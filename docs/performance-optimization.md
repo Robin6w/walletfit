@@ -28,12 +28,13 @@
 - **개선 내용**:
   - `vite.config.ts`의 `build.rollupOptions.output.manualChunks` 설정을 통해 모놀리식 단일 번들을 분리했습니다:
     - `cards-catalog`: 대용량 카탈로그 JSON(`cards-catalog.json`)을 독립 청크로 격리하여 브라우저 장기 캐싱 활용
-    - `vendor`: React, Lucide 등 `node_modules`의 공통 외부 라이브러리 격리
-    - (이 외 나머지는 `index` 진입 청크로 자동 유지)
+    - (이 외 나머지는 Vite 자동 청크 분할에 맡깁니다. 아래 업데이트 노트 참고)
   - `App.tsx`에서 갤러리(`CardsPage`)·명세서 분석(`StatementAnalysisPage`)·혜택 추천(`BenefitRecommendPage`)·지갑 만들기(`WalletWizardPage`) 각 feature 페이지를 `React.lazy()`와 `Suspense`로 감싸, 시작 화면 진입 시 아직 안 쓰는 화면의 코드를 로드하지 않도록 지연 로딩을 구축했습니다.
   - 500 kB 초과 빌드 경고 억제를 위해 `chunkSizeWarningLimit`도 800으로 조정했습니다(대용량 카탈로그 청크 자체는 분리해도 여전히 커서).
 
 > **업데이트 노트**: 이 보고서는 작성 당시(#23) 기준 기록입니다. 이후 팀이 외부 LLM(Gemini) 연동을 쓰지 않기로 결정하면서 `@google/generative-ai` 의존성과 그것을 분리했던 `gemini-ai` 청크는 코드베이스에서 완전히 제거되었고, feature 기반 구조로 리팩터링되며 지연 로드 대상도 `MyCardsPage`/`SimulatorPage`가 아니라 위에 적은 4개 feature 페이지로 바뀌었습니다. 아래 3장의 정량 비교표는 그 시점의 측정치라 `Gemini AI 청크` 행은 지금은 존재하지 않는 청크입니다.
+>
+> **추가 업데이트(Vercel 배포 대응)**: `node_modules`에 있으면 무조건 별도 `vendor` 청크로 묶던 규칙은 이후 제거했습니다. 이 규칙이 react/react-dom의 CJS→ESM 변환 헬퍼 함수를 `vendor` 청크가 아니라 그 헬퍼가 필요한 다른 앱 코드 청크(예: `categoryStyle.ts`) 쪽에 두게 만들어, 두 청크가 서로를 참조하는 순환 구조를 만들었습니다. 그 결과 로컬 개발 서버·타입체크·테스트에서는 전혀 드러나지 않다가 실제 프로덕션 빌드(Vercel 배포)에서만 `"__commonJSMin is not a function"`(콘솔에는 압축 후 `"t is not a function"`으로 표시) 런타임 에러가 나서 화면이 완전히 하얗게 뜨는 문제가 있었습니다. `cards-catalog` 분리만 남기고 나머지는 Vite 기본 자동 청크 분할에 맡기는 것으로 해결했습니다. 아래 3장의 `공통 벤더 청크(vendor.js)` 행도 이제는 해당하지 않는 과거 수치입니다.
 
 ### 3) 목록 렌더링 가상화 검토 및 최적화
 - **위치**: [`src/features/catalog/CatalogCardTile.tsx`](../src/features/catalog/CatalogCardTile.tsx), [`src/features/catalog/CatalogGallery.tsx`](../src/features/catalog/CatalogGallery.tsx)

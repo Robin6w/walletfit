@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+jspm_packages/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.serverless/
+.fusebox/
+.dynamodb/
+
+# Debug logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# IDEs and editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+coverage/
+.nyc_output
+
+# Temp
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.node_repl_history
+
+# Agent Temp
+.claude/
+
+# 스캐폴딩 중 생긴 임시/중복 산출물 — 앱 동작에 필요 없어서 git에는 올리지 않습니다.
+# (public/pyodide-dist/의 Pyodide+scipy 런타임은 앱이 실제로 자체 호스팅해서 쓰는
+# 정적 자산이라 이 목록에 넣지 않았습니다 — 그건 그대로 커밋되어야 합니다.)
+_scipy_parts/
+Claude outputs/
+
+# scripts/fetchCardTierDetail.ts가 받아오는 카드고릴라 내부 API 원본 응답(raw dump).
+# 앱 소스에서는 전혀 읽지 않고 scripts/buildTieredCatalog.ts가 tiers를 뽑아낼 때만
+# 쓰는 빌드용 중간 산출물이라 (용량도 수십 MB로 커서) git에서는 뺍니다.
+# 필요하면 `npm run fetch:tiers`로 다시 받을 수 있습니다(사내망 IP 차단 때문에 실제
+# 사용자 컴퓨터에서 실행해야 함 — README 참고).
+data/catalog/cards-detail-raw.json

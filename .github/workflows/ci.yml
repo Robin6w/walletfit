@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check package.json exists
+        id: check_package
+        run: |
+          if [ -f package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm ci
+
+      - name: Type check & build
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run build --if-present
+
+      - name: Check Lint (Optional)
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run lint --if-present
+
+      - name: Check Accessibility (a11y)
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run lint:a11y --if-present
+
+      - name: Run Tests & Coverage (Optional)
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run test:coverage --if-present

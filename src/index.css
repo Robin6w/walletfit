@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #12194a;
+  --color-brand-blue-deep: #1b3fc4;
+  --color-brand-blue: #2883fc;
+  --color-brand-sky: #cfe0ff;
+  /* 버튼·강조 그라데이션의 두 번째/세 번째 색상. 기존 남색 톤에서 좀 더 다채로운
+     보라·자주 톤으로 옮겨서, 아래 mesh-bg 배경과 톤이 맞물리게 합니다. */
+  --color-brand-violet: #6b46c1;
+  --color-brand-plum: #7c2d64;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bgDrift {
+  0% {
+    background-position: 0% 0%, 22% 16%, 28% 38%, 46% 48%, 56% 56%, 64% 38%, 72% 68%, 100% 100%, 0 0;
+  }
+  100% {
+    background-position: 6% 5%, 26% 20%, 32% 41%, 49% 51%, 59% 59%, 68% 41%, 76% 71%, 95% 94%, 0 0;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+html {
+  /* OS/브라우저 다크 모드가 select·input 등 폼 요소 배색을 강제로 뒤집으면서
+     글자가 안 보이거나 클릭해도 반응이 없는 것처럼 보이는 문제를 막기 위해
+     항상 라이트 테마 폼 컨트롤을 사용하도록 고정합니다. */
+  color-scheme: light;
+}
+
+body {
+  background: #eef2fb;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 파스텔 톤 8색 mesh 그라데이션 + 미세한 노이즈 텍스처. 사진처럼 복잡한 배경을
+   만들기 위해 blob마다 위치·크기를 다르게 잡고, 아주 천천히(34s) 드리프트시킵니다.
+   .app-shell(사이드바+본문 카드형 레이아웃)과 시작 화면(StartPage)이 함께 씁니다. */
+.mesh-bg {
+  background-color: #ffffff;
+  background-image: radial-gradient(ellipse 74% 60% at 6% 8%, #bfe3f5f0 0%, transparent 78%),
+    radial-gradient(ellipse 52% 44% at 26% 16%, #8fd4d0e0 0%, transparent 76%),
+    radial-gradient(ellipse 58% 48% at 30% 38%, #a89ce0e0 0%, transparent 74%),
+    radial-gradient(ellipse 46% 38% at 46% 48%, #d68fd0d9 0%, transparent 72%),
+    radial-gradient(ellipse 34% 28% at 56% 56%, #f3e6f7ec 0%, transparent 70%),
+    radial-gradient(ellipse 44% 36% at 64% 38%, #7dd8ccd9 0%, transparent 74%),
+    radial-gradient(ellipse 50% 42% at 72% 68%, #f0a8d0d9 0%, transparent 74%),
+    radial-gradient(ellipse 74% 60% at 92% 90%, #8fc4ecea 0%, transparent 78%),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.85'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'%20opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 220px 220px;
+  background-position: 0% 0%, 22% 16%, 28% 38%, 46% 48%, 56% 56%, 64% 38%, 72% 68%, 100% 100%, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+  background-blend-mode: normal, normal, normal, normal, normal, normal, normal, normal, soft-light;
+  animation: bgDrift 34s ease-in-out infinite alternate;
+}
+
+/* 히어로 배너와 진짜 "다음 단계로 넘어가는" 주요 CTA 버튼에만 쓰는 3색 그라데이션
+   (파랑 → 보라 → 자주). 화면에서 가장 중요한 한 가지 행동에만 예약해서 쓰고,
+   토글/탭/아이콘 배지 등에는 아래 두 변형을 대신 씁니다. */
+.brand-gradient {
+  background-image: linear-gradient(135deg, var(--color-brand-blue-deep) 0%, var(--color-brand-violet) 55%, var(--color-brand-plum) 100%);
+}
+
+/* 토글·탭·필터 칩·사이드바 활성 상태처럼 "지금 선택됐다"를 나타내는 곳에 쓰는
+   차분한 2색 그라데이션. brand-gradient보다 색 폭이 좁아서 여러 개가 동시에
+   보여도 화면이 덜 시끄럽습니다. */
+.brand-gradient-select {
+  background-image: linear-gradient(120deg, var(--color-brand-blue-deep) 0%, var(--color-brand-blue) 100%);
+}
+
+/* 아이콘 배지·플로팅 버튼·빈 상태 아이콘처럼 장식 성격이 강한 곳에 쓰는 그라데이션.
+   같은 파랑-보라 계열이되 각도와 방향을 달리해서 브랜드 그라데이션의 복제처럼
+   보이지 않게 합니다. */
+.brand-gradient-soft {
+  background-image: linear-gradient(160deg, var(--color-brand-violet) 0%, var(--color-brand-blue-deep) 100%);
+}
+
+/* 지갑 빠르게 바꾸기(WalletQuickEditView) 등 primary CTA 버튼에 쓰는 hover 리프트 효과. */
+.cta-btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cta-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(27, 63, 196, 0.17);
+}
+
+/* 카드 추가 검색창처럼 점선 테두리 입력 행에 쓰는 hover 강조 테두리. */
+.add-row {
+  transition: border-color 0.15s ease;
+}
+.add-row:hover {
+  border-color: var(--color-brand-blue);
+}
+
+/* 카탈로그 카드 타일 전용 hover 효과. 타일마다 그 카드가 가장 잘 맞는 카테고리
+   색상(accent)을 --tile-accent로 넘겨받아, hover 시 그 색이 은은하게 번지는
+   그림자를 만든다 — 모든 타일이 똑같은 파란 그림자를 쓰는 대신 카드마다 다른
+   색감이 느껴지도록 하기 위함. */
+.catalog-tile {
+  --tile-accent: var(--color-brand-blue-deep);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.catalog-tile:hover {
+  transform: translateY(-7px) scale(1.014);
+  box-shadow:
+    0 22px 40px -16px color-mix(in srgb, var(--tile-accent) 55%, transparent),
+    0 4px 10px -2px color-mix(in srgb, var(--tile-accent) 30%, transparent);
+}
+
+/* 월 지출 시뮬레이터의 카테고리별 카드 전용 hover/focus 효과. 카드마다 그 카테고리
+   고유 색상을 --cat-accent로 넘겨받아, 전부 똑같은 하늘색 대신 카테고리 색으로
+   hover 테두리/배경, 금액 입력창 focus 링이 물든다. */
+.spend-cat-card {
+  --cat-accent: var(--color-brand-blue-deep);
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+.spend-cat-card:hover {
+  border-color: color-mix(in srgb, var(--cat-accent) 45%, transparent);
+  background-color: color-mix(in srgb, var(--cat-accent) 7%, transparent);
+}
+.spend-cat-card input[type="number"]:focus {
+  border-color: var(--cat-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cat-accent) 30%, transparent);
+}
+
+/* 반투명 유리 느낌 카드/패널. mesh-bg 위에 얹히는 큰 표면(섹션 카드, 사이드바,
+   상단 바 등)에 적용해서 뒷배경이 은은하게 비치게 합니다.
+   2026-09 UI 고도화("벤토 그리드 + 리파인드 글래스"): 블러·채도를 올리고 테두리를
+   밝은 반투명 화이트로 바꿔서 또렷한 유리 느낌을 낸다. border-color만 지정해서,
+   기존에 border/border-[#e6ecf8] 같은 Tailwind 유틸리티로 두께·스타일을 잡아둔
+   곳들은 그 값 그대로 두고 색상만 자연스럽게 갱신되게 한다. */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 8px 28px rgba(31, 41, 86, 0.08);
+}
+
+/* glass-panel이 이미 걸린 큰 섹션 안에 중첩해서 얹는 작은 타일용. backdrop-filter를 또
+   걸면 조상의 블러를 한 번 더 블러링하게 되어(특히 겹치는 영역에서) 값이 기하급수적으로
+   누적되므로, 여기서는 blur 없이 은은한 화이트 톤만 얹어 "유리 위에 올라간 카드" 느낌만
+   낸다. */
+.glass-tile-flat {
+  background-color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 14px rgba(31, 41, 86, 0.06);
+}
+
+/* 벤토 그리드: 정보 중요도에 따라 타일 크기가 달라지는 대시보드/추천 결과 화면 전용.
+   기본 4열이고, 더 중요하거나 내용이 많은 타일에는 .bento-span-2/3을 얹어 폭을 넓힌다.
+   모바일(639px 이하)에서는 Phase 2에서 사이드바를 고친 것과 같은 이유로 — 4열이 타일을
+   너무 좁게 눌러서 — 2열로 줄이고, span 타일은 한 줄을 그대로 쓰게 한다. */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(96px, auto);
+  gap: 16px;
+}
+.bento-span-2 {
+  grid-column: span 2 / span 2;
+}
+.bento-span-3 {
+  grid-column: span 3 / span 3;
+}
+@media (max-width: 639px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bento-span-2,
+  .bento-span-3 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* 카테고리별 배정 카드처럼 항목마다 높이가 크게 다른(1장 배정 vs 3장으로 분할) 목록은
+   그리드로 묶으면 짧은 카드가 옆의 긴 카드 높이만큼 강제로 늘어나며 텅 빈 여백만 남는다
+   (실제로 겪은 버그). 그리드 대신 CSS 컬럼 기반 매스너리로 바꿔서 카드마다 자기 내용
+   만큼만 높이를 쓰게 한다. */
+.masonry-cols {
+  column-count: 2;
+  column-gap: 16px;
+}
+.masonry-cols > * {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+@media (max-width: 639px) {
+  .masonry-cols {
+    column-count: 1;
+  }
+}
+
+/* 카테고리 카드 하나하나에 그 카테고리 고유색을 왼쪽 스트라이프(--tile-accent)로 드러내고,
+   hover 시 그 색이 은은하게 번지는 그림자로 뜨는 느낌을 준다 (.catalog-tile과 동일한 발상). */
+.category-tile {
+  --tile-accent: var(--color-brand-blue-deep);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+}
+.category-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px -12px color-mix(in srgb, var(--tile-accent) 60%, transparent);
+}
+
+/* "드라마틱한 변화" 2차 보완: (1) 화면에 들어올 때 타일이 순서대로 톡톡 튀어 오르는
+   입장 모션 — 기존 popIn 키프레임을 재사용하고 형제 순서(nth-child)로 살짝씩 딜레이를
+   줘서 한꺼번에 뜨지 않고 차례로 나타나게 한다. */
+.bento-grid > *,
+.masonry-cols > * {
+  animation: popIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.bento-grid > *:nth-child(2),
+.masonry-cols > *:nth-child(2) {
+  animation-delay: 45ms;
+}
+.bento-grid > *:nth-child(3),
+.masonry-cols > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.bento-grid > *:nth-child(4),
+.masonry-cols > *:nth-child(4) {
+  animation-delay: 135ms;
+}
+.bento-grid > *:nth-child(5),
+.masonry-cols > *:nth-child(5) {
+  animation-delay: 180ms;
+}
+.bento-grid > *:nth-child(n + 6),
+.masonry-cols > *:nth-child(n + 6) {
+  animation-delay: 220ms;
+}
+
+/* (2) 토스류 "눌림" 피드백 — 리서치에서 확인한 물리적 압축 피드백 패턴. 버튼을 누르는
+   순간 살짝 눌리는 느낌을 줘서 클릭이 실제로 손끝에 닿는 것처럼 느껴지게 한다.
+   사이드바 내비게이션, 숏컷 카드, 주요 CTA/토글 버튼에 적용한다. */
+.tap-press {
+  transition: transform 0.12s ease;
+}
+.tap-press:active {
+  transform: scale(0.97);
+}
+
+/* 사이드바 + 본문이 하나의 배경을 공유하는 카드형 레이아웃 */
+.app-shell {
+  background-color: #ffffff;
+  background-image: radial-gradient(ellipse 74% 60% at 6% 8%, #bfe3f5f0 0%, transparent 78%),
+    radial-gradient(ellipse 52% 44% at 26% 16%, #8fd4d0e0 0%, transparent 76%),
+    radial-gradient(ellipse 58% 48% at 30% 38%, #a89ce0e0 0%, transparent 74%),
+    radial-gradient(ellipse 46% 38% at 46% 48%, #d68fd0d9 0%, transparent 72%),
+    radial-gradient(ellipse 34% 28% at 56% 56%, #f3e6f7ec 0%, transparent 70%),
+    radial-gradient(ellipse 44% 36% at 64% 38%, #7dd8ccd9 0%, transparent 74%),
+    radial-gradient(ellipse 50% 42% at 72% 68%, #f0a8d0d9 0%, transparent 74%),
+    radial-gradient(ellipse 74% 60% at 92% 90%, #8fc4ecea 0%, transparent 78%),
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.85'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'%20opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 160% 160%, 220px 220px;
+  background-position: 0% 0%, 22% 16%, 28% 38%, 46% 48%, 56% 56%, 64% 38%, 72% 68%, 100% 100%, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+  background-blend-mode: normal, normal, normal, normal, normal, normal, normal, normal, soft-light;
+  animation: bgDrift 34s ease-in-out infinite alternate;
+}

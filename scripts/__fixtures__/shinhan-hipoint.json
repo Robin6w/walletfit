@@ -1,0 +1,30 @@
+{
+  "sourceId": 1,
+  "name": "신한카드 Hi-Point",
+  "keyBenefit": [
+    {
+      "title": "쇼핑",
+      "comment": "백화점/할인점/홈쇼핑·온라인몰 1.0~5.0% 적립",
+      "cate_idx": 16,
+      "info": "<p><strong>롯데/ 현대백화점 마이신한포인트 1.0~5.0% 적립</strong></p><p>- 문화센타 등 비쇼핑 항목 및 온라인매장은 적립 제외</p>"
+    },
+    {
+      "title": "모든가맹점",
+      "comment": "전국 가맹점 0.2~2.0% 적립\n해외 가맹점 1~5% 적립",
+      "cate_idx": 11,
+      "info": "<p><strong>전국 가맹점 0.2~2.0% 적립</strong></p><p>- 국내 어디서나 이용한 일시불/할부 금액의 0.2~2.0% 마이신한포인트 적립</p><p><strong>해외 가맹점 1.0~5.0% 마이신한포인트 적립</strong></p>"
+    },
+    {
+      "title": "주유",
+      "comment": "S-OIL, 에이치디현대오일뱅크 주유 시 리터 당 60원 적립",
+      "cate_idx": 21,
+      "info": "<p><strong>S-OIL / 에이치디현대오일뱅크 주유 시 리터 당 60원 마이신한포인트 적립</strong></p>"
+    },
+    {
+      "title": "적립",
+      "comment": "포인트 적립상세 및 포인트 사용 안내",
+      "cate_idx": 86,
+      "info": "<p><strong>포인트 적립율 산정</strong></p><p>- 직전월 일시불/할부 이용실적을 기준으로 당월의 매 승인 건에 대한 적립율이 결정됩니다.</p><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"b-table\" width=\"100%\"><tbody><tr class=\"b-table-top\"><td class=\"b-table-top\">전월 신판 이용금액</td><td class=\"b-table-top\">50만원 미만</td><td class=\"b-table-top\">50만원 이상~100만원 미만</td><td class=\"b-table-top\">100만원 이상~150만원 미만</td><td class=\"b-table-top\">150만원 이상</td></tr><tr><td>1~5% 적립처</td><td>1.0%</td><td>2.0%</td><td>3.5%</td><td>5.0%</td></tr><tr><td>0.2~2% 적립처</td><td>0.2%</td><td>0.8%</td><td>1.5%</td><td>2.0%</td></tr></tbody></table><p>- 신한카드 Hi-Point 이용금액만 반영됩니다.</p>"
+    }
+  ]
+}

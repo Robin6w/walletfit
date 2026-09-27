@@ -1,0 +1,12 @@
+[
+  { "id": "convenience", "label": "편의점" },
+  { "id": "cafe", "label": "카페/디저트" },
+  { "id": "transport", "label": "대중교통" },
+  { "id": "mobile", "label": "통신비" },
+  { "id": "onlineShopping", "label": "온라인쇼핑" },
+  { "id": "mart", "label": "대형마트/슈퍼" },
+  { "id": "dining", "label": "외식" },
+  { "id": "culture", "label": "영화/공연/OTT" },
+  { "id": "gas", "label": "주유" },
+  { "id": "etc", "label": "그 외 일반가맹점" }
+]

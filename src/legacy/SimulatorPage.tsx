@@ -100,7 +100,7 @@ export function SimulatorPage({ myCards, onGoToGallery }: SimulatorPageProps) {
       }),
     [optimizationCandidates, spending, maxCards, maxAnnualFee],
   );
-  const bestSingleCardNetBenefit = ranked.length > 0 ? ranked[0].netMonthlyBenefit : null;
+  const bestSingleCard = ranked.length > 0 ? ranked[0] : null;
 
   const showEmptyState = scope === "myCards" && myCards.ids.length === 0;
 
@@ -187,7 +187,7 @@ export function SimulatorPage({ myCards, onGoToGallery }: SimulatorPageProps) {
             onMaxAnnualFeeChange={setMaxAnnualFee}
             optimizationMode={optimizationMode}
             onOptimizationModeChange={setOptimizationMode}
-            bestSingleCardNetBenefit={bestSingleCardNetBenefit}
+            bestSingleCard={bestSingleCard}
             myCards={myCards}
           />
           <CardList

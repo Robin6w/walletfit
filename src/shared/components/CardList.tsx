@@ -1,4 +1,4 @@
-import { Fragment, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { ChevronDown, ChevronUp, Sparkles, Crown } from "lucide-react";
 import { formatWon } from "@/shared/lib/format";
 import { getCardAdvice, type CardAdviceMap } from "@/features/chatbot/cardAdvice";

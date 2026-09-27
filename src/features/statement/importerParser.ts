@@ -284,7 +284,7 @@ export async function extractTextFromPdf(file: File): Promise<string> {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
     const lineText = content.items
-      .map((item) => ("str" in item ? item.str : ""))
+      .map((item: unknown) => (typeof item === "object" && item !== null && "str" in item ? (item as { str: string }).str : ""))
       .join(" ");
     pageTexts.push(lineText);
   }

@@ -1,12 +1,21 @@
 import type { SpendCategory } from "@/domain/types/card";
 import type { CardFitScore } from "@/domain/types/recommendation";
 import type { WalletBlueprint } from "@/domain/types/optimization";
-import { requestAzuLlmChat, AzuLlmConfigError, AzuLlmRequestError } from "@/features/chatbot/azuLlmClient";
+import { requestAzuLlmChatStream, AzuLlmConfigError, AzuLlmRequestError } from "@/features/chatbot/azuLlmClient";
 import { buildAzuLlmMessages } from "@/features/chatbot/promptBuilder";
+import { splitResponse, visiblePortion, EMPTY_CHATBOT_META, type ChatbotResponseMeta } from "@/features/chatbot/responseParser";
 
 export interface ChatMessage {
   role: "user" | "model";
   text: string;
+  /** model 메시지에만 붙습니다. 오프라인(규칙 기반) 응답이나 파싱 실패 시에는 빈 메타입니다. */
+  meta?: ChatbotResponseMeta;
+}
+
+/** sendChatMessage의 반환 형태. 화면 텍스트와, 그 뒤에 따로 그릴 구조화 데이터를 분리해서 돌려줍니다. */
+export interface ChatSendResult {
+  text: string;
+  meta: ChatbotResponseMeta;
 }
 
 export interface ChatContext {
@@ -97,21 +106,33 @@ async function sendChatMessageOffline(
 }
 
 /**
- * 챗봇의 실제 진입점입니다. connection.apiKey가 있으면 아주LLM API Gateway로 실제 호출을
- * 시도하고, 키가 없거나(AzuLlmConfigError) 호출이 실패하면(AzuLlmRequestError, 네트워크
+ * 챗봇의 실제 진입점입니다. connection.apiKey가 있으면 아주LLM API Gateway로 스트리밍
+ * 호출을 시도하고(onDelta가 있으면 토큰이 오는 대로 "지금까지 보여줘도 되는 텍스트"를
+ * 알려줍니다), 키가 없거나(AzuLlmConfigError) 호출이 실패하면(AzuLlmRequestError, 네트워크
  * 오류 등) 화면이 멈추지 않도록 조용히 규칙 기반 응답(sendChatMessageOffline)으로
- * 넘어갑니다. Chatbot.tsx가 부르는 시그니처는 그대로 유지했습니다(connection만 추가).
+ * 넘어갑니다. 스트리밍 도중 실패하면 그때까지 보여주던 부분 텍스트는 버리고 규칙 기반
+ * 응답으로 완전히 교체합니다 — 절반만 온 답변을 그대로 두는 것보다 낫습니다.
+ *
+ * 반환값은 화면에 보여줄 텍스트(text)와, 그 답변에서 뽑아낸 구조화 데이터(meta: 언급된
+ * 카드명/핵심 수치/후속 질문)로 나뉩니다. 오프라인 응답에는 구조화 데이터가 없어서 meta는
+ * 항상 비어 있습니다(EMPTY_CHATBOT_META).
  */
 export async function sendChatMessage(
   history: ChatMessage[],
   message: string,
   context: ChatContext,
   connection?: AzuLlmConnection,
-): Promise<string> {
+  onDelta?: (visibleTextSoFar: string) => void,
+): Promise<ChatSendResult> {
   if (connection?.apiKey?.trim()) {
     try {
       const messages = buildAzuLlmMessages(history, message, context);
-      return await requestAzuLlmChat(messages, { apiKey: connection.apiKey, model: connection.model });
+      const raw = await requestAzuLlmChatStream(
+        messages,
+        { apiKey: connection.apiKey, model: connection.model },
+        (accumulated) => onDelta?.(visiblePortion(accumulated)),
+      );
+      return splitResponse(raw);
     } catch (e) {
       if (import.meta.env.DEV) {
         const reason = e instanceof AzuLlmConfigError || e instanceof AzuLlmRequestError ? e.message : e;
@@ -121,5 +142,6 @@ export async function sendChatMessage(
       // 그냥 규칙 기반 응답을 보여줍니다 — 챗봇이 아예 멈추는 것보다 낫습니다.
     }
   }
-  return sendChatMessageOffline(history, message, context);
+  const text = await sendChatMessageOffline(history, message, context);
+  return { text, meta: EMPTY_CHATBOT_META };
 }

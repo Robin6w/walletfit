@@ -33,17 +33,21 @@ interface RequestAzuLlmChatOptions {
   signal?: AbortSignal;
 }
 
+interface ResolvedRequestConfig {
+  apiKey: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+}
+
 /**
- * chat completions 한 번을 호출해 모델 응답 텍스트만 돌려줍니다.
+ * 두 호출 함수(스트리밍/비스트리밍)가 똑같이 하던 설정 검증을 한 곳으로 모았습니다.
+ * gpt-oss-120b처럼 답변 전에 내부적으로 "추론(reasoning)"을 하는 모델은 그 추론 토큰도
+ * max_tokens 예산을 함께 써서, 600 정도로는 실제 답변이 문장 중간에 끊기는 경우가 많이
+ * 관찰돼(finish_reason: "length") 여유 있게 늘려둡니다.
  */
-export async function requestAzuLlmChat(
-  messages: AzuLlmMessage[],
-  options: RequestAzuLlmChatOptions,
-): Promise<string> {
-  // gpt-oss-120b처럼 답변 전에 내부적으로 "추론(reasoning)"을 하는 모델은 그 추론 토큰도
-  // max_tokens 예산을 함께 써서, 600 정도로는 실제 답변이 문장 중간에 끊기는 경우가 많이
-  // 관찰돼(finish_reason: "length") 여유 있게 늘려둡니다.
-  const { apiKey, model = DEFAULT_MODEL, temperature = 0.4, maxTokens = 1200, signal } = options;
+function resolveRequestConfig(options: RequestAzuLlmChatOptions): ResolvedRequestConfig {
+  const { apiKey, model = DEFAULT_MODEL, temperature = 0.4, maxTokens = 1200 } = options;
 
   if (!BASE_URL) {
     throw new AzuLlmConfigError("아주LLM 게이트웨이 주소(VITE_AZU_LLM_BASE_URL)가 설정되지 않았습니다.");
@@ -54,17 +58,30 @@ export async function requestAzuLlmChat(
   if (!apiKey.trim()) {
     throw new AzuLlmConfigError("아주LLM API Key가 설정되지 않았습니다.");
   }
+  return { apiKey, model, temperature, maxTokens };
+}
+
+/**
+ * chat completions 한 번을 호출해 모델 응답 텍스트만 돌려줍니다(스트리밍 아님, 완전한
+ * 응답이 올 때까지 기다립니다). 지금은 실제 화면에서는 안 쓰고 있고(Chatbot.tsx는
+ * requestAzuLlmChatStream을 씁니다), 스트리밍이 막힌 환경을 위한 대체 경로로 남겨둡니다.
+ */
+export async function requestAzuLlmChat(
+  messages: AzuLlmMessage[],
+  options: RequestAzuLlmChatOptions,
+): Promise<string> {
+  const { apiKey, model, temperature, maxTokens } = resolveRequestConfig(options);
 
   let response: Response;
   try {
-    response = await fetch(`${BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    response = await fetch(`${BASE_URL!.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
-      signal,
+      signal: options.signal,
     });
   } catch (e) {
     throw new AzuLlmRequestError(e instanceof Error ? `네트워크 오류: ${e.message}` : "네트워크 오류가 발생했습니다.");
@@ -82,4 +99,86 @@ export async function requestAzuLlmChat(
     throw new AzuLlmRequestError("아주LLM 응답에서 답변 내용을 찾지 못했습니다.");
   }
   return content.trim();
+}
+
+/**
+ * chat completions를 스트리밍(stream: true)으로 호출해서, 토큰이 도착하는 대로
+ * onDelta(그때까지 누적된 전체 텍스트)를 호출합니다. 최종적으로는 누적된 전체 텍스트를
+ * 반환합니다.
+ *
+ * gpt-oss-120b는 실제 답변(content)을 내놓기 전에 내부 "추론" 과정을 reasoning_content
+ * 델타로 먼저 스트리밍합니다(끝날 때까지 content는 null로 옵니다). 이 함수는
+ * delta.content만 누적하고 reasoning_content는 그냥 버려서, 화면에는 실제 답변만
+ * 타이핑되듯 나타납니다.
+ */
+export async function requestAzuLlmChatStream(
+  messages: AzuLlmMessage[],
+  options: RequestAzuLlmChatOptions,
+  onDelta: (accumulatedText: string) => void,
+): Promise<string> {
+  const { apiKey, model, temperature, maxTokens } = resolveRequestConfig(options);
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL!.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens, stream: true }),
+      signal: options.signal,
+    });
+  } catch (e) {
+    throw new AzuLlmRequestError(e instanceof Error ? `네트워크 오류: ${e.message}` : "네트워크 오류가 발생했습니다.");
+  }
+
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => "");
+    throw new AzuLlmRequestError(`아주LLM 호출 실패 (${response.status}): ${bodyText || response.statusText}`);
+  }
+  if (!response.body) {
+    throw new AzuLlmRequestError("아주LLM 응답 스트림을 열 수 없습니다.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  // 청크가 "data: {...}\n\n" 줄 경계와 어긋나게 잘려서 올 수 있어, 완성된 줄만 파싱하고
+  // 마지막 미완성 줄은 다음 read()와 이어붙입니다.
+  let lineBuffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    lineBuffer += decoder.decode(value, { stream: true });
+
+    const lines = lineBuffer.split("\n");
+    lineBuffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const payload = trimmed.slice("data:".length).trim();
+      if (payload === "" || payload === "[DONE]") continue;
+
+      try {
+        const chunk = JSON.parse(payload) as {
+          choices?: { delta?: { content?: string | null } }[];
+        };
+        const delta = chunk.choices?.[0]?.delta?.content;
+        if (typeof delta === "string" && delta.length > 0) {
+          accumulated += delta;
+          onDelta(accumulated);
+        }
+      } catch {
+        // 청크 하나가 깨져서 파싱이 안 되면 그 줄만 버리고 스트림은 계속 읽습니다.
+      }
+    }
+  }
+
+  if (accumulated.trim() === "") {
+    throw new AzuLlmRequestError("아주LLM 응답에서 답변 내용을 찾지 못했습니다.");
+  }
+  return accumulated;
 }

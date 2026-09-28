@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Sparkles, RotateCcw } from "lucide-react";
 import { sendChatMessage, type ChatMessage } from "@/features/chatbot/cardChatbot";
+import { ApiKeySettings } from "@/features/settings/ApiKeySettings";
+import type { StorageType } from "@/shared/hooks/useAzuLlmApiKey";
 import type { SpendCategory } from "@/domain/types/card";
 import type { CardFitScore } from "@/domain/types/recommendation";
+import type { WalletBlueprint } from "@/domain/types/optimization";
 
 interface ChatbotProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   evaluations: CardFitScore[];
   categories: SpendCategory[];
+  /** 지갑 마법사(WalletWizardPage)가 계산한 추천 조합. 아직 계산 전/방문 전이면 null. */
+  walletResult: WalletBlueprint | null;
+  /** 아주LLM API Key 상태 — App.tsx의 useAzuLlmApiKey 훅을 그대로 받아 씁니다. */
+  apiKey: string;
+  storageType: StorageType;
+  onApiKeyChange: (value: string) => void;
+  onApiKeySave: (storageType?: StorageType) => void;
+  onApiKeyRemove: () => void;
+  onApiKeyStorageTypeChange: (type: StorageType) => void;
 }
 
 const GREETING: ChatMessage = {
   role: "model",
-  text: "안녕하세요! walletfit 카드 상담 챗봇이에요. 지금 등록한 카드와 지출 데이터를 보고 답해드릴게요. 아래 질문 중 하나를 눌러보거나 직접 물어보세요.",
+  text: "안녕하세요! walletfit 카드 상담 챗봇이에요. 지금 등록한 카드와 지갑 만들기 추천 결과를 보고 답해드릴게요. 아래 질문 중 하나를 눌러보거나 직접 물어보세요.",
 };
 
 /** 사용자가 바로 눌러볼 수 있는 퀵 질문. 매번 직접 타이핑하는 번거로움을 줄여준다. */
@@ -22,14 +34,28 @@ const QUICK_QUESTIONS = [
   "연회비 대비 손해 보는 카드가 있나요?",
   "카드를 몇 장 들고 다니는 게 적당할까요?",
   "실적 조건을 못 채우고 있는 카드가 있나요?",
+  "방금 계산된 지갑 조합은 왜 이렇게 나왔어요?",
 ];
 
-export function Chatbot({ open, onOpenChange, evaluations, categories }: ChatbotProps) {
+export function Chatbot({
+  open,
+  onOpenChange,
+  evaluations,
+  categories,
+  walletResult,
+  apiKey,
+  storageType,
+  onApiKeyChange,
+  onApiKeySave,
+  onApiKeyRemove,
+  onApiKeyStorageTypeChange,
+}: ChatbotProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const hasApiKey = apiKey.trim().length > 0;
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -45,7 +71,7 @@ export function Chatbot({ open, onOpenChange, evaluations, categories }: Chatbot
     setError(null);
 
     try {
-      const reply = await sendChatMessage(messages, text, { evaluations, categories });
+      const reply = await sendChatMessage(messages, text, { evaluations, categories, walletResult }, { apiKey });
       setMessages((prev) => [...prev, { role: "model", text: reply }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "답변을 가져오는 중 오류가 발생했습니다.");
@@ -83,7 +109,9 @@ export function Chatbot({ open, onOpenChange, evaluations, categories }: Chatbot
               <div className="flex items-center gap-2 text-sm font-bold">
                 <Sparkles className="h-4 w-4" /> 카드 상담 챗봇
               </div>
-              <div className="mt-0.5 text-[10px] font-medium text-brand-sky">예시 응답으로 동작 중이에요</div>
+              <div className="mt-0.5 text-[10px] font-medium text-brand-sky">
+                {hasApiKey ? "아주LLM으로 답변하고 있어요" : "예시 응답으로 동작 중이에요"}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {messages.length > 1 && (
@@ -101,6 +129,17 @@ export function Chatbot({ open, onOpenChange, evaluations, categories }: Chatbot
                 <X className="h-4.5 w-4.5" />
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-end border-b border-slate-100 px-3 py-2">
+            <ApiKeySettings
+              apiKey={apiKey}
+              storageType={storageType}
+              onChange={onApiKeyChange}
+              onSave={onApiKeySave}
+              onRemove={onApiKeyRemove}
+              onStorageTypeChange={onApiKeyStorageTypeChange}
+            />
           </div>
 
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

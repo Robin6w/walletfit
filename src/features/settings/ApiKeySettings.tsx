@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { Settings, Key, ShieldAlert, CheckCircle2 } from "lucide-react";
+import type { StorageType } from "@/shared/hooks/useAzuLlmApiKey";
 
-/**
- * API Key 보관 위치. 이전에는 GeminiApiKeyContext.tsx에서 가져왔지만, 해당 파일은
- * Gemini 연동 제거 과정에서 이미 삭제되어(레거시 정리) 여기서 직접 선언합니다.
- */
-export type StorageType = "session" | "local";
+export type { StorageType };
 
 interface ApiKeySettingsProps {
   apiKey: string;
@@ -16,7 +13,14 @@ interface ApiKeySettingsProps {
   onStorageTypeChange?: (type: StorageType) => void;
 }
 
-/** 지출 내역 가져오기 화면 우측 상단의 Groq API Key 등록/해제 버튼과 팝오버. */
+/**
+ * 아주LLM API Key 등록/해제 버튼과 팝오버입니다. 원래는 Groq 전용으로 만들어졌다가
+ * (Gemini 연동 제거 과정에서 GeminiApiKeyContext.tsx가 삭제된 뒤 여기 직접 선언했던
+ * 시절도 있었습니다) 실제로는 어디에도 연결되지 않은 채 남아 있던 컴포넌트인데, 이제
+ * 챗봇(추천 결과 설명)에 실제로 연동하면서 아주LLM 전용으로 바꿨습니다. 키 상태 자체는
+ * useAzuLlmApiKey 훅(shared/hooks)에서 관리해서, 나중에 명세서 분석 화면에서도 같은 키를
+ * 그대로 재사용할 수 있습니다.
+ */
 export function ApiKeySettings({
   apiKey,
   storageType = "session",
@@ -52,18 +56,18 @@ export function ApiKeySettings({
         }`}
       >
         <Settings className={`h-3.5 w-3.5 ${hasKey ? "text-emerald-600" : "text-slate-500"}`} />
-        {hasKey ? `Groq AI (${currentStorageType === "session" ? "세션" : "로컬"})` : "Groq API 설정"}
+        {hasKey ? `아주LLM (${currentStorageType === "session" ? "세션" : "로컬"})` : "아주LLM API 설정"}
       </button>
 
       {showKeyInput && (
         <div
-          aria-label="Groq API Key 설정"
+          aria-label="아주LLM API Key 설정"
           className="glass-panel absolute right-0 top-11 z-20 w-96 rounded-2xl border border-slate-200 p-5 shadow-2xl transition-all duration-300"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h4 className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
               <Key className="h-4 w-4 text-brand-blue" />
-              Groq API Key 보안 설정
+              아주LLM API Key 보안 설정
             </h4>
             <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
               클라이언트 전용
@@ -86,13 +90,13 @@ export function ApiKeySettings({
 
           <div className="mt-3.5 flex flex-col gap-3">
             <div>
-              <label htmlFor="groq-api-key-input" className="mb-1 block text-xs font-semibold text-slate-700">
+              <label htmlFor="azu-llm-api-key-input" className="mb-1 block text-xs font-semibold text-slate-700">
                 API Key 입력
               </label>
               <input
-                id="groq-api-key-input"
+                id="azu-llm-api-key-input"
                 type="password"
-                placeholder="gsk_..."
+                placeholder="아주LLM API Key"
                 value={apiKey}
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-mono focus:border-brand-blue focus:outline-none"

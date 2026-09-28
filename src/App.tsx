@@ -1,6 +1,7 @@
 import { useMemo, useState, lazy, Suspense } from "react";
 import { Menu } from "lucide-react";
 import { useSavedCards } from "@/domain/state/useSavedCards";
+import { useAzuLlmApiKey } from "@/shared/hooks/useAzuLlmApiKey";
 import { ToastProvider } from "@/shared/contexts/ToastContext";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { Sidebar } from "@/shared/layout/Sidebar";
@@ -8,6 +9,7 @@ import { Chatbot } from "@/features/chatbot/Chatbot";
 import { HomePage } from "@/features/home/HomePage";
 import { StartPage } from "@/features/start/StartPage";
 import type { SimulatorScope } from "@/features/wallet/WalletWizardPage";
+import type { WalletBlueprint } from "@/domain/types/optimization";
 import { rankByNetReward } from "@/domain/engine/recommender";
 import { catalogCards, categories } from "@/domain/engine/loadCatalog";
 import { toWalletCard } from "@/domain/engine/cardConverter";
@@ -45,7 +47,12 @@ function AppContent() {
   // 시작 화면에서 고른 갈래("보유한 카드로" / "새 카드까지 포함해서")를 지갑 만들기
   // 마법사로 그대로 넘겨줍니다.
   const [startScope, setStartScope] = useState<SimulatorScope>("myCards");
+  // 지갑 마법사가 마지막으로 계산한 추천 조합. 챗봇이 그 화면을 벗어난 뒤에도 "왜 이
+  // 조합인지" 답할 수 있도록 여기(App.tsx)에서 들고 있습니다. 마법사를 아직 한 번도
+  // 열지 않았으면 null입니다.
+  const [wizardResult, setWizardResult] = useState<WalletBlueprint | null>(null);
   const myCards = useSavedCards();
+  const azuLlm = useAzuLlmApiKey();
   const { spending } = useMonthlySpend(categories);
 
   const chatEvaluations = useMemo(() => {
@@ -136,13 +143,26 @@ function AppContent() {
                   step={wizardStep}
                   onStepChange={setWizardStep}
                   initialScope={startScope}
+                  onResultChange={setWizardResult}
                 />
               </ErrorBoundary>
             )}
           </Suspense>
         </main>
 
-        <Chatbot open={chatOpen} onOpenChange={setChatOpen} evaluations={chatEvaluations} categories={categories} />
+        <Chatbot
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          evaluations={chatEvaluations}
+          categories={categories}
+          walletResult={wizardResult}
+          apiKey={azuLlm.apiKey}
+          storageType={azuLlm.storageType}
+          onApiKeyChange={azuLlm.setApiKey}
+          onApiKeySave={azuLlm.save}
+          onApiKeyRemove={azuLlm.remove}
+          onApiKeyStorageTypeChange={azuLlm.setStorageType}
+        />
       </div>
     </div>
   );

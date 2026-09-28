@@ -1,9 +1,25 @@
 import type { SpendCategory } from "@/domain/types/card";
 import type { CardFitScore } from "@/domain/types/recommendation";
+import type { WalletBlueprint } from "@/domain/types/optimization";
+import { requestAzuLlmChat, AzuLlmConfigError, AzuLlmRequestError } from "@/features/chatbot/azuLlmClient";
+import { buildAzuLlmMessages } from "@/features/chatbot/promptBuilder";
 
 export interface ChatMessage {
   role: "user" | "model";
   text: string;
+}
+
+export interface ChatContext {
+  evaluations: CardFitScore[];
+  categories: SpendCategory[];
+  /** 지갑 마법사(WalletWizardPage)가 계산한 추천 조합. 아직 계산 전/방문 전이면 null. */
+  walletResult?: WalletBlueprint | null;
+}
+
+/** 아주LLM 호출에 필요한 최소 정보. apiKey가 비어 있으면 sendChatMessage는 곧바로 규칙 기반으로 답합니다. */
+export interface AzuLlmConnection {
+  apiKey: string;
+  model?: string;
 }
 
 function buildMyCardsSummary(evaluations: CardFitScore[], categories: SpendCategory[]): string {
@@ -25,17 +41,15 @@ function buildMyCardsSummary(evaluations: CardFitScore[], categories: SpendCateg
 }
 
 /**
- * 실제 AI API 연동 전까지 임시로 쓰는 예시 응답 생성기입니다.
- *
- * 아직 팀에서 실제 API(모델/키)를 확정해 연동하지 못한 상태라, 외부 LLM을 호출하지 않고
- * 사용자가 이미 등록한 카드/지출 데이터를 바탕으로 만든 규칙 기반 문장을 돌려줍니다. 실제
- * 연동을 붙일 때는 이 함수의 내부 구현만 API 호출로 교체하면 되도록, 호출부(Chatbot.tsx)가
- * 쓰는 시그니처(history/message/context)는 그대로 유지했습니다.
+ * 아주LLM API Key가 없거나 호출이 실패했을 때 쓰는 규칙 기반 응답입니다. 예전에는 이 함수가
+ * sendChatMessage 자체였는데, 실제 API 연동을 붙이면서 폴백 전용으로 내렸습니다. 팀원들이
+ * 키 없이도 UI를 테스트할 수 있고, 발표 시연 중 네트워크 문제가 나도 챗봇이 완전히
+ * 멈추지는 않게 하려는 목적입니다.
  */
-export async function sendChatMessage(
+async function sendChatMessageOffline(
   _history: ChatMessage[],
   message: string,
-  context: { evaluations: CardFitScore[]; categories: SpendCategory[] },
+  context: ChatContext,
 ): Promise<string> {
   // 실제 응답을 기다리는 것처럼 느껴지도록 짧은 지연을 둡니다(예시 응답이라는 걸 숨기려는
   // 목적이 아니라, 로딩 UI가 순간적으로 깜빡이지 않도록 하기 위함입니다).
@@ -80,4 +94,32 @@ export async function sendChatMessage(
     evaluations,
     categories,
   )}\n\n혜택 추천, 연회비, 카드 개수, 실적 조건 중 궁금한 걸 다시 물어보시면 더 자세히 답해드릴게요.`;
+}
+
+/**
+ * 챗봇의 실제 진입점입니다. connection.apiKey가 있으면 아주LLM API Gateway로 실제 호출을
+ * 시도하고, 키가 없거나(AzuLlmConfigError) 호출이 실패하면(AzuLlmRequestError, 네트워크
+ * 오류 등) 화면이 멈추지 않도록 조용히 규칙 기반 응답(sendChatMessageOffline)으로
+ * 넘어갑니다. Chatbot.tsx가 부르는 시그니처는 그대로 유지했습니다(connection만 추가).
+ */
+export async function sendChatMessage(
+  history: ChatMessage[],
+  message: string,
+  context: ChatContext,
+  connection?: AzuLlmConnection,
+): Promise<string> {
+  if (connection?.apiKey?.trim()) {
+    try {
+      const messages = buildAzuLlmMessages(history, message, context);
+      return await requestAzuLlmChat(messages, { apiKey: connection.apiKey, model: connection.model });
+    } catch (e) {
+      if (import.meta.env.DEV) {
+        const reason = e instanceof AzuLlmConfigError || e instanceof AzuLlmRequestError ? e.message : e;
+        console.warn("[chatbot] 아주LLM 호출 실패, 규칙 기반 응답으로 전환합니다.", reason);
+      }
+      // 설정 누락(AzuLlmConfigError)이든 호출 실패(AzuLlmRequestError)든, 사용자에게는
+      // 그냥 규칙 기반 응답을 보여줍니다 — 챗봇이 아예 멈추는 것보다 낫습니다.
+    }
+  }
+  return sendChatMessageOffline(history, message, context);
 }

@@ -7,6 +7,7 @@ import { catalogCards, isInfoInsufficient, isDiscontinued, categories } from "@/
 import { toWalletCard } from "@/domain/engine/cardConverter";
 import type { useSavedCards } from "@/domain/state/useSavedCards";
 import type { CardKind, MonthlySpend } from "@/domain/types/card";
+import type { WalletBlueprint } from "@/domain/types/optimization";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { SpendingSimulator } from "@/shared/components/SpendingSimulator";
@@ -39,11 +40,24 @@ interface WalletWizardPageProps {
   onStepChange: (step: number) => void;
   /** 시작 화면에서 고른 범위("보유한 카드로" / "새 카드까지 포함해서")를 그대로 이어받습니다. */
   initialScope?: SimulatorScope;
+  /**
+   * 계산된 추천 조합을 App.tsx로 올려보냅니다. 챗봇(추천 결과 설명 역할)이 "왜 이 조합인지"
+   * 답하려면 이 화면을 벗어난 뒤에도 마지막 결과를 기억하고 있어야 해서, 상태를 이 화면
+   * 안에만 두지 않고 App.tsx로 끌어올립니다.
+   */
+  onResultChange?: (result: WalletBlueprint) => void;
 }
 
 const STEPS = ["카드 선택", "지출 입력", "추천 결과"];
 
-export function WalletWizardPage({ myCards, onNavigate, step, onStepChange, initialScope }: WalletWizardPageProps) {
+export function WalletWizardPage({
+  myCards,
+  onNavigate,
+  step,
+  onStepChange,
+  initialScope,
+  onResultChange,
+}: WalletWizardPageProps) {
   const { spending, updateCategory, setSpending, resetSpending } = useMonthlySpend(categories);
   // "소득으로 빠르게 시작하기"에서 방금 값을 채웠는지 추적합니다. 지출 시뮬레이터에 안내
   // 문구를 띄워 두 영역이 하나의 흐름이라는 걸 보여주고, 사용자가 슬라이더를 직접 만지거나
@@ -153,6 +167,13 @@ export function WalletWizardPage({ myCards, onNavigate, step, onStepChange, init
     efficientCeiling,
   } = useWalletBlueprintAsync(optimizationCandidates, debouncedSpending, walletOptions);
   const bestSingleCard = ranked.length > 0 ? ranked[0] : null;
+
+  // 챗봇(추천 결과 설명 역할)이 이 화면을 벗어난 뒤에도 "마지막으로 계산된 조합"을 계속
+  // 참고할 수 있도록 App.tsx로 결과를 올려보냅니다. 계산이 새로 끝날 때마다(walletResult가
+  // 바뀔 때마다) 최신 값으로 갱신합니다.
+  useEffect(() => {
+    onResultChange?.(walletResult);
+  }, [walletResult, onResultChange]);
 
   // 효율적 모드에서는 efficientCeiling(이 지출 규모에서 확실히 이득인 카드 수)을 넘겨서
   // maxCards를 올려도 실제 조합은 바뀌지 않습니다. "숫자를 눌러도 반영이 안 된다"는 혼란을

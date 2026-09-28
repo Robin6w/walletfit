@@ -1,9 +1,34 @@
 import type { SpendCategory } from "@/domain/types/card";
 import type { CardFitScore } from "@/domain/types/recommendation";
+import type { WalletBlueprint } from "@/domain/types/optimization";
+import { requestAzuLlmChatStream, AzuLlmConfigError, AzuLlmRequestError } from "@/features/chatbot/azuLlmClient";
+import { buildAzuLlmMessages } from "@/features/chatbot/promptBuilder";
+import { splitResponse, visiblePortion, EMPTY_CHATBOT_META, type ChatbotResponseMeta } from "@/features/chatbot/responseParser";
 
 export interface ChatMessage {
   role: "user" | "model";
   text: string;
+  /** model 메시지에만 붙습니다. 오프라인(규칙 기반) 응답이나 파싱 실패 시에는 빈 메타입니다. */
+  meta?: ChatbotResponseMeta;
+}
+
+/** sendChatMessage의 반환 형태. 화면 텍스트와, 그 뒤에 따로 그릴 구조화 데이터를 분리해서 돌려줍니다. */
+export interface ChatSendResult {
+  text: string;
+  meta: ChatbotResponseMeta;
+}
+
+export interface ChatContext {
+  evaluations: CardFitScore[];
+  categories: SpendCategory[];
+  /** 지갑 마법사(WalletWizardPage)가 계산한 추천 조합. 아직 계산 전/방문 전이면 null. */
+  walletResult?: WalletBlueprint | null;
+}
+
+/** 아주LLM 호출에 필요한 최소 정보. apiKey가 비어 있으면 sendChatMessage는 곧바로 규칙 기반으로 답합니다. */
+export interface AzuLlmConnection {
+  apiKey: string;
+  model?: string;
 }
 
 function buildMyCardsSummary(evaluations: CardFitScore[], categories: SpendCategory[]): string {
@@ -25,17 +50,15 @@ function buildMyCardsSummary(evaluations: CardFitScore[], categories: SpendCateg
 }
 
 /**
- * 실제 AI API 연동 전까지 임시로 쓰는 예시 응답 생성기입니다.
- *
- * 아직 팀에서 실제 API(모델/키)를 확정해 연동하지 못한 상태라, 외부 LLM을 호출하지 않고
- * 사용자가 이미 등록한 카드/지출 데이터를 바탕으로 만든 규칙 기반 문장을 돌려줍니다. 실제
- * 연동을 붙일 때는 이 함수의 내부 구현만 API 호출로 교체하면 되도록, 호출부(Chatbot.tsx)가
- * 쓰는 시그니처(history/message/context)는 그대로 유지했습니다.
+ * 아주LLM API Key가 없거나 호출이 실패했을 때 쓰는 규칙 기반 응답입니다. 예전에는 이 함수가
+ * sendChatMessage 자체였는데, 실제 API 연동을 붙이면서 폴백 전용으로 내렸습니다. 팀원들이
+ * 키 없이도 UI를 테스트할 수 있고, 발표 시연 중 네트워크 문제가 나도 챗봇이 완전히
+ * 멈추지는 않게 하려는 목적입니다.
  */
-export async function sendChatMessage(
+async function sendChatMessageOffline(
   _history: ChatMessage[],
   message: string,
-  context: { evaluations: CardFitScore[]; categories: SpendCategory[] },
+  context: ChatContext,
 ): Promise<string> {
   // 실제 응답을 기다리는 것처럼 느껴지도록 짧은 지연을 둡니다(예시 응답이라는 걸 숨기려는
   // 목적이 아니라, 로딩 UI가 순간적으로 깜빡이지 않도록 하기 위함입니다).
@@ -80,4 +103,45 @@ export async function sendChatMessage(
     evaluations,
     categories,
   )}\n\n혜택 추천, 연회비, 카드 개수, 실적 조건 중 궁금한 걸 다시 물어보시면 더 자세히 답해드릴게요.`;
+}
+
+/**
+ * 챗봇의 실제 진입점입니다. connection.apiKey가 있으면 아주LLM API Gateway로 스트리밍
+ * 호출을 시도하고(onDelta가 있으면 토큰이 오는 대로 "지금까지 보여줘도 되는 텍스트"를
+ * 알려줍니다), 키가 없거나(AzuLlmConfigError) 호출이 실패하면(AzuLlmRequestError, 네트워크
+ * 오류 등) 화면이 멈추지 않도록 조용히 규칙 기반 응답(sendChatMessageOffline)으로
+ * 넘어갑니다. 스트리밍 도중 실패하면 그때까지 보여주던 부분 텍스트는 버리고 규칙 기반
+ * 응답으로 완전히 교체합니다 — 절반만 온 답변을 그대로 두는 것보다 낫습니다.
+ *
+ * 반환값은 화면에 보여줄 텍스트(text)와, 그 답변에서 뽑아낸 구조화 데이터(meta: 언급된
+ * 카드명/핵심 수치/후속 질문)로 나뉩니다. 오프라인 응답에는 구조화 데이터가 없어서 meta는
+ * 항상 비어 있습니다(EMPTY_CHATBOT_META).
+ */
+export async function sendChatMessage(
+  history: ChatMessage[],
+  message: string,
+  context: ChatContext,
+  connection?: AzuLlmConnection,
+  onDelta?: (visibleTextSoFar: string) => void,
+): Promise<ChatSendResult> {
+  if (connection?.apiKey?.trim()) {
+    try {
+      const messages = buildAzuLlmMessages(history, message, context);
+      const raw = await requestAzuLlmChatStream(
+        messages,
+        { apiKey: connection.apiKey, model: connection.model },
+        (accumulated) => onDelta?.(visiblePortion(accumulated)),
+      );
+      return splitResponse(raw);
+    } catch (e) {
+      if (import.meta.env.DEV) {
+        const reason = e instanceof AzuLlmConfigError || e instanceof AzuLlmRequestError ? e.message : e;
+        console.warn("[chatbot] 아주LLM 호출 실패, 규칙 기반 응답으로 전환합니다.", reason);
+      }
+      // 설정 누락(AzuLlmConfigError)이든 호출 실패(AzuLlmRequestError)든, 사용자에게는
+      // 그냥 규칙 기반 응답을 보여줍니다 — 챗봇이 아예 멈추는 것보다 낫습니다.
+    }
+  }
+  const text = await sendChatMessageOffline(history, message, context);
+  return { text, meta: EMPTY_CHATBOT_META };
 }

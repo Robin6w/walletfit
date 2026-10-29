@@ -11,7 +11,8 @@ import {
   MAX_CARD_SPEND_RATIO,
   estimateSpendingFromIncome,
 } from "@/domain/engine/incomeEstimate";
-import { solveWalletWithMode } from "@/domain/engine/useWalletBlueprintAsync";
+import { engineCall } from "@/domain/engine/walletEngine";
+import type { RecommendResponse } from "@/domain/types/engine";
 import type { OptimizationMode } from "@/domain/engine/walletOptimizer";
 import type { SpendCategory, MonthlySpend, WalletCard } from "@/domain/types/card";
 
@@ -30,7 +31,14 @@ interface IncomeCardCountEstimatorProps {
   onApplySpending: (spending: MonthlySpend) => void;
   /** 추천받은 카드 수를 실제 maxCards 상태에 반영하는 콜백 */
   onApplyMaxCards: (count: number) => void;
+  /** 화면마다 다른 안내 문구(v2 결과 화면에는 '아래 지출 시뮬레이터'가 없다). 없으면 v1 문구 */
+  copy?: { intro: string; apply: string };
 }
+
+const V1_COPY = {
+  intro: "지출을 카테고리별로 직접 입력하기 번거롭다면, 월 소득만 넣어도 대략적인 지출을 채워드려요. 아래 카테고리별 지출 시뮬레이터에 그대로 반영되고, 적용한 뒤에도 언제든 값을 고쳐 쓸 수 있어요.",
+  apply: "아래 지출에 채우고 카드 수 추천받기",
+};
 
 type EstimateStatus = "idle" | "loading" | "done" | "error";
 
@@ -57,6 +65,7 @@ export function IncomeCardCountEstimator({
   mode,
   onApplySpending,
   onApplyMaxCards,
+  copy = V1_COPY,
 }: IncomeCardCountEstimatorProps) {
   const [income, setIncome] = useState(0);
   const [cardSpendRatio, setCardSpendRatio] = useState(ASSUMED_CARD_SPEND_RATIO);
@@ -91,17 +100,21 @@ export function IncomeCardCountEstimator({
     setRecommendedCount(null);
     setRecommendedBenefit(null);
     try {
-      const { blueprint: result } = await solveWalletWithMode(candidates, estimatedSpending, {
-        maxCards: Math.min(DISCOVERY_MAX_CARDS_CEILING, candidates.length),
+      // 새 계산 엔진(혜택 표 + 추천 엔진 v2)으로 같은 지출에서 몇 장이 맞는지 계산합니다.
+      const res = await engineCall<RecommendResponse>("recommend", {
+        ids: candidates.map((c) => Number(String(c.id).replace("catalog-", ""))),
+        spending: estimatedSpending,
+        margin: 20000,
         mode,
-        maxTotalAnnualFee: maxAnnualFee,
+        maxCards: Math.min(DISCOVERY_MAX_CARDS_CEILING, candidates.length),
+        feeCap: maxAnnualFee,
       });
-      if (!result.feasible) {
+      if (!res.ok || res.empty) {
         setStatus("error");
         return;
       }
-      setRecommendedCount(result.selectedCards.length);
-      setRecommendedBenefit(result.netMonthlyBenefit);
+      setRecommendedCount(res.result.cards.length);
+      setRecommendedBenefit(res.result.net);
       setStatus("done");
     } catch {
       setStatus("error");
@@ -121,9 +134,7 @@ export function IncomeCardCountEstimator({
         </button>
       </div>
       <p className="mt-1 text-[11.5px] leading-relaxed text-slate-500">
-        지출을 카테고리별로 직접 입력하기 번거롭다면, 월 소득만 넣어도 대략적인 지출을 채워드려요.
-        아래 카테고리별 지출 시뮬레이터에 그대로 반영되고, 적용한 뒤에도 언제든 값을 고쳐 쓸 수
-        있어요.
+        {copy.intro}
       </p>
 
       {showBasis && (
@@ -173,7 +184,7 @@ export function IncomeCardCountEstimator({
           disabled={!hasIncome || candidates.length === 0 || status === "loading"}
           className="cta-btn brand-gradient flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
         >
-          {status === "loading" ? "계산 중…" : "아래 지출에 채우고 카드 수 추천받기"}
+          {status === "loading" ? "계산 중…" : copy.apply}
           {status !== "loading" && <ChevronDown className="h-3.5 w-3.5" />}
         </button>
       </div>

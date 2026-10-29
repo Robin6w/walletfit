@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
+import { onStoredKeyChange, removeAndNotify, writeAndNotify } from "@/shared/lib/sameTabStorage";
 import type { SpendCategory, MonthlySpend } from "@/domain/types/card";
 import type { ParsedSpendingItem } from "@/features/statement/importerParser";
 
@@ -51,20 +52,13 @@ export function loadStoredMonthlySpend(categories: SpendCategory[]): MonthlySpen
 
 export function saveMonthlySpend(spending: MonthlySpend): void {
   if (typeof window === "undefined" || !window.localStorage) return;
-  try {
-    localStorage.setItem(SPENDING_STORAGE_KEY, JSON.stringify(spending));
-  } catch {
-    // QuotaExceededError나 시크릿 모드 등에서는 조용히 무시
-  }
+  // 값이 바뀔 때만 쓰고, 같은 탭의 다른 화면에도 알린다(QuotaExceededError·시크릿 모드는 조용히 무시)
+  writeAndNotify(SPENDING_STORAGE_KEY, JSON.stringify(spending));
 }
 
 export function clearMonthlySpend(): void {
   if (typeof window === "undefined" || !window.localStorage) return;
-  try {
-    localStorage.removeItem(SPENDING_STORAGE_KEY);
-  } catch {
-    // ignore storage remove errors
-  }
+  removeAndNotify(SPENDING_STORAGE_KEY);
 }
 
 type SpendingUpdater = MonthlySpend | ((prev: MonthlySpend) => MonthlySpend);
@@ -118,16 +112,19 @@ export function useMonthlySpend(categories: SpendCategory[]) {
     saveMonthlySpend(spending);
   }, [spending]);
 
-  // 다중 탭 및 외부 스토리지 변경 동기화
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === SPENDING_STORAGE_KEY) {
-        dispatch({ kind: "replace", updater: loadStoredMonthlySpend(categories) });
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [categories]);
+  // 다른 탭, 그리고 같은 탭의 다른 화면(지갑 만들기·명세서·전체 카드 등)에서 바꾼 값을 따라간다
+  const current = useRef(spending);
+  current.current = spending;
+  useEffect(
+    () =>
+      onStoredKeyChange(SPENDING_STORAGE_KEY, () => {
+        const stored = loadStoredMonthlySpend(categories);
+        if (JSON.stringify(stored) !== JSON.stringify(current.current)) {
+          dispatch({ kind: "replace", updater: stored });
+        }
+      }),
+    [categories],
+  );
 
   const updateCategory = useCallback((categoryId: string, value: number) => {
     dispatch({ kind: "setCategory", categoryId, value });

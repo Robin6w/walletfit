@@ -8,6 +8,12 @@ import {
   UtensilsCrossed,
   Film,
   Fuel,
+  Car,
+  PawPrint,
+  GraduationCap,
+  Dumbbell,
+  Flag,
+  Building2,
   MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +33,12 @@ const CATEGORY_COLOR_BY_ID: Record<string, string> = {
   dining: "#be185d",
   culture: "#b5651d",
   gas: "#0f766e",
+  car: "#0f766e",
+  pet: "#be185d",
+  education: "#4b5aa8",
+  beautyFitness: "#b5651d",
+  golf: "#0f766e",
+  department: "#be185d",
   etc: "#4b5aa8",
 };
 
@@ -40,6 +52,12 @@ const CATEGORY_ICON_BY_ID: Record<string, LucideIcon> = {
   dining: UtensilsCrossed,
   culture: Film,
   gas: Fuel,
+  car: Car,
+  pet: PawPrint,
+  education: GraduationCap,
+  beautyFitness: Dumbbell,
+  golf: Flag,
+  department: Building2,
   etc: MoreHorizontal,
 };
 

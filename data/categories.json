@@ -8,5 +8,11 @@
   { "id": "dining", "label": "외식" },
   { "id": "culture", "label": "영화/공연/OTT" },
   { "id": "gas", "label": "주유" },
+  { "id": "car", "label": "자동차/정비" },
+  { "id": "pet", "label": "반려동물" },
+  { "id": "education", "label": "교육/육아" },
+  { "id": "beautyFitness", "label": "뷰티/피트니스" },
+  { "id": "golf", "label": "골프" },
+  { "id": "department", "label": "백화점/의류" },
   { "id": "etc", "label": "그 외 일반가맹점" }
 ]

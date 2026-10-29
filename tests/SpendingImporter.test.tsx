@@ -24,7 +24,8 @@ describe("SpendingImporter and SimulatorPage ErrorBoundary integration", () => {
       />
     );
 
-    expect(screen.getByText("명세서 업로드")).toBeInTheDocument();
+    // 탭 버튼과 업로드 영역 제목에 같은 문구가 두 번 나온다
+    expect(screen.getAllByText("명세서 업로드").length).toBeGreaterThan(0);
     expect(screen.getByText("명세서 파일을 여기에 끌어다 놓으세요")).toBeInTheDocument();
   });
 
@@ -55,7 +56,8 @@ describe("SpendingImporter and SimulatorPage ErrorBoundary integration", () => {
     );
 
     // 명세서 업로드 및 월 지출 시뮬레이터가 함께 존재하는지 확인
-    expect(screen.getByText("명세서 업로드")).toBeInTheDocument();
+    // 탭 버튼과 업로드 영역 제목에 같은 문구가 두 번 나온다
+    expect(screen.getAllByText("명세서 업로드").length).toBeGreaterThan(0);
     expect(screen.getByText("월 지출 시뮬레이터")).toBeInTheDocument();
 
     consoleSpy.mockRestore();

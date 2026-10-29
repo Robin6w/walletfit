@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { WalletCard, MonthlySpend } from "@/domain/types/card";
 import type { CardTierStatus, SlotAssignment, WalletBlueprint } from "@/domain/types/optimization";
 import type { WalletBlueprintOptions, OptimizationMode } from "@/domain/engine/walletOptimizer";
+import { postRequest } from "@/domain/engine/workerClient";
 
 /**
  * buildWalletBlueprint(walletOptimizer.ts)와 완전히 동일한 MILP 모델을, 메인 스레드를
@@ -35,67 +36,10 @@ const EMPTY_BLUEPRINT: WalletBlueprint = {
   cardTierStatus: {},
 };
 
-type PendingResolver = (result: WorkerSolveResult) => void;
-
-/**
- * 앱 전체에서 Worker 인스턴스를 하나만 띄워서 재사용한다 (매번 새로 만들면 Pyodide를
- * 다시 부팅해야 해서 몇 초씩 걸린다). 첫 사용 시점에 한 번만 생성한다(lazy singleton).
- */
-let sharedWorker: Worker | null = null;
-let requestSeq = 0;
-const pending = new Map<number, PendingResolver>();
-
-/**
- * 대기 중인 모든 요청을 에러로 해소하고 정리한다. Worker 자체가 죽어서(onerror) 더 이상
- * 메시지를 보낼 수 없는 상황에서, 응답을 기다리며 걸려 있던 Promise들을 전부 풀어준다.
- * 이렇게 안 하면 pending에 남은 요청들은 영원히 resolve되지 않아, 그 요청을 기다리던
- * useWalletBlueprintAsync 쪽 isComputing이 "최적 조합을 다시 계산하고 있어요…" 상태로
- * 무한히 멈춰 있게 된다.
- */
-function rejectAllPending(message: string) {
-  for (const [requestId, resolve] of pending) {
-    pending.delete(requestId);
-    resolve({ feasible: false, error: message });
-  }
-}
-
-function getWorker(): Worker {
-  if (!sharedWorker) {
-    // 명시적으로 모듈(ESM) Worker로 띄운다 — dev 서버와 프로덕션 빌드에서 동일하게 동작하게
-    // 하기 위해서다 (walletOptimizer.worker.ts 상단 주석 참고).
-    sharedWorker = new Worker(new URL("./walletOptimizer.worker.ts", import.meta.url), { type: "module" });
-    sharedWorker.onmessage = (event: MessageEvent) => {
-      const { type, requestId, data } = event.data ?? {};
-      if (type !== "result") return;
-      const resolve = pending.get(requestId);
-      if (!resolve) return;
-      pending.delete(requestId);
-      resolve(data as WorkerSolveResult);
-    };
-    // 원래 onmessage만 등록돼 있었다. Pyodide 부팅 실패나 Worker 스크립트 자체의
-    // 예외처럼 "result" 메시지가 아예 오지 않는 실패는 onerror로만 잡힌다. 여기서 잡지
-    // 않으면 대기 중이던 요청들이 영원히 응답을 못 받아 무한 로딩 상태가 된다. Worker
-    // 인스턴스 자체는 손상된 것으로 보고 버리고(다음 getWorker 호출에서 새로 띄움),
-    // 다음 계산 시도가 정상적인 새 Worker로 다시 시작할 수 있게 한다.
-    sharedWorker.onerror = (event: ErrorEvent) => {
-      rejectAllPending(event.message || "카드 조합 계산 엔진(Worker)에서 오류가 발생했습니다.");
-      sharedWorker = null;
-    };
-    sharedWorker.onmessageerror = () => {
-      rejectAllPending("카드 조합 계산 엔진(Worker)과의 통신 중 오류가 발생했습니다.");
-    };
-  }
-  return sharedWorker;
-}
-
+/** 이전 계산 엔진(walletOptimizerCore.py) 호출. 공용 Worker(workerClient.ts)를 같이 씁니다. */
 function solveInWorker(candidates: WalletCard[], spending: MonthlySpend, options: WalletBlueprintOptions) {
-  const requestId = ++requestSeq;
-  const worker = getWorker();
-  const promise = new Promise<WorkerSolveResult>((resolve) => {
-    pending.set(requestId, resolve);
-  });
-  worker.postMessage({ type: "solve", payload: { requestId, candidates, spending, options } });
-  return { requestId, promise };
+  const promise = postRequest<WorkerSolveResult>("solve", { candidates, spending, options });
+  return { requestId: 0, promise };
 }
 
 function assembleBlueprint(candidates: WalletCard[], raw: WorkerSolveResult): WalletBlueprint {

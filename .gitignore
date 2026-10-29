@@ -73,3 +73,16 @@ Claude outputs/
 # 필요하면 `npm run fetch:tiers`로 다시 받을 수 있습니다(사내망 IP 차단 때문에 실제
 # 사용자 컴퓨터에서 실행해야 함 — README 참고).
 data/catalog/cards-detail-raw.json
+
+# Python 캐시 (계산 엔진 시험을 돌리면 생김)
+__pycache__/
+
+# walletfit-ds에만 두는 데이터 작업(DS) 폴더와 작업 백업(저장소에는 앱만 올림, 2026-10-29)
+/1_혜택정보구조화/
+/1-2_추천엔진/
+/2_지출추정/
+/demo/
+/v1_최종디자인/
+/검증결과_*.md
+/walletfit-ds_추가분_*.zip
+/_backup_*/

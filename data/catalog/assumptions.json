@@ -1,0 +1,53 @@
+{
+  "_note": "계산기 가정값. 원문에 없는 정보라서 따로 둔다. 3번(가게 이름 분류)·명세서 분석이 끝나면 개인 값으로 바꾼다.",
+  "eval_date": "2026-10-04",
+  "point_value_won": 1.0,
+  "mileage_value_won": 15.0,
+  "fuel_price_won_per_liter": 1700,
+  "payment_condition_policy": "best",
+  "eligible_share_by_specificity": {
+    "_note": "카테고리 지출 중 대상 가맹점에서 쓰는 비율. brand=특정 브랜드 1~3곳",
+    "brand": 0.35,
+    "merchant_group": 0.7,
+    "category": 1.0,
+    "all_merchants": 1.0
+  },
+  "avg_ticket_won": {
+    "_note": "카테고리별 1회 결제 평균 금액(건수 기준). 건당 최소 금액·횟수 조건 계산에 사용. 결제 금액은 지수분포로 가정",
+    "convenience": 7000,
+    "cafe": 7000,
+    "dining": 18000,
+    "transport": 1500,
+    "mobile": 60000,
+    "onlineShopping": 35000,
+    "mart": 50000,
+    "culture": 14000,
+    "gas": 60000,
+    "car": 80000,
+    "pet": 40000,
+    "education": 150000,
+    "beautyFitness": 30000,
+    "golf": 100000,
+    "department": 80000,
+    "etc": 25000
+  },
+  "single_txn_categories": {
+    "_note": "한 달에 한 번 고정 금액으로 결제되는 카테고리(지수분포 대신 1건으로 계산)",
+    "mobile": true
+  },
+  "item_prices": {
+    "_note": "무료 제공 혜택의 가격 가정. 원문에 금액이 없어서 가정값 사용, 확인 필요",
+    "movie_ticket_2d": 15000
+  },
+  "day_share": {
+    "_note": "요일 한정 혜택의 대상 지출 비중. 요일별로 고르게 쓴다고 가정(요일 수 / 7)"
+  },
+  "payment_method_share": {
+    "_note": "'모든 가맹점 + 특정 결제 수단(간편결제 등)' 혜택에서 그 결제 수단으로 결제하는 지출 비중 가정. 확인 필요",
+    "default": 0.3
+  },
+  "time_window_share": {
+    "_note": "시간대 한정 혜택(예: 오후 9시~오전 9시)의 대상 지출 비중. 카테고리 지출 중 그 시간대 결제 비율 가정. 확인 필요",
+    "default": 0.25
+  }
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, MessageCircle, Plus } from "lucide-react";
-import { requestAzuLlmChatStream, AzuLlmConfigError } from "@/features/chatbot/azuLlmClient";
+import { requestAzuLlmChatStream, AzuLlmConfigError, azuLlmErrorReason } from "@/features/chatbot/azuLlmClient";
 import { renderLiteMarkdown } from "@/features/chatbot/chatFormatting";
 import { ApiKeySettings } from "@/features/settings/ApiKeySettings";
 import type { UseAzuLlmApiKeyResult } from "@/shared/hooks/useAzuLlmApiKey";
@@ -60,7 +60,8 @@ export function ChatV1({ ctx, azuLlm, initialQuestion, onConsumed, onOpenResult,
       setMsgs((m) => [...m.slice(0, -1), { role: "model", text: final, blocks: local.blocks, sources: local.sources, followups: local.followups }]);
     } catch (e) {
       const local = answerLocal(ctx, q);
-      const note = e instanceof AzuLlmConfigError ? "" : "(아주LLM 연결이 안 돼서 계산 기록으로 바로 답했어요) ";
+      if (!(e instanceof AzuLlmConfigError)) console.warn("[상담] 아주LLM 호출 실패, 계산 기록으로 답합니다.", e instanceof Error ? e.message : e);
+      const note = e instanceof AzuLlmConfigError ? "" : `(아주LLM 답을 받지 못했어요: ${azuLlmErrorReason(e)}. 계산 기록으로 바로 답했어요) `;
       setMsgs((m) => [...m.slice(0, -1), { ...local, text: note + local.text }]);
     } finally {
       setBusy(false);

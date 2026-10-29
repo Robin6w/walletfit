@@ -256,7 +256,7 @@ v2 화면은 글꼴 패키지(`@fontsource/ibm-plex-sans-kr`, `@fontsource/outfi
 기타 스크립트:
 ```bash
 npm run build           # 타입 체크 + 프로덕션 빌드
-npm run test            # Vitest 단위 테스트 (263개)
+npm run test            # Vitest 단위 테스트 (272개)
 npm run test:py         # 계산기 시험 30개 + 계산 엔진 시험 (Python, numpy·scipy 필요)
 npm run build:benefit   # 혜택 표 카탈로그 다시 만들기 (1_혜택정보구조화 → data/catalog/cards-benefit.json, calc.py 동기화)
 npm run lint            # oxlint

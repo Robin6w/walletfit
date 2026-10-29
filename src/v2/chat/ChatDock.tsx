@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
-import { AzuLlmConfigError, requestAzuLlmChatStream } from "@/features/chatbot/azuLlmClient";
+import { AzuLlmConfigError, azuLlmErrorReason, requestAzuLlmChatStream } from "@/features/chatbot/azuLlmClient";
 import { renderLiteMarkdown } from "@/features/chatbot/chatFormatting";
 import { catalogBySourceId, categories } from "@/v1/catalog";
 import { useAppData } from "@/v2/app/AppData";
@@ -145,7 +145,9 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
       if (intent === "free") replaceLast(final ? { role: "model", text: final } : local);
       else replaceLast({ ...local, text: final || local.text });
     } catch (e) {
-      const note = e instanceof AzuLlmConfigError ? "" : "(아주LLM 연결이 안 돼서 계산 결과로 바로 답했어요) ";
+      // 실패 이유를 짧게 붙이고(키·주소·모델·한도), 전체 오류는 콘솔에 남긴다(2026-10-29)
+      if (!(e instanceof AzuLlmConfigError)) console.warn("[상담] 아주LLM 호출 실패, 계산 결과로 답합니다.", e instanceof Error ? e.message : e);
+      const note = e instanceof AzuLlmConfigError ? "" : `(아주LLM 답을 받지 못했어요: ${azuLlmErrorReason(e)}. 계산 결과로 바로 답했어요) `;
       replaceLast({ ...local, text: note + local.text });
     } finally {
       setBusy(false);

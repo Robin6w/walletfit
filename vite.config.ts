@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite'
+import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
@@ -85,6 +86,8 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.ts'],
+    // PC 작업 폴더의 백업본(_backup_*/tests)은 테스트로 돌리지 않는다(2026-10-29)
+    exclude: [...configDefaults.exclude, '_backup_*/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

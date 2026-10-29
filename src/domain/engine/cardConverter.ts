@@ -22,7 +22,9 @@ const GENERIC_MERCHANT_KEYWORDS = ["가맹점", "전국", "국내외", "모든",
 function splitBenefitClauses(summary: string): string[] {
   // 혜택 유형 키워드가 끝나는 시점의 쉼표/플러스 기호로만 분할한다.
   // lookbehind로 '마트,편의점'처럼 명사 나열에 쓰인 쉼표에서 잘못 쪼개지는 것을 막는다.
-  return summary.split(/(?<=(?:할인|적립|캐시백|포인트|마일|원|%|L))\s*[,+]\s*/);
+  // '캐쉬백'(표기 차이), '혜택', '면제', '우대', '발행', '리워드', '제공', 닫는 괄호 뒤 쉼표도 혜택 경계로 본다(2026-10-07 전수검사).
+  // 예전에는 '넥슨캐시 15% 캐쉬백, 대중교통 5% 캐쉬백'이 한 덩어리로 읽혀 교통에도 15%가 붙었다.
+  return summary.split(/(?<=(?:할인|적립|캐시백|캐쉬백|포인트|마일|원|%|L|혜택|면제|우대|발행|리워드|제공|\)))\s*[,+]\s*/);
 }
 
 /**
@@ -86,13 +88,24 @@ function extractPercentRate(clause: string): RateExtraction | null {
 function extractMileageRate(clause: string): RateExtraction | null {
   if (!clause.includes("마일")) return null;
 
-  const wonMatch = clause.replace(/,/g, "").match(/(\d+)\s*원당/);
+  // '1,500원당 1마일'과 '1,500원/1마일' 두 표기를 모두 읽는다
+  const wonMatch = clause.replace(/,/g, "").match(/(\d+)\s*원\s*(?:당|\/)/);
   const mileMatch = clause.match(/(\d+(?:\.\d+)?)\s*마일/);
   if (!wonMatch || !mileMatch) return null;
 
   const wonPerUnit = parseFloat(wonMatch[1]);
   const milesPerUnit = parseFloat(mileMatch[1]);
   return { rate: (milesPerUnit * 15) / wonPerUnit, type: "point" };
+}
+
+/** '1,000원당 100원', '1,500원당 200원'처럼 결제 금액당 돌려주는 금액(사실상 정률)을 읽는다. 정액으로 읽으면 67%처럼 부풀었다. */
+function extractPerAmountRate(clause: string): RateExtraction | null {
+  const m = clause.replace(/,/g, "").match(/(\d+)\s*원\s*당\s*(?:최대\s*)?(\d+(?:\.\d+)?)\s*(?:원|포인트|P|점)/);
+  if (!m || clause.includes("마일")) return null;
+  const per = parseFloat(m[1]);
+  const back = parseFloat(m[2]);
+  if (!(per > 0) || !(back > 0) || back >= per) return null;
+  return { rate: back / per, type: "discount" };
 }
 
 /** 리터당 할인("150원/L")이나 정액 할인("5,000원", "200~600원")을, 카테고리별 기준 금액 대비 비율로 환산한다. */
@@ -117,12 +130,13 @@ function extractAmountBasedRate(clause: string, category: SpendCategoryId): Rate
   // 한도가 나오는 문제가 있었다.
   //
   // averageWon이 referenceAmount보다 크면(예: "최대 25,000원 할인") 비율이 100%를 넘어
-  // "할인 250%"처럼 말이 안 되는 숫자가 화면(계산 과정 설명)에 그대로 노출된다. 실제
-  // 카드 혜택 중에 100% 넘게 돌려주는 건 없으므로 100%를 상한으로 둔다 — capPerMonth가
-  // 이미 실제 한도를 정확히 반영하므로, rate를 100%로 눌러도 "그 한도에 도달하는 데
-  // 필요한 지출 규모"만 약간 커질 뿐 한도 자체가 줄어들지는 않는다.
+  // "할인 250%"처럼 말이 안 되는 숫자가 화면(계산 과정 설명)에 그대로 노출된다. 그래서 비율에
+  // 상한을 둔다(아래 50%). capPerMonth가 원문 금액을 그대로 쓰므로, 비율을 눌러도 "그 한도에
+  // 도달하는 데 필요한 지출 규모"만 커질 뿐 한도 자체가 줄어들지는 않는다.
   const referenceAmount = category === "transport" ? 1500 : category === "mobile" ? 50000 : 10000;
-  const rate = Math.min(averageWon / referenceAmount, 1);
+  // 상한은 50%로 둔다(2026-10-07). 정답표 요율도 대부분 50% 이하(최대 60%)라, 정액을 100%로 바꾸면
+  // '그 금액만큼 쓰면 전액 돌려받는' 계산이 되어 지출이 적을 때 부풀었다. 한도(원문 금액)는 그대로다.
+  const rate = Math.min(averageWon / referenceAmount, 0.5);
   return { rate, type: "discount", capPerMonth: Math.round(averageWon) };
 }
 
@@ -130,6 +144,7 @@ function extractAmountBasedRate(clause: string, category: SpendCategoryId): Rate
 const RATE_EXTRACTORS: Array<(clause: string, category: SpendCategoryId) => RateExtraction | null> = [
   (clause) => extractPercentRate(clause),
   (clause) => extractMileageRate(clause),
+  (clause) => extractPerAmountRate(clause),
   extractAmountBasedRate,
 ];
 
@@ -160,10 +175,19 @@ function keepHighestRatePerCategory(candidates: RewardRule[]): RewardRule[] {
   return [...bestByCategory.values()];
 }
 
+/**
+ * 카드고릴라 요약 끝의 ' | 신한 딥오일 카드' 같은 꼬리표는 카드 이름 읽기라서 뗀다(요약 237장, 꼬리표는 모두 1개).
+ * 예전에는 '| 농협올원 엘지유플러스카드'의 '엘지유플러스'를 통신 혜택으로 읽었다.
+ */
+export function stripCardNameSuffix(summary: string): string {
+  const i = summary.lastIndexOf("|");
+  return i < 0 ? summary : summary.slice(0, i).trim();
+}
+
 function parseBenefitSummary(benefitSummary: string): RewardRule[] {
   const candidates: RewardRule[] = [];
 
-  for (const clause of splitBenefitClauses(benefitSummary)) {
+  for (const clause of splitBenefitClauses(stripCardNameSuffix(benefitSummary))) {
     for (const category of matchCategories(clause)) {
       const { rate, type, capPerMonth } = extractRate(clause, category);
       if (rate <= 0) continue;

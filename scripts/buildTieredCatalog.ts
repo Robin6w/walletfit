@@ -26,6 +26,42 @@ import {
 // 조립한다 — cardConverter.ts를 고치는 게 아니라 이 스크립트만의 사정.
 const GENERIC_MERCHANT_KEYWORDS = ["가맹점", "전국", "국내외", "모든", "마일", "해외"];
 
+/**
+ * 45장 실적구간표 감사에서 "매핑 실패"로 잡혔던 33개 라벨 중 절반이 넘는 항목(37건/62건)이
+ * 사실은 소비 카테고리가 아니라 카드고릴라 페이지 구조상 들어있는 텍스트였다: 선택형 카드
+ * UI 문구("1개 선택"), 한도·건당 결제금액 설명("제한 없음", "10만원 미만 건"), 유의사항,
+ * 적립 유형 라벨("기본 적립"/"특별 적립" 등 — 카테고리가 아니라 적립 방식 구분), 빈 값 등이다.
+ * 이런 항목은 KEYWORD_MAP에 키워드를 아무리 추가해도 매핑되지 않으므로(애초에 매핑 대상이
+ * 아니라서), unmappedTitles로 보고하지 않고 여기서 먼저 걸러낸다.
+ */
+const NON_CATEGORY_TITLES = new Set([
+  "",
+  "-",
+  "유의사항",
+  "제한 없음",
+  "적립",
+  "할인",
+  "기본 적립",
+  "추가 적립",
+  "특별 적립",
+  "기본적립",
+  "추가적립",
+  "LIVING",
+  "MEMBERSHIP",
+]);
+
+const NON_CATEGORY_PATTERNS = [
+  /^\d+개\s*선택$/, // "1개 선택", "2개 선택" 같은 선택형 카드 UI 문구
+  /^[\d,]+\s*만?\s*원\s*(이상|미만)\s*건$/, // "10만원 미만 건" 같은 건당 결제금액 구간 설명
+  /한도\s*$/, // "월 이용금액 30만원 한도" 같은 한도 설명
+];
+
+function isNonCategoryTitle(title: string): boolean {
+  const trimmed = title.trim();
+  if (NON_CATEGORY_TITLES.has(trimmed)) return true;
+  return NON_CATEGORY_PATTERNS.some((re) => re.test(trimmed));
+}
+
 function matchCategories(clause: string): string[] {
   let working = stripFalsePositivePhrases(clause.toLowerCase());
   const matched = new Set<string>();
@@ -132,6 +168,7 @@ function main() {
 
     for (const [title, tiers] of tierMap) {
       if (tiers.length < 2) continue; // 구간이 1개뿐이면(=사실상 고정 요율) 굳이 tiers로 안 채움
+      if (isNonCategoryTitle(title)) continue; // 카테고리가 아닌 구조적 텍스트라 애초에 매핑 대상이 아님(unmappedTitles에도 안 남김)
       // title이 실제 key_benefit 항목의 title과 일치하면 그 항목의 title+comment로 매핑을
       // 시도하고, 일치하는 항목이 없으면(공용 표 안의 행 이름 자체가 title로 온 경우 —
       // 예: "국내 가맹점" — tierTableParser.ts의 마지막 fallback 참고) title 텍스트 자체로

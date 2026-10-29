@@ -1,20 +1,46 @@
 export interface ParsedSpendingItem {
   merchant: string;
   amount: number;
-  category: string; // convenience, cafe, transport, mobile, onlineShopping, mart, dining, culture, gas, etc
+  category: string; // convenience, cafe, transport, mobile, onlineShopping, mart, dining, culture, gas, car, pet, education, beautyFitness, golf, department, etc
 }
 
 // 한국어 지출 카테고리 매핑 규칙
 export const KEYWORD_MAP: { [category: string]: string[] } = {
-  cafe: ["스타벅스", "스벅", "투썸", "이디야", "커피", "메가커피", "빽다방", "폴바셋", "할리스", "카페", "디저트", "베이커리", "빵집", "설빙"],
+  // "EDIYA"(영문 표기)와 "커피빈"은 2026-10-07 추가. "커피빈"은 원래도 "커피"로 카페에 잡혔지만, 브랜드 이름으로 먼저 잡혀야
+  // 자동 변환에서 브랜드 한정 혜택으로 읽힌다(brandScope.ts)
+  cafe: ["스타벅스", "스벅", "투썸", "이디야", "EDIYA", "커피빈", "커피", "메가커피", "빽다방", "폴바셋", "할리스", "카페", "디저트", "베이커리", "빵집", "설빙"],
   convenience: ["GS25", "CU", "세븐일레븐", "이마트24", "미니스톱", "편의점"],
   transport: ["택시", "버스", "지하철", "철도", "코레일", "SRT", "KTX", "티머니", "캐시비", "카카오T", "카카오택시", "타다", "대중교통"],
-  mobile: ["SKT", "KT", "LGU+", "엘지유플러스", "알뜰폰", "통신요금", "통신비", "휴대폰요금"],
-  onlineShopping: ["쿠팡", "네이버쇼핑", "네이버페이", "G마켓", "지마켓", "11번가", "SSG", "옥션", "마켓컬리", "컬리", "위메프", "티몬", "배송", "택배"],
+  // "SK텔레콤", "LG U+"(띄어쓴 표기)는 2026-10-07 추가. 혜택 요약에서 이 표기만 쓴 카드가 있었다
+  mobile: ["SKT", "SK텔레콤", "KT", "LGU+", "LG U+", "엘지유플러스", "알뜰폰", "통신요금", "통신비", "휴대폰요금", "통신"],
+  // "쇼핑"은 카드고릴라 key_benefit title에서 "쿠팡"/"네이버쇼핑"처럼 구체적 브랜드명 대신
+  // 그냥 상위 개념어 하나로만 적혀 있는 경우가 실제로 있어서(45장 실적구간표 감사에서 확인,
+  // 6건) 추가했다. 명세서 상호명 매칭에서는 원래 브랜드명이 그대로 찍히니 영향이 없다.
+  onlineShopping: ["쿠팡", "네이버쇼핑", "네이버페이", "G마켓", "지마켓", "11번가", "SSG", "옥션", "마켓컬리", "컬리", "위메프", "티몬", "배송", "택배", "쇼핑"],
   mart: ["이마트", "홈플러스", "롯데마트", "농협하나로", "하나로마트", "슈퍼마켓", "슈퍼", "마트", "다이소", "노브랜드", "SSM"],
-  dining: ["식당", "맛집", "푸드", "고기집", "갈비", "삼겹살", "국밥", "찌개", "치킨", "피자", "족발", "보쌈", "스시", "초밥", "반점", "짜장면", "파스타", "배달의민족", "배민", "요기요", "쿠팡이츠", "한식", "양식", "중식", "일식"],
-  culture: ["넷플릭스", "유튜브", "premium", "디즈니", "티빙", "웨이브", "CGV", "롯데시네마", "메가박스", "영화관", "멜론", "지니", "티켓", "공연", "연극"],
+  // "외식"도 위 "쇼핑"과 같은 이유로 추가(같은 감사에서 "외식, 통신" 등 조합형 라벨로 확인).
+  dining: ["식당", "맛집", "푸드", "고기집", "갈비", "삼겹살", "국밥", "찌개", "치킨", "피자", "족발", "보쌈", "스시", "초밥", "반점", "짜장면", "파스타", "배달의민족", "배민", "요기요", "쿠팡이츠", "한식", "양식", "중식", "일식", "외식"],
+  // "디지털구독"/"구독"은 넷플릭스·웨이브 등 개별 OTT 브랜드명 대신 상위 개념어로만 적힌
+  // 경우를 커버한다(같은 감사에서 "디지털구독" 1건 확인).
+  culture: ["넷플릭스", "유튜브", "premium", "디즈니", "티빙", "웨이브", "CGV", "롯데시네마", "메가박스", "영화관", "멜론", "지니", "티켓", "공연", "연극", "디지털구독", "구독"],
   gas: ["주유소", "GS칼텍스", "칼텍스", "SK에너지", "엔크린", "에쓰오일", "S-OIL", "오일뱅크", "주유", "충전소"],
+  // 아래 6개 카테고리(car ~ department)는 카드고릴라 45장 실적구간표 감사에서 발견된,
+  // 기존 10개 카테고리 어디에도 속하지 않는 실제 소비 영역이다. 표본이 작아 각 1~2건뿐이지만,
+  // 전체 카탈로그(1,400여 장)의 benefitSummary 파싱에도 같은 KEYWORD_MAP을 재사용하므로
+  // 실제 영향 범위는 이보다 클 가능성이 높다.
+  car: ["자동차", "정비", "카센터", "세차", "타이어"],
+  pet: ["애완동물", "반려동물", "동물병원", "펫샵"],
+  education: ["교육", "육아", "학원", "어린이집", "유치원"],
+  beautyFitness: ["뷰티", "피트니스", "헬스장", "필라테스", "네일", "에스테틱"],
+  golf: ["골프", "골프장", "스크린골프"],
+  // "의류"/"잡화"는 일반 명사라 다른 브랜드명과 우연히 겹칠 위험이 상대적으로 크다.
+  // 실제 카탈로그에 적용해보고 오탐이 보이면 FALSE_POSITIVE_PHRASES에 추가해서 막을 것.
+  department: ["백화점", "롯데백화점", "신세계백화점", "현대백화점", "갤러리아", "AK플라자", "의류", "잡화"],
+  // "금융"/"간편결제"/"생활"은 특정 소비 카테고리라기보다 결제 방식이나 포괄적 생활비에 가까워
+  // 별도 카테고리를 만들지 않고 기존 "그 외 일반가맹점"으로 흡수한다. "생활"은 45장 감사에서
+  // 5건으로 제일 많이 나온 미매핑 라벨인데, 원문 comment 텍스트 없이 title만으로는 더 세분화할
+  // 근거가 없어 우선 보수적으로 여기 둔다(실제 카드명을 보고 더 쪼갤 수 있으면 나중에 옮길 것).
+  etc: ["금융", "간편결제", "생활"],
 };
 
 const REFUND_KEYWORD_REGEX = /(?:승인취소|결제취소|취소완료|취소|환불)/i;
@@ -263,7 +289,19 @@ export function validateStatementFile(file: File): FileValidationResult {
 const PDFJS_MODULE_SPECIFIER = "pdfjs-dist";
 const PDFJS_WORKER_SPECIFIER = "pdfjs-dist/build/pdf.worker.mjs?url";
 
-export async function extractTextFromPdf(file: File): Promise<string> {
+/**
+ * 비밀번호로 잠긴 PDF. need: 비밀번호가 필요함, wrong: 비밀번호가 맞지 않음(2026-10-28 v2 명세서 화면)
+ */
+export class StatementPasswordError extends Error {
+  readonly reason: "need" | "wrong";
+  constructor(reason: "need" | "wrong") {
+    super(reason === "need" ? "비밀번호로 잠긴 파일이에요." : "비밀번호가 맞지 않아요.");
+    this.name = "StatementPasswordError";
+    this.reason = reason;
+  }
+}
+
+export async function extractTextFromPdf(file: File, password?: string): Promise<string> {
   let pdfjsLib;
   let workerSrc;
   try {
@@ -277,7 +315,15 @@ export async function extractTextFromPdf(file: File): Promise<string> {
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let pdf;
+  try {
+    pdf = await pdfjsLib.getDocument(password ? { data: buffer, password } : { data: buffer }).promise;
+  } catch (e) {
+    // pdf.js PasswordException: code 1 = 비밀번호 필요, 2 = 비밀번호 틀림
+    const err = e as { name?: string; code?: number };
+    if (err?.name === "PasswordException") throw new StatementPasswordError(err.code === 2 ? "wrong" : "need");
+    throw e;
+  }
 
   const pageTexts: string[] = [];
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
@@ -296,10 +342,10 @@ export async function extractTextFromPdf(file: File): Promise<string> {
  * 업로드된 명세서 파일(PDF/TXT/CSV)에서 텍스트를 읽어 옵니다.
  * PDF는 extractTextFromPdf로, 그 외 텍스트 기반 파일은 File.text()로 직접 읽습니다.
  */
-export async function readStatementFileAsText(file: File): Promise<string> {
+export async function readStatementFileAsText(file: File, password?: string): Promise<string> {
   const fileExt = "." + (file.name.split(".").pop() || "").toLowerCase();
   if (fileExt === ".pdf" || file.type === "application/pdf") {
-    return extractTextFromPdf(file);
+    return extractTextFromPdf(file, password);
   }
   return file.text();
 }

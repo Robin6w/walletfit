@@ -1,0 +1,1 @@
+{"ids": [2686, 51, 13, 2235, 2330, 281], "spending": {"convenience": 250000, "cafe": 180000, "transport": 80000, "mobile": 140000, "onlineShopping": 65000, "dining": 70000, "gas": 50000}, "margin": 20000, "mode": "maxBenefit", "maxCards": 5, "brandShare": {"cafe": {"스타벅스": 0.35, "메가MGC커피": 0.35}, "convenience": {"GS25": 0.7}, "onlineShopping": {"쿠팡": 0.7}}, "withAlt": true}

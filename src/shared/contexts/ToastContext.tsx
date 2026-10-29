@@ -13,9 +13,11 @@ const DEFAULT_DURATION = 4000;
 
 interface ToastProviderProps {
   children: ReactNode;
+  /** 알림 상자 위치(Tailwind 클래스). 기본은 오른쪽 위 */
+  placement?: string;
 }
 
-export function ToastProvider({ children }: ToastProviderProps) {
+export function ToastProvider({ children, placement = "fixed top-5 right-5" }: ToastProviderProps) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -93,7 +95,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
       {/* 전역 토스트 렌더링 컨테이너 */}
       <section
         aria-label="알림 메시지"
-        className="fixed top-5 right-5 z-50 flex max-w-sm w-full flex-col gap-2.5 pointer-events-none px-4 sm:px-0"
+        className={`${placement} z-50 flex max-w-sm w-full flex-col gap-2.5 pointer-events-none px-4 sm:px-0`}
       >
         {toasts.map((toast) => {
           const isAlert = toast.type === "error" || toast.type === "warning";

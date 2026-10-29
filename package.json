@@ -13,12 +13,18 @@
     "test:coverage": "vitest run --coverage",
     "fetch:catalog": "tsx scripts/fetchCardCatalog.ts",
     "fetch:tiers": "tsx scripts/fetchCardTierDetail.ts",
-    "build:catalog": "tsx scripts/buildTieredCatalog.ts"
+    "build:catalog": "tsx scripts/buildTieredCatalog.ts",
+    "build:benefit": "tsx --tsconfig tsconfig.app.json scripts/buildBenefitCatalog.ts",
+    "extract:azu": "node scripts/extractWithAzuLlm.mjs",
+    "test:py": "cd 1_혜택정보구조화 && python tests/test_calc.py && cd .. && python scripts/testEngine.py"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans-kr": "^5.3.0",
+    "@fontsource/outfit": "^5.3.0",
     "javascript-lp-solver": "^0.4.24",
     "lucide-react": "^1.33.0",
     "pdfjs-dist": "^4.0.0",
+    "pretendard": "^1.3.9",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

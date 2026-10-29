@@ -38,6 +38,13 @@ export const MAX_CARD_SPEND_RATIO = 0.6;
 /**
  * 카테고리별 지출 비중 가정 (합계 1.0). data/categories.json의 카테고리 구성에 맞춰 만들었고,
  * 새 카테고리가 추가되면 이 표도 같이 갱신해야 합니다.
+ *
+ * TODO: car/pet/education/beautyFitness/golf/department 6개 카테고리는 아직 이 표에 없다.
+ * 다른 항목처럼 통계청 가계동향조사 등 실제 근거로 비중을 산정해야 하는데, 지금은 그 근거가
+ * 없어서 임의로 숫자를 채우지 않았다. 그 결과 이 6개는 estimateSpendingFromIncome()에서
+ * `?? 0`으로 0원 처리되고(에러는 안 남, 그냥 소득 기반 자동 추정에서 빠질 뿐), 합계도 더 이상
+ * 정확히 1.0이 아니다(현재 1.00에서 이 6개만큼 부족). 실제 비중 근거를 확보하면 이 표를 갱신하고
+ * 기존 값들도 그만큼 비례해서 낮춰야 한다.
  */
 export const CATEGORY_SPEND_SHARE: Record<string, number> = {
   dining: 0.22,

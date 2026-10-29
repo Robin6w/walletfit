@@ -63,7 +63,7 @@ describe("toWalletCard", () => {
     expect(etcBenefit?.type).toBe("cashback");
   });
 
-  it("혜택 정보가 없거나 해석할 수 없는 경우 기본 etc 혜택을 부여한다", () => {
+  it("혜택 정보가 없거나 해석할 수 없는 경우 임의의 기본 혜택을 만들지 않는다", () => {
     const entry: CatalogListing = {
       sourceId: 103,
       sourceUrl: "http://example.com/103",
@@ -75,10 +75,9 @@ describe("toWalletCard", () => {
 
     const card = toWalletCard(entry);
     const benefits = card.tiers[0].benefits;
-    expect(benefits).toHaveLength(1);
-    expect(benefits[0].category).toBe("etc");
-    expect(benefits[0].rate).toBeCloseTo(0.007);
-    expect(benefits[0].type).toBe("discount");
+    // 예전에는 '그 외 일반가맹점 0.7%'를 임의로 넣었지만, 못 읽은 카드를 검증된 저혜택 카드처럼
+    // 보이게 해서 지금은 비워 둔다(cardConverter.ts 주석 참고)
+    expect(benefits).toHaveLength(0);
   });
 
   it("한 구절에 여러 카테고리 키워드가 포함된 경우 모든 카테고리에 혜택을 부여한다", () => {
@@ -266,6 +265,64 @@ describe("toWalletCard", () => {
 
     expect(benefits.find((b) => b.category === "dining")).toBeDefined();
     expect(benefits.find((b) => b.category === "onlineShopping")).toBeUndefined();
+  });
+
+  it("카드고릴라 실적구간표 감사에서 새로 추가한 6개 카테고리(자동차/반려동물/교육/뷰티피트니스/골프/백화점)를 올바르게 분류한다", () => {
+    const entry: CatalogListing = {
+      sourceId: 115,
+      sourceUrl: "http://example.com/115",
+      name: "라이프스타일 카드",
+      issuer: "테스트카드사",
+      category: "신용",
+      benefitSummary: "카센터 정비 10% 할인, 반려동물 병원 5% 할인, 학원 수강료 3% 할인, 필라테스 15% 할인, 골프장 20% 할인, 백화점 7% 할인",
+      fetchedAt: new Date().toISOString(),
+    };
+
+    const card = toWalletCard(entry);
+    const benefits = card.tiers[0].benefits;
+
+    expect(benefits.find((b) => b.category === "car")).toBeDefined();
+    expect(benefits.find((b) => b.category === "pet")).toBeDefined();
+    expect(benefits.find((b) => b.category === "education")).toBeDefined();
+    expect(benefits.find((b) => b.category === "beautyFitness")).toBeDefined();
+    expect(benefits.find((b) => b.category === "golf")).toBeDefined();
+    expect(benefits.find((b) => b.category === "department")).toBeDefined();
+  });
+
+  it("브랜드명 대신 상위 개념어로만 적힌 혜택(쇼핑/외식/통신/디지털구독)도 기존 카테고리로 분류한다", () => {
+    const entry: CatalogListing = {
+      sourceId: 116,
+      sourceUrl: "http://example.com/116",
+      name: "상위개념어 카드",
+      issuer: "테스트카드사",
+      category: "신용",
+      benefitSummary: "쇼핑 5% 할인, 외식 10% 할인, 통신 3% 할인, 디지털구독 8% 할인",
+      fetchedAt: new Date().toISOString(),
+    };
+
+    const card = toWalletCard(entry);
+    const benefits = card.tiers[0].benefits;
+
+    expect(benefits.find((b) => b.category === "onlineShopping")).toBeDefined();
+    expect(benefits.find((b) => b.category === "dining")).toBeDefined();
+    expect(benefits.find((b) => b.category === "mobile")).toBeDefined();
+    expect(benefits.find((b) => b.category === "culture")).toBeDefined();
+  });
+
+  it("특정 소비 카테고리로 보기 어려운 혜택(금융/간편결제/생활)은 그 외 일반가맹점(etc)으로 분류한다", () => {
+    const entry: CatalogListing = {
+      sourceId: 117,
+      sourceUrl: "http://example.com/117",
+      name: "포괄혜택 카드",
+      issuer: "테스트카드사",
+      category: "신용",
+      benefitSummary: "간편결제 5% 캐시백",
+      fetchedAt: new Date().toISOString(),
+    };
+
+    const card = toWalletCard(entry);
+    const benefits = card.tiers[0].benefits;
+    expect(benefits.find((b) => b.category === "etc")).toBeDefined();
   });
 
   it("'슈퍼적립'이나 '제주지니'처럼 우연히 다른 카테고리 키워드를 포함한 마케팅 문구는 그 카테고리로 분류하지 않는다", () => {

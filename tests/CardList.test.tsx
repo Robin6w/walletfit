@@ -66,7 +66,8 @@ describe("CardList Component Smoke Test", () => {
       />
     );
 
-    const creditCheckbox = screen.getByLabelText("신용카드");
+    // 카드 종류 토글은 체크박스에서 aria-pressed 버튼으로 바뀌었다
+    const creditCheckbox = screen.getByRole("button", { name: "신용카드" });
     fireEvent.click(creditCheckbox);
     expect(mockOnToggleCardType).toHaveBeenCalledWith("credit");
   });

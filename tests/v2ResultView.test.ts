@@ -186,7 +186,7 @@ describe("추천 결과(보유한 카드로, 여유 2만원)", () => {
     );
     expect(u.assumed).toContain("결제 1회 평균 카페·편의점 7천원, 교통 1,500원");
     expect(u.assumed).toContain("포인트 1점 = 1원");
-    expect(u.assumed).toContain("혜택 정보는 카드고릴라 원문(9월 17일 수집) 기준");
+    expect(u.assumed).toContain("혜택 정보는 카드고릴라 원문(10월 29일 수집) 기준");
   });
   it("고르지 않은 카테고리는 계산기 가정값(브랜드 35%, 묶음 70%)으로 추정했다고 적는다", () => {
     const u = usedValuesVM(pack, { ...ctx, brandShare: {}, picks: {} });

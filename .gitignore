@@ -73,6 +73,7 @@ Claude outputs/
 # 필요하면 `npm run fetch:tiers`로 다시 받을 수 있습니다(사내망 IP 차단 때문에 실제
 # 사용자 컴퓨터에서 실행해야 함 — README 참고).
 data/catalog/cards-detail-raw.json
+data/catalog/cards-detail-changes.json
 
 # Python 캐시 (계산 엔진 시험을 돌리면 생김)
 __pycache__/

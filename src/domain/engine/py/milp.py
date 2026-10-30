@@ -138,16 +138,21 @@ class Model:
                 self.rows.append(self.nrow); self.cols.append(v); self.vals.append(c)
         self.rlo.append(lo); self.rhi.append(hi); self.nrow += 1
 
-    def solve(self, time_limit=60, mip_rel_gap=1e-6):
+    def solve(self, time_limit=60, mip_rel_gap=1e-6, node_limit=None):
+        """node_limit: 시간 대신 탐색 노드 수로 끊는다. 시간으로 끊으면 기기가 느릴수록(휴대폰, 백그라운드 탭) 결과가 나빠지고
+        같은 입력에도 결과가 달라진다(2026-10-30). 노드 수로 끊으면 어느 기기에서나 같은 결과가 나온다(느린 기기는 더 기다림)."""
         milp, LinearConstraint, Bounds, coo_matrix = _scipy()
         n = len(self.lb)
         A = coo_matrix((self.vals, (self.rows, self.cols)), shape=(self.nrow, n)).tocsr()
         kw = dict(c=-np.array(self.obj), constraints=[LinearConstraint(A, self.rlo, self.rhi)] if self.nrow else [],
                   integrality=np.array(self.integ), bounds=Bounds(self.lb, self.ub))
-        res = milp(**kw, options={"time_limit": time_limit, "mip_rel_gap": mip_rel_gap, "disp": False})
+        opts = {"time_limit": time_limit, "mip_rel_gap": mip_rel_gap, "disp": False}
+        if node_limit:
+            opts["node_limit"] = int(node_limit)
+        res = milp(**kw, options=opts)
         if res.status in (2, 4):
             # HiGHS 전처리(presolve)에서 수치 오류가 나거나 해가 있는데 '해 없음'으로 끝나는 경우가 있어(2612) 전처리 없이 다시 푼다
-            res = milp(**kw, options={"time_limit": time_limit, "mip_rel_gap": mip_rel_gap, "disp": False, "presolve": False})
+            res = milp(**kw, options={**opts, "presolve": False})
         return res
 
 
@@ -917,11 +922,12 @@ def B_name_cat(B, var):
 def solve(records, spending, A, **kw):
     """lb: 이미 아는 해의 목적값(예: 카드 수를 하나 줄인 풀이). 그보다 나쁜 해를 탐색에서 잘라 속도를 높인다."""
     time_limit = kw.pop("time_limit", 60)
+    node_limit = kw.pop("node_limit", None)
     lb = kw.pop("lb", None)
     M, blocks, cats = build(records, spending, A, **kw)
     if lb is not None:
         M.con({i: c for i, c in enumerate(M.obj) if c != 0}, lo=lb - 1.0)
-    res = M.solve(time_limit=time_limit)
+    res = M.solve(time_limit=time_limit, node_limit=node_limit)
     if res.x is None:
         return {"status": res.status, "message": res.message, "objective": None, "cards": []}
     x = res.x

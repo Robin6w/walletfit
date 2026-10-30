@@ -117,6 +117,8 @@ export interface RecommendResponse {
   pool: number[];
   spending: Record<string, number>;
   elapsed: number;
+  /** kLimit으로 장수를 줄여 빨리 낸 결과(점진적 결과의 첫 단계). 전체 계산이 끝나면 바뀐다 */
+  partial?: boolean;
 }
 
 export interface RecommendArgs {

@@ -15,13 +15,24 @@ import milp
 
 WHOLE_CATS = ("mobile", "transport")  # 자동납부·후불교통은 카드 1장에만 등록되므로 나누지 않는다
 SHORTLIST = 12                        # 후보가 이보다 많으면 카드 한 장 계산값으로 먼저 추린다
+SHORTLIST_MAX = 20                    # 추린 후보 상한(상위 8장 + 카테고리별 1장). 2026-10-30 측정: 40장부터 3장 계산이 30초를 넘김
+PRICE_ROUND = False                   # 커널 서치 한 바퀴(아래)를 쓸지. 2026-10-30 측정(지출 6가지): 합 +1.2%에 최대 시간 26초 → 42초라 꺼 둔다
+PRICE_ADD = 4                         # 첫 풀이 뒤 조합을 낫게 할 만한 카드를 이만큼 더 넣고 한 번 더 푼다(커널 서치)
+PRICE_MIN_GAIN = 1000                 # 그 카드를 넣을 만한 최소 기대 이득(원/월)
 EFFICIENT_RELATIVE_CUTOFF = 0.3       # '효율적' 모드: 1등 카드 순혜택의 30% 미만을 버는 카드는 뺀다
 MAX_BAR = 5                           # 카드 수 막대는 1~5장
-# 3장 이상 MILP 시간 제한(초). 2026-10-29 측정: 지출 조건 11가지에서 5초와 2초의 결과 금액이 모두 같고
-# 시간은 최대 15.1초 → 8.2초. 1초는 한 조건에서 20원 차이가 나서 2초로 둔다
-K3_TIME_LIMIT = 2
+# 3장 이상 MILP 시간 제한(초). 2026-10-29에는 후보 58장이라 2초로 충분했다.
+# 2026-10-30 후보가 1,125장(원문 정제)으로 늘자 2초 안에 더 나은 조합을 못 찾아 2장에서 멈췄다
+# (월 100만원: 2장 82,625원 → 3장 88,093원, 월 150만원: 3장 129,762원 → 4장 138,984원).
+# 2·5·8·12초를 재 보니 8초부터 결과가 같아 8초로 둔다(계산 시간 최대 약 7초 → 20초)
+K3_TIME_LIMIT = 8
+# 느린 기기 대비(2026-10-30): 장수마다 시간 대신 탐색 노드 수로 끊는다. 0이면 위 시간 제한을 쓴다.
+# SAFETY_TIME_LIMIT은 아주 느린 기기에서 끝없이 기다리지 않게 하는 마지막 안전장치
+NODE_LIMIT = 0
+SAFETY_TIME_LIMIT = 60
 
 STATE = {"records": {}, "status": {}, "A": None}
+_SEED = {}  # 점진적 결과: 빠른 계산(kLimit)의 후보와 장수별 결과. 전체 계산이 이어받는다
 
 
 def init_json(catalog_text, assumptions_text):
@@ -164,20 +175,18 @@ def _refine(ev, X, spending, budget_s=3.0):
     return best_X
 
 
-def _solve_k(recs_sel, spending, A, K, fee_cap=None, fixed=(), lb=None, time_limit=10):
+def _solve_k(recs_sel, spending, A, K, fee_cap=None, fixed=(), lb=None, time_limit=10, node_limit=None):
     split = len(recs_sel) <= SPLIT_MAX_POOL
     res = milp.solve(recs_sel, spending, A, K=K, split=split, whole_cats=WHOLE_CATS, time_limit=time_limit,
-                     lb=lb, fee_cap=fee_cap, fixed=fixed)
+                     lb=lb, fee_cap=fee_cap, fixed=fixed, node_limit=node_limit)
     if not res.get("cards"):
         return None, res.get("objective")
     X = {c["sid"]: {k: float(v) for k, v in c["assign"].items() if v > 0.5} for c in res["cards"]}
     return X, res.get("objective")
 
 
-def _shortlist(ids, spending, A, margin, fixed=()):
-    """후보가 많으면 카드 한 장에 지출 전부를 냈을 때의 순혜택과 카테고리별 혜택으로 추린다."""
-    if len(ids) <= SHORTLIST:
-        return list(ids)
+def _score_rows(ids, spending, A, margin):
+    """카드마다 지출 전부를 한 장에 냈을 때의 (순혜택, 카테고리별 혜택, 월 연회비). 후보 고르기에만 쓴다."""
     rows = []
     for sid in ids:
         rec = _raised(STATE["records"][sid], margin)
@@ -190,16 +199,62 @@ def _shortlist(ids, spending, A, margin, fixed=()):
             v = r["by_benefit"].get(b["id"], 0)
             cat = (b.get("scope") or {}).get("app_category") or "all"
             by_cat[cat] = by_cat.get(cat, 0) + v
-        rows.append((sid, r["total"] - _fee_m(rec), by_cat))
-    keep = [s for s, _, _ in sorted(rows, key=lambda x: -x[1])[:8]]
-    for c in spending:
-        for s, _, bc in sorted(rows, key=lambda x: -x[2].get(c, 0))[:2]:
-            if s not in keep and rows and dict((r[0], r[2]) for r in rows)[s].get(c, 0) > 0:
+        rows.append((sid, r["total"] - _fee_m(rec), by_cat, _fee_m(rec)))
+    return rows
+
+
+def _undominated(rows, keep=()):
+    """지배 카드 빼기: 다른 카드보다 순혜택·연회비·카테고리별 혜택이 모두 같거나 나쁜 카드는 후보에서 뺀다
+    (시설 입지 문제의 dominance reduction과 같은 생각. 혜택이 0인 카드도 뺀다). keep은 빼지 않는다."""
+    order = sorted(rows, key=lambda r: -r[1])
+    front = []
+    for r in order:
+        sid, net, bc, fee = r
+        if sid not in keep and (net <= 0 and not any(v > 0 for v in bc.values())):
+            continue
+        cats = [c for c, v in bc.items() if v > 0]
+        dom = sid not in keep and any(
+            f[1] >= net and f[3] <= fee and all(f[2].get(c, 0) >= v for c, v in bc.items() if v > 0) and (f[1] > net or f[2] != bc)
+            for f in front if all(f[2].get(c, 0) > 0 for c in cats))
+        if not dom:
+            front.append(r)
+    return front
+
+
+def _shortlist(ids, spending, A, margin, fixed=(), rows=None):
+    """후보가 많으면 지배 카드를 빼고, 순혜택 상위 8장 + 지출이 큰 카테고리부터 그 카테고리에 가장 강한 카드 1장씩으로 추린다.
+    (예전: 상위 8장 + 카테고리별 2장을 12장에서 잘랐는데, 카테고리가 22개가 되자 카테고리에 강한 카드가 대부분 잘렸다)"""
+    if len(ids) <= SHORTLIST:
+        return list(ids)
+    rows = _undominated(rows if rows is not None else _score_rows(ids, spending, A, margin), keep=set(fixed))
+    keep = [r[0] for r in sorted(rows, key=lambda x: -x[1])[:8]]
+    for c in sorted(spending, key=lambda c: -spending[c]):
+        for s, _, bc, _ in sorted(rows, key=lambda x: -x[2].get(c, 0))[:1]:
+            if s not in keep and bc.get(c, 0) > 0:
                 keep.append(s)
     for s in fixed:
         if s not in keep:
             keep.append(s)
-    return keep[:SHORTLIST + len(fixed)]
+    return keep[:SHORTLIST_MAX + len(fixed)]
+
+
+def _price_in(rows, X, pool, spending, n=PRICE_ADD):
+    """커널 서치의 '묶음 넣기'를 가볍게 한 것: 지금 조합에서 카테고리를 맡은 카드보다 그 카테고리 혜택이 큰 카드를
+    (더 받는 혜택 − 연회비)가 큰 순으로 n장 고른다. 후보에 없던 카드 중 조합을 낫게 할 만한 것만 MILP에 다시 넣는다."""
+    by = {r[0]: r for r in rows}
+    holder = {}
+    for c in spending:
+        s = max(X, key=lambda s: X[s].get(c, 0), default=None)
+        if s is not None and X[s].get(c, 0) > 0.5 and s in by:
+            holder[c] = by[s][2].get(c, 0)
+    gains = []
+    for sid, net, bc, fee in rows:
+        if sid in pool:
+            continue
+        g = sum(max(0.0, bc.get(c, 0) - v) for c, v in holder.items()) - fee
+        if g > PRICE_MIN_GAIN:
+            gains.append((g, sid))
+    return [s for _, s in sorted(gains, reverse=True)[:n]]
 
 
 def _card_view(sid, alloc, A, margin, ev_total):
@@ -300,27 +355,74 @@ def recommend_json(payload_text):
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
 
-    pool = _shortlist(ids, spending, A, margin, fixed)
-    recs_sel = {s: _raised(STATE["records"][s], margin) for s in pool}
-    ev = Evaluator(recs_sel, A)
-    k_top = min(len(pool), max(MAX_BAR, max_cards))
-    by_k, X_prev, obj_prev = {}, None, None
-    for K in range(max(1, len(fixed)), k_top + 1):
-        X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
-                          time_limit=time_limit if K <= 2 else min(time_limit, K3_TIME_LIMIT))
-        if X is None:
-            if X_prev is None:
-                continue
-            X, obj = copy.deepcopy(X_prev), obj_prev
-        X = _refine(ev, X, spending)
-        net = _net_of(ev, X)
-        if X_prev is not None and net < by_k[K - 1]["netSel"] + 1:
-            # 한 장 더 넣어도 늘지 않으면 이후 장수도 같은 조합
-            for k2 in range(K, k_top + 1):
-                by_k[k2] = dict(by_k[K - 1], same=True)
-            break
-        by_k[K] = {"X": X, "netSel": net}
-        X_prev, obj_prev = X, obj
+    # 점진적 결과(2026-10-30): 화면이 먼저 kLimit=2로 빨리(몇 초) 받아 보여 주고, 이어서 전체 장수를 계산해 바꾼다.
+    # 빠른 계산의 후보와 1~2장 결과를 남겨 두고 전체 계산은 3장부터 이어서 한다(같은 계산을 두 번 하지 않게)
+    k_limit = int(p["kLimit"]) if p.get("kLimit") else None
+    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare")], sort_keys=True)
+    seed = None if k_limit else _SEED.get(seed_key)
+    if seed:
+        rows, pool = seed["rows"], list(seed["pool"])
+    else:
+        rows = _score_rows(ids, spending, A, margin) if len(ids) > SHORTLIST else None
+        pool = _shortlist(ids, spending, A, margin, fixed, rows=rows)
+
+    def run(pool, seed=None):
+        recs_sel = {s: _raised(STATE["records"][s], margin) for s in pool}
+        ev = Evaluator(recs_sel, A)
+        k_top = min(len(pool), max(MAX_BAR, max_cards))
+        if k_limit:
+            k_top = min(k_top, max(k_limit, len(fixed)))
+        by_k, X_prev, obj_prev = {}, None, None
+        k_start = max(1, len(fixed))
+        if seed and seed["pool"] == pool:
+            by_k = copy.deepcopy(seed["by_k"])
+            if seed["stopped"] or not by_k:
+                # 빠른 계산에서 이미 '한 장 더 넣어도 늘지 않음'으로 멈췄으면 전체도 같은 조합
+                last = max(by_k) if by_k else None
+                for k2 in range((last or 0) + 1, k_top + 1):
+                    if last is not None:
+                        by_k[k2] = dict(by_k[last], same=True)
+                return by_k, recs_sel, ev
+            k_start = max(by_k) + 1
+            X_prev, obj_prev = copy.deepcopy(by_k[max(by_k)]["X"]), seed["obj"]
+        stopped = False
+        for K in range(k_start, k_top + 1):
+            if NODE_LIMIT:
+                X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
+                                  time_limit=SAFETY_TIME_LIMIT, node_limit=NODE_LIMIT)
+            else:
+                X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
+                                  time_limit=time_limit if K <= 2 else min(time_limit, K3_TIME_LIMIT))
+            if X is None:
+                if X_prev is None:
+                    continue
+                X, obj = copy.deepcopy(X_prev), obj_prev
+            X = _refine(ev, X, spending)
+            net = _net_of(ev, X)
+            if X_prev is not None and net < by_k[K - 1]["netSel"] + 1:
+                # 한 장 더 넣어도 늘지 않으면 이후 장수도 같은 조합
+                for k2 in range(K, k_top + 1):
+                    by_k[k2] = dict(by_k[K - 1], same=True)
+                stopped = True
+                break
+            by_k[K] = {"X": X, "netSel": net}
+            X_prev, obj_prev = X, obj
+        if k_limit:
+            _SEED[seed_key] = {"rows": rows, "pool": list(pool), "stopped": stopped, "obj": obj_prev,
+                               "by_k": copy.deepcopy({k: v for k, v in by_k.items() if not v.get("same")})}
+            while len(_SEED) > 4:
+                _SEED.pop(next(iter(_SEED)))
+        return by_k, recs_sel, ev
+
+    by_k, recs_sel, ev = run(pool, seed)
+    if PRICE_ROUND and rows and by_k:
+        # 커널 서치 한 바퀴: 첫 조합을 기준으로 후보 밖에서 조합을 낫게 할 만한 카드를 넣고 다시 푼다. 나아질 때만 바꾼다
+        best = max(by_k.values(), key=lambda v: v["netSel"])
+        extra = _price_in(rows, best["X"], pool, spending)
+        if extra:
+            by_k2, recs2, ev2 = run(pool + extra)
+            if by_k2 and max(v["netSel"] for v in by_k2.values()) > best["netSel"] + 1:
+                by_k, recs_sel, ev, pool = by_k2, recs2, ev2, pool + extra
 
     if not by_k:
         return json.dumps({"ok": False, "error": "조건에 맞는 조합을 찾지 못했어요"})
@@ -358,7 +460,7 @@ def recommend_json(payload_text):
     return json.dumps({
         "ok": True, "k": k_rec, "mode": mode, "margin": margin, "efficientCeiling": efficient_ceiling,
         "result": rec_pack, "bar": bar, "alt": alt, "pool": pool, "spending": spending,
-        "elapsed": round(time.time() - t0, 2),
+        "elapsed": round(time.time() - t0, 2), "partial": bool(k_limit),
     })
 
 

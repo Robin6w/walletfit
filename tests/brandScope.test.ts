@@ -37,7 +37,7 @@ describe("자동 변환 혜택 표", () => {
 
   it("청춘대로 톡톡카드의 스타벅스 50%는 카페 전체가 아니라 스타벅스 한정이다", () => {
     const c = bySid.get(129)!;
-    expect(c.status).toBe("auto");
+    expect(c.status).toBe("extracted"); // 10-30부터 원문 전체 정제 표(예전엔 자동 변환)
     const cafe = c.record.benefits.find((b) => b.scope.app_category === "cafe")!;
     expect(cafe.scope).toMatchObject({ specificity: "brand", merchants: ["스타벅스"] });
   });

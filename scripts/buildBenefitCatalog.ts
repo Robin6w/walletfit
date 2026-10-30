@@ -4,6 +4,7 @@
  * 앱의 모든 카드는 이 파일의 혜택 표(양식 v0.2.1)로 새 계산기(calc.py)와 추천 엔진 v2(milp.py)를 거칩니다.
  * 카드마다 혜택 표를 가져오는 곳은 아래 순서로 고릅니다.
  *
+ *   0. extracted : 원문 전체 정제 결과(1,180장) 1_혜택정보구조화/정제/out_full/records — 아래 모든 표보다 먼저
  *   1. reviewed  : 사람이 검수한 정답표        1_혜택정보구조화/cards, cards_test
  *   2. gold_ai   : 원문 대조로 만든 정답표      1_혜택정보구조화/cards_eval (사람 확인 전)
  *   3. extracted : AI 추출 + 원문 대조 통과     1_혜택정보구조화/extracted_scn, extracted_eval
@@ -29,12 +30,31 @@ type Status = "reviewed" | "gold_ai" | "extracted" | "auto";
 type BenefitRecord = Record<string, any>;
 
 const SOURCES: { dir: string; status: Status }[] = [
+  // 원문 전체 정제(2026-10-30, 발급 중 1,180장, 양식 v0.3): 예전 표보다 먼저 쓴다(사용자 결정: 다 이번 것으로)
+  { dir: "정제/out_full/records", status: "extracted" },
   { dir: "cards", status: "reviewed" },
   { dir: "cards_test", status: "reviewed" },
   { dir: "cards_eval", status: "gold_ai" },
   { dir: "extracted_scn", status: "extracted" },
   { dir: "extracted_eval", status: "extracted" },
 ];
+
+/**
+ * 앱(계산기·화면)이 읽지 않는 칸을 지운다. 정제 레코드는 메모·근거 위치·업종 id까지 담아 그대로 넣으면
+ * 혜택 표가 3MB → 15MB가 된다(브라우저 워커가 통째로 읽음). 원본은 1_혜택정보구조화에 그대로 남는다.
+ * 남기는 것: 계산기 입력 전부, 화면이 쓰는 source_quote(400자까지)·performance.excluded_items·scope.merchants
+ */
+function slim(record: BenefitRecord) {
+  delete record.perks;
+  delete record.notes;
+  delete record.performance?.quote;
+  for (const c of record.shared_caps ?? []) delete c.source_quote;
+  for (const b of record.benefits ?? []) {
+    for (const k of ["notes", "source_ref", "unknowns", "confidence"]) delete b[k];
+    for (const k of ["excluded", "excluded_types", "merchant_types", "brands", "payment_methods", "issuer_type"]) delete b.scope?.[k];
+    if (typeof b.source_quote === "string" && b.source_quote.length > 400) b.source_quote = b.source_quote.slice(0, 400);
+  }
+}
 
 function readTables(): Map<number, { status: Status; record: BenefitRecord; file: string }> {
   const found = new Map<number, { status: Status; record: BenefitRecord; file: string }>();
@@ -49,6 +69,7 @@ function readTables(): Map<number, { status: Status; record: BenefitRecord; file
       const sid = Number(record?.card?.source_id ?? name.replace(".json", ""));
       if (!Number.isFinite(sid) || found.has(sid)) continue; // 앞 순서(검수 수준이 높은 쪽)가 이긴다
       delete record.extraction_notes;
+      slim(record);
       found.set(sid, { status, record, file: `${dir}/${name}` });
     }
   }

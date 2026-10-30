@@ -41,7 +41,7 @@ describe("새 카드 추천 후보", () => {
   it("기본은 원문과 대조한 카드만, 대상 한정 카드는 빼고 쓴다", () => {
     const pool = issuableCards();
     expect(pool.every((c) => isVerified(c) && !isRestricted(c) && !isDiscontinued(c))).toBe(true);
-    expect(pool.length).toBe(58);
+    expect(pool.length).toBe(1125); // 10-30 원문 정제 1,180장이 들어가며 58 → 1125
     const ids = new Set(pool.map((c) => c.sourceId));
     for (const sid of [2934, 712, 2857, 1202]) expect(ids.has(sid)).toBe(false);
   });

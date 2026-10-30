@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "fetch:catalog": "tsx scripts/fetchCardCatalog.ts",
     "fetch:tiers": "tsx scripts/fetchCardTierDetail.ts",
+    "catalog:from-detail": "tsx scripts/buildCatalogFromDetail.ts",
     "build:catalog": "tsx scripts/buildTieredCatalog.ts",
     "build:benefit": "tsx --tsconfig tsconfig.app.json scripts/buildBenefitCatalog.ts",
     "extract:azu": "node scripts/extractWithAzuLlm.mjs",

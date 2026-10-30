@@ -260,7 +260,7 @@ npm run test            # Vitest 단위 테스트 (272개)
 npm run test:py         # 계산기 시험 30개 + 계산 엔진 시험 (Python, numpy·scipy 필요)
 npm run build:benefit   # 혜택 표 카탈로그 다시 만들기 (1_혜택정보구조화 → data/catalog/cards-benefit.json, calc.py 동기화)
 npm run lint            # oxlint
-npm run fetch:catalog / fetch:tiers / build:catalog   # 카드고릴라 수집(아래 참고)
+npm run fetch:tiers / catalog:from-detail / build:catalog   # 카드고릴라 수집(아래 참고)
 ```
 
 `.env`는 walletfit-app의 값을 그대로 복사했습니다(아주LLM 게이트웨이 주소·모델). API Key는 카드 상담 창 아래 '아주LLM 연결하기'에서 넣습니다. 키는 브라우저에 두고 질문할 때만 아주LLM으로 보냅니다.
@@ -268,8 +268,16 @@ npm run fetch:catalog / fetch:tiers / build:catalog   # 카드고릴라 수집(�
 ---
 
 ## 🔄 카드 카탈로그 자동 수집
-1. **`npm run fetch:catalog`** — 카드고릴라 상세 페이지의 `application/ld+json`으로 카드명·카드사·연회비·이미지·혜택 요약·발급 중단 여부를 `cards-catalog.json`에 모읍니다.
-2. **`npm run fetch:tiers`** — 카드고릴라 내부 API 원본을 `cards-detail-raw.json`에 저장합니다. 일부 클라우드 IP에서 막혀 있어 사용자 컴퓨터에서 실행해야 합니다.
+2026-10-29부터 카드 한 장에 API 요청 한 번으로 원문과 카탈로그를 모두 만듭니다(카드 상세 페이지도 카드 내용은 이 API 하나에서만 받음).
+
+1. **`npm run fetch:tiers`** — 카드고릴라 내부 API 원본을 `cards-detail-raw.json`에 저장합니다. 일부 클라우드 IP에서 막혀 있어 사용자 컴퓨터에서 실행해야 합니다.
+   - 혜택 원문 외에 전월실적 기준(`preMonthMoney`, API의 0은 '모름'이라 null), 연회비, 출시일, 단종 예정, 혜택 요약 한 줄, 카드 그림, 표시 여부, 카드고릴라 '신청하기' 링크(`issuerUrlPc`, 신청 연결이 있는 카드만, 표본 60장 중 11장), 심의필 문구, 혜택 태그, 혜택 본문 속 그림 주소와 글자 수도 저장합니다(`scripts/cardDetailRecord.ts`).
+   - 한 번에 하나씩, 요청 사이 1.5초를 쉽니다(전체 약 40분). 받은 카드만 기존 파일에 덮어 쓰고, 내용이 바뀌었는지 비교해 `changedAt`과 `cards-detail-changes.json`에 남깁니다. 혜택 본문에 그림이 있고 글자가 적은 카드는 `imageDependent`로 따로 적습니다.
+   - 사이트맵의 카드별 수정일(lastmod)을 저장합니다. 평소에는 **`npm run fetch:tiers -- --updated`**(수정일이 바뀐 카드, 새 카드, 아직 예전 형식인 줄만)로 받고, 한 달에 한 번 전체를 받습니다. 예전 형식 줄이 남아 있는 동안에는 첫 `--updated`가 사실상 전체 수집이 됩니다(2026-10-29 기준 1,514장, 약 46분).
+   - 사이트맵에 있는 카드만 받습니다. 카드고릴라가 숨긴 카드(`is_visible=false`)는 API에 남아 있어도 모으지 않습니다.
+   - 그 밖의 옵션: `--only-new`, `--older-than-days=N`, `--ids=1,2`, `--limit=N`, `--interval-ms=1500`, `--out=경로`.
+2. **`npm run catalog:from-detail`** — 1의 원문으로 `cards-catalog.json`을 만듭니다(네트워크 없음). 아직 예전 형식인 원문 줄은 기존 카탈로그 줄을 그대로 쓰고, 사이트맵에서 빠진 카드는 뺍니다.
+   - 예전 `npm run fetch:catalog`(상세 HTML의 ld+json)는 비교용으로만 남겨 둡니다. 같은 값을 API에서 읽을 수 있고, `--limit`으로 시험하면 파일 전체를 덮어씁니다.
 3. **`npm run build:catalog`** — 원본 구간표로 `cards-catalog.json`에 구간별 요율을 채웁니다.
 4. **`npm run build:benefit`** (v1) — 정답표·AI 추출 혜택 표가 있는 카드는 그 표를, 나머지는 위 카탈로그를 자동 변환해서 `cards-benefit.json`을 만듭니다.
 

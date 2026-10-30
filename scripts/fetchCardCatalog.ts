@@ -13,6 +13,10 @@
  * 들어있습니다. 그래서 카드 한 장당 기존 HTML 요청에 이어 이 API도 한 번 더 호출합니다.
  *
  * 실행: npx tsx scripts/fetchCardCatalog.ts [--limit=50] [--concurrency=4]
+ *
+ * 2026-10-29: 이 스크립트 대신 fetchCardTierDetail.ts(API 원문 수집) → buildCatalogFromDetail.ts(카탈로그 만들기)를 씁니다.
+ * 여기서 읽는 값은 API 응답에 모두 있고, 이 스크립트는 --limit으로 시험하면 파일 전체를 덮어쓰고 ld+json이 없는 카드를
+ * 조용히 버립니다. 예전 방식과 비교할 때만 남겨 둡니다.
  */
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";

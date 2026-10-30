@@ -72,6 +72,16 @@ def _count_limit(cond):
     return calc._count_limit(cond)
 
 
+def _splits_spend(b):
+    import calc
+    return calc.splits_spend(b)
+
+
+def _channel_share(sc, cat, A):
+    import calc
+    return calc.channel_share(sc, cat, A)
+
+
 def _value(b, tier, A):
     allv = b["reward"]["value_by_tier"]
     vals = [v for v in allv if tier is not None and v.get("tier") == tier] or [v for v in allv if v.get("tier") is None]
@@ -135,8 +145,8 @@ class Model:
         kw = dict(c=-np.array(self.obj), constraints=[LinearConstraint(A, self.rlo, self.rhi)] if self.nrow else [],
                   integrality=np.array(self.integ), bounds=Bounds(self.lb, self.ub))
         res = milp(**kw, options={"time_limit": time_limit, "mip_rel_gap": mip_rel_gap, "disp": False})
-        if res.status == 4:
-            # HiGHS 전처리(presolve)에서 수치 오류가 나는 경우가 있어 전처리 없이 다시 푼다
+        if res.status in (2, 4):
+            # HiGHS 전처리(presolve)에서 수치 오류가 나거나 해가 있는데 '해 없음'으로 끝나는 경우가 있어(2612) 전처리 없이 다시 푼다
             res = milp(**kw, options={"time_limit": time_limit, "mip_rel_gap": mip_rel_gap, "disp": False, "presolve": False})
         return res
 
@@ -279,6 +289,12 @@ def _build_card(M, B, cats, S, A, BIGQ):
         for tier, wt, lo, hi in ws:
             for v, c in wt.items():
                 lo_terms[v] = lo_terms.get(v, 0) - lo * c
+        if ws and ws[0][2] == 0:
+            # 할인받아 빠지는 금액(d)은 보수적 추정이라 묶음끼리 겹치면 지출보다 커질 수 있다(2572: q < 0 → 해 없음).
+            # 맨 아래 구간(0원부터)에서는 q가 0보다 작아도 되게 여유 σ를 둔다
+            sig = M.var(f"sig[{B.sid}|{tset}]", 0, np.inf)
+            M.con({sig: 1.0, **{v: -qmax * c for v, c in ws[0][1].items()}}, hi=0)
+            lo_terms[sig] = 1.0
         M.con(lo_terms, lo=0)
         hi_terms = dict(qterms)
         for tier, wt, lo, hi in ws:
@@ -304,7 +320,8 @@ def _build_card(M, B, cats, S, A, BIGQ):
             for x in o["benefit_ids"]:
                 multi_opt_of[x] = ov
         M.con({**{v: 1 for v in ovars}, B.y: -g.get("choose", 1)}, lo=0, hi=0)
-    active = [b for b in rec["benefits"] if b["id"] not in in_opt or b["id"] in chosen1 or b["id"] in multi_opt_of]
+    active = [b for b in rec["benefits"] if (b["id"] not in in_opt or b["id"] in chosen1 or b["id"] in multi_opt_of)
+              and b.get("status", "auto") == "auto"]  # calc.usable과 같음: 사람 확인·계산 제외 혜택은 빼고
     for b in active:
         if b.get("counts_toward_performance") is False or (perf.get("excludes_discounted_spend") and b["reward"]["kind"] in ("discount", "cashback")):
             disc_benefits.append(b["id"])
@@ -331,16 +348,14 @@ def _build_card(M, B, cats, S, A, BIGQ):
 
     def scales_for(b):
         pool = base_active + [bb for bb in active if bb["id"] in opt_members.get(b["id"], set())]
+        import calc
         share_sum = defaultdict(float)
-        cat_count = defaultdict(int)
         for bb in pool:
             sc = bb["scope"]
             if sc["region"] != "overseas" and sc["specificity"] in ("brand", "merchant_group") and sc["app_category"]:
                 share_sum[sc["app_category"]] += _elig_share(sc, A)
-            if sc["region"] != "overseas" and sc["specificity"] == "category" and sc["app_category"]:
-                cat_count[sc["app_category"]] += 1
         return ({c: (1.0 / v if v > 1 else 1.0) for c, v in share_sum.items()},
-                {c: 1.0 / n for c, n in cat_count.items() if n > 1})
+                calc.category_scales(pool))  # 혜택 id별(채널별로 센 나눠 가짐 비율, calc와 같음)
     is_general = lambda b: b["scope"]["specificity"] == "all_merchants" and b["scope"].get("days", "any") == "any"
 
     def conv(b):
@@ -370,9 +385,9 @@ def _build_card(M, B, cats, S, A, BIGQ):
         share_scale, category_scale = scales_for(b)
         if sc["specificity"] in ("brand", "merchant_group"):
             scale = share_scale.get(c, 1.0)
-        elif sc["specificity"] == "category":
-            scale = category_scale.get(c, 1.0)
-        return share * scale * dshare
+        elif _splits_spend(b):
+            scale = category_scale.get(b["id"], 1.0)
+        return share * scale * dshare * _channel_share(sc, c, A)
 
     def coef(b, c, tier):
         """x_{c} 1원당 (혜택액, 대상지출), 횟수 제한 상한(원). 실제 금액은 지수분포 결제 모델을 그대로 씀."""
@@ -386,24 +401,31 @@ def _build_card(M, B, cats, S, A, BIGQ):
         k = conv(b)
         if B.whole or (c in A["single_txn_categories"] and A["single_txn_categories"].get(c)):
             # 카테고리를 나누지 않는 모드(x = S·z)와 한 달 1건 결제 카테고리: 카테고리 전액을 이 카드로 낼 때의 값을
-            # 계산기와 똑같이 구해 계수로 쓴다(횟수 제한·건당 조건까지 정확)
+            # 계산기와 똑같이 구해 계수로 쓴다(횟수 제한·건당 조건까지 정확).
+            # 여러 카테고리에 걸친 혜택의 횟수 제한은 카테고리끼리 나눠 쓰므로 여기서 자르지 않고 상한(climit)으로 넘긴다
             s_full = S[c] * f
+            multi = lim is not None and len(bcats(b)) > 1
+            climit = None
             if typ == "percent":
                 n, base, per = _txn_model(s_full, c, A, v, cond.get("min_txn_won"), cond.get("max_counted_txn_won"), cond.get("max_benefit_per_txn_won"))
-                kk = n if lim is None else min(n, lim)
+                kk = n if lim is None or multi else min(n, lim)
                 amt, el = per * kk, base * kk
+                climit = per * lim * k if multi else None
             elif typ in ("won_per_txn", "free_item"):
                 n, base, _ = _txn_model(s_full, c, A, None, cond.get("min_txn_won"))
-                kk = n if lim is None else min(n, lim)
+                kk = n if lim is None or multi else min(n, lim)
                 unit = v if typ == "won_per_txn" else v * A["item_prices"].get(rw.get("item_key"), 0)
                 amt, el = unit * kk, base * kk
+                climit = unit * lim * k if multi else None
             elif typ == "won_per_liter":
                 amt, el = s_full / A["fuel_price_won_per_liter"] * v, s_full
             elif typ == "per_unit_spend":
                 amt, el = s_full / rw["unit_spend_won"] * v, s_full
             else:
                 amt, el = 0.0, s_full
-            return (amt * k / S[c], el / S[c], None, typ)
+            if el / S[c] < 1e-6:
+                return (0.0, 0.0, None, typ)  # 아래 일반 경로와 같은 이유(너무 작은 계수)
+            return (amt * k / S[c], el / S[c], climit, typ)
         unit_s = 1.0e5  # 비례 계수를 뽑기 위한 기준 금액(결과는 지출에 비례)
         s1 = unit_s * f
         if s1 <= 0:
@@ -425,6 +447,10 @@ def _build_card(M, B, cats, S, A, BIGQ):
             a, e, climit = 0.0, f, None
         else:
             raise ValueError(typ)
+        if e < 1e-6:
+            # 지출 100만원당 대상 1원도 안 되는 계수(예: 건당 50만원 이상, 1294 → 1e-13)는 0으로: 너무 작은 계수가 big-M과 섞이면
+            # 솔버가 수치 오차로 '해 없음'을 낸다
+            return (0.0, 0.0, None, typ)
         return (a * k, e, (climit * k if climit is not None else None), typ)
 
     def skip(b):
@@ -480,6 +506,23 @@ def _build_card(M, B, cats, S, A, BIGQ):
         t[B.y] = t.get(B.y, 0) + len(gates) * Mbig - rhs
         M.con(t, lo=0)
 
+    def count_row(rows, b, tier, wt, var, climit, Mbig):
+        """횟수 제한 상한. 한 카테고리 혜택은 var ≤ climit, 여러 카테고리 혜택은 횟수를 나눠 쓰므로
+        Σ_c var_c / climit_c ≤ 1 (= Σ 카테고리별 횟수 ≤ 월 N회, calc.py와 같음)로 모아 둔다"""
+        if len(bcats(b)) <= 1:
+            gle({var: 1.0}, [wt], climit, Mbig)
+            return
+        if climit <= 0:
+            gle({var: 1.0}, [wt], 0.0, Mbig)
+            return
+        _, terms, mb = rows.get(tier, (wt, {}, 0.0))
+        terms[var] = 1.0 / climit
+        rows[tier] = (wt, terms, mb + Mbig / climit)
+
+    def close_count_rows(rows):
+        for tier, (wt, terms, mb) in rows.items():
+            gle(terms, [wt], 1.0, mb + 1)
+
     def states_of(b):
         tset = (b.get("conditions") or {}).get("tier_set", "card")
         return tset, B.W[tset]
@@ -534,6 +577,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 for (tier, wt, lo, hi) in card_states:
                     elig_coef[(b["id"], tier, c)] = factors(b, c) if (tset != "card" or tier is not None) else 0.0
         else:
+            cnt_rows = {}
             for c in bcats(b):
                 cs_by = {}
                 for (tier, wt, lo, hi) in sts:
@@ -548,7 +592,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 for (tier, wt, lo, hi) in sts:
                     cs = cs_by.get(tier)
                     if cs and cs[2] is not None:
-                        gle({var: 1.0}, [wt], cs[2], Mbig)
+                        count_row(cnt_rows, b, tier, wt, var, cs[2], Mbig)
                     if cs and cs[0] > 0 and cs[1] > 0:
                         B.rho[(b["id"], tier, c)] = cs[0] / cs[1]
                 terms_total[var] = 1.0
@@ -560,6 +604,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                         # 카드 구간과 다른 구간표를 쓰는 혜택: 가장 높은 상태에서 열려 있으면 받은 것으로 근사
                         cs = cs_by.get(sts[-1][0])
                     elig_coef[(b["id"], ctier, c)] = cs[1] if (cs and cs[0] > 0) else 0.0
+            close_count_rows(cnt_rows)
         gate = gate_terms(b)
         if gate is not None:
             M.con({**terms_total, gate: -(_ub(b) + 1)}, hi=0)
@@ -572,7 +617,8 @@ def _build_card(M, B, cats, S, A, BIGQ):
     if B.multi:
         by_cat = defaultdict(list)
         for b in specific:
-            if b["scope"]["specificity"] in ("category", "brand", "merchant_group") and b["reward"]["type"] != "won_per_period":
+            if (_splits_spend(b) or b["scope"]["specificity"] in ("brand", "merchant_group")) and b["reward"]["type"] != "won_per_period":
+                # 겹쳐 받는(stacks) 업종 혜택은 같은 지출에 더해 주므로 넣지 않는다(calc의 나눠 가짐과 같은 기준, 108)
                 by_cat[(b["scope"]["app_category"], b["scope"]["specificity"] == "category")].append(b)
         for (c, is_cat), bl in by_cat.items():
             if c not in cats or len(bl) < 2 or not any(b["id"] in multi_opt_of for b in bl):
@@ -588,7 +634,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                         continue
                     sc1, cc1 = scales_for(b)
                     if is_cat:
-                        unscaled, share_b = cs[0] / cc1.get(c, 1.0), 1.0
+                        unscaled, share_b = cs[0] / cc1.get(b["id"], 1.0), 1.0
                     else:
                         unscaled, share_b = cs[0] / sc1.get(c, 1.0), _elig_share(b["scope"], A)
                     terms[var] = terms.get(var, 0) + share_b / unscaled
@@ -630,6 +676,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
             B.aper[b["id"]] = av
             terms_total[av] = 1.0
         else:
+            cnt_rows = {}
             for c in bcats(b):
                 cs_by = {}
                 for (tier, wt, lo, hi) in sts:
@@ -648,7 +695,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                         gle({var: 1.0}, [wt], 0.0, Mbig)
                         continue
                     if cs[2] is not None:
-                        gle({var: 1.0}, [wt], cs[2], Mbig)
+                        count_row(cnt_rows, b, tier, wt, var, cs[2], Mbig)
                     for (ctier, cwt, _, _) in card_states:
                         frac = cov_frac(ctier, c, b) if exclusive else 1.0
                         terms = {var: 1.0, B.x[c]: -cs[0] * frac}
@@ -659,6 +706,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                         else:
                             gle(terms, [wt, cwt], 0.0, Mbig)
                 terms_total[var] = 1.0
+            close_count_rows(cnt_rows)
         gate = gate_terms(b)
         if gate is not None:
             M.con({**terms_total, gate: -(_ub(b) + 1)}, hi=0)
@@ -743,7 +791,10 @@ def _build_card(M, B, cats, S, A, BIGQ):
     # --- 할인받은 결제의 실적 제외 ---
     # 계산기: 빠지는 금액 = Σ 대상지출 × (실제 혜택 / 한도 전 혜택). MILP가 혜택을 일부러 덜 받아 실적을 맞추는 일을
     # 막기 위해, 혜택 변수와 무관한 보수적 추정을 쓴다:
-    #   묶음(공유 한도 또는 혜택 하나)마다 min(대상지출 합, 한도 ÷ 최소 혜택률)  → 실제 빠지는 금액 이상
+    #   묶음(공유 한도 또는 혜택 하나)마다 min(대상지출 합, 한도 ÷ 평균 혜택률)
+    #   평균 혜택률 = 이 카드로 전 지출을 낼 때의 Σ혜택 ÷ Σ대상지출(계산기가 한도에 걸린 비율로 빼는 것과 같은 값).
+    #   예전에는 '최소 혜택률'로 나눠 건당 한도가 걸린 카테고리(백화점 등 3%대) 때문에 빠지는 금액이 지출 전체만큼 커져
+    #   위 구간이 아예 불가능해졌다(3097: 한도 1.8만 ÷ 3% = 60만 → 계산기 2.2만원을 MILP는 6천원으로 봄)
     # 그래서 이 카드들은 MILP가 실적을 조금 낮게 볼 수 있다(혜택을 과대평가하지는 않는 쪽).
     if B.d is not None:
         Mbig = sum(S.values()) * 2 + 10
@@ -768,7 +819,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
             for key, members in groups_.items():
                 L1 = {}
                 L1s = {}
-                rhos = []
+                rhos = []  # (혜택 계수 x 지출, 대상지출 계수 x 지출)
                 own_caps_m = []
                 for b in members:
                     tset = (b.get("conditions") or {}).get("tier_set", "card")
@@ -789,7 +840,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                             continue
                         L1[B.x[c]] = L1.get(B.x[c], 0) + cs[1]
                         if cs[0] > 0:
-                            rhos.append(cs[0] / cs[1])
+                            rhos.append((cs[0] * S[c], cs[1] * S[c]))
                     if key[0] == "own":
                         for cp in b.get("caps", []):
                             if cp.get("basis", "benefit") == "benefit":
@@ -802,7 +853,9 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 g = M.var(f"g[{B.sid}|{ctier}|{key[1]}]", 0)
                 g_all.append(g)
                 if capm is not None and rhos:
-                    L2 = capm / min(rhos)
+                    # 빠지는 금액은 총지출을 넘을 수 없다. 혜택률이 아주 낮으면(1294: 0.6%) 한도 ÷ 혜택률이 big-M보다 커져
+                    # 모든 경우가 불가능(해 없음)해지므로 총지출로 자른다
+                    L2 = min(capm / (sum(a for a, _ in rhos) / sum(e for _, e in rhos)), sum(S.values()))
                     dl = M.var(f"dl[{B.sid}|{ctier}|{key[1]}]", 0, 1, True)
                     M.con({dl: 1, B.y: -1}, hi=0)
                     # g ≥ L1 − M·δ,  g ≥ L2 − M(1−δ)  (구간 상태 W가 켜졌을 때)

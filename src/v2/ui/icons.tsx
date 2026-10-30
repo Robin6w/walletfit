@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-import { Building2, Car, Dumbbell, Film, Flag, GraduationCap, Globe, PawPrint, Store } from "lucide-react";
+import { Bike, BookOpen, Building2, Car, Dumbbell, Film, Flag, GraduationCap, Globe, Package, PawPrint, Plane, Receipt, Stethoscope, Store } from "lucide-react";
 
 /**
  * 카테고리 아이콘. 디자인(양준서 페이지)에 그려진 8개는 원본 도형과 색을 그대로 쓰고,
@@ -107,6 +107,12 @@ const CAT_ICONS: Record<string, CatIcon> = {
   beautyFitness: { bg: "#E6F1FF", fg: "#2F7FF0", lucide: Dumbbell },
   golf: { bg: "#E3F1FF", fg: "#1170D9", lucide: Flag },
   department: { bg: "#E8EEFF", fg: "#2457F5", lucide: Building2 },
+  delivery: { bg: "#E7EEFC", fg: "#3E6FD8", lucide: Bike },
+  travel: { bg: "#E3F1FF", fg: "#1170D9", lucide: Plane },
+  medical: { bg: "#E6F1FF", fg: "#2F7FF0", lucide: Stethoscope },
+  bills: { bg: "#EDF1F8", fg: "#4D5F88", lucide: Receipt },
+  books: { bg: "#E5EBFA", fg: "#1C3FAA", lucide: BookOpen },
+  household: { bg: "#ECEBFB", fg: "#4338CA", lucide: Package },
   etc: { bg: "#EDF1F8", fg: "#4D5F88", lucide: Store },
   overseas: { bg: "#E6EAF5", fg: "#0E1F5C", lucide: Globe },
   // 디자인의 '그 밖의 지출' 아이콘(점 세 개)

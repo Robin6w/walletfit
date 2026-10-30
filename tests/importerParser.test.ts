@@ -53,11 +53,11 @@ describe("parseTextLocally", () => {
     });
   });
 
-  it("쿠팡이츠 배달 내역은 '쿠팡'이 아니라 외식으로 분류한다", () => {
+  it("쿠팡이츠 배달 내역은 '쿠팡'이 아니라 배달로 분류한다", () => {
     const text = "쿠팡이츠 결제 24,000원";
     const result = parseTextLocally(text);
     expect(result).toHaveLength(1);
-    expect(result[0].category).toBe("dining");
+    expect(result[0].category).toBe("delivery");
   });
 
   it("여러 행의 지출 텍스트를 동시에 처리할 수 있다", () => {
@@ -136,7 +136,7 @@ describe("parseTextLocally", () => {
       expect(result[0]).toEqual({ merchant: "GS25강남역점", amount: 4500, category: "convenience" });
       expect(result[1]).toEqual({ merchant: "스타벅스", amount: -5500, category: "cafe" });
       expect(result[2]).toEqual({ merchant: "쿠팡", amount: 42900, category: "onlineShopping" });
-      expect(result[3]).toEqual({ merchant: "배달의민족", amount: -24000, category: "dining" });
+      expect(result[3]).toEqual({ merchant: "배달의민족", amount: -24000, category: "delivery" });
     });
   });
 });

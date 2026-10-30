@@ -1,5 +1,6 @@
-import { lazy, Suspense, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import type { CatalogListing } from "@/domain/types/catalog";
+import type { CardViewEntry } from "@/domain/types/cardView";
 import type { RankRow } from "@/domain/types/engine";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
 import { KEYWORD_MAP } from "@/features/statement/importerParser";
@@ -8,13 +9,16 @@ import { useToast } from "@/shared/hooks/useToast";
 import { catalogCards, categories, catLabel, feeLabel, isDiscontinued, isUnread, isVerified, summaryChips } from "@/v1/catalog";
 import { approxWon, num } from "@/v1/format";
 import { useAppData } from "@/v2/app/AppData";
+import { useCardView } from "@/v2/app/cardView";
 import { compareStore, COMPARE_MAX, useCompare } from "@/v2/app/compareStore";
 import { useEngine } from "@/v2/app/engine";
 import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 import { useBrandPicks } from "@/v2/app/state";
 import { matchesCard } from "@/v2/model/cardSearch";
+import { benefitChips, matchedChip, matchesBenefit, perfText } from "@/v2/model/cardView";
 import { picksToBrandShare } from "@/v2/model/brands";
+import { CardDetailSheet } from "@/v2/ui/CardDetailSheet";
 import { CardImage } from "@/v2/ui/CardImage";
 import { CategoryGlyph } from "@/v2/ui/icons";
 import { PageMain } from "@/v2/ui/Page";
@@ -22,10 +26,8 @@ import { MenuBar } from "@/v2/ui/TopBar";
 
 /* 디자인 원본 F-D-Gallery(전체 카드) 값을 그대로 옮김. 카드 그림은 실물 사진 */
 
-const CardDetailModal = lazy(() => import("@/features/catalog/CardDetailModal").then((m) => ({ default: m.CardDetailModal })));
-
 const SHADOW = "0 1px 2px rgba(13, 40, 120, 0.05), 0 10px 28px rgba(13, 40, 120, 0.08)";
-const BENEFITS = ["cafe", "convenience", "transport", "mobile", "onlineShopping", "dining", "gas"];
+const BENEFITS = ["cafe", "convenience", "transport", "mobile", "onlineShopping", "dining", "delivery", "mart", "gas", "travel"];
 const SORTS = [
   { id: "fit", label: "내 지출에 유리한 순" },
   { id: "verified", label: "원문 확인 카드 먼저" },
@@ -70,8 +72,10 @@ const selectStyle: CSSProperties = { height: 44, padding: "0 12px", border: "1px
 const chip: CSSProperties = { padding: "3px 10px", borderRadius: 999, background: "#F3F7FF", border: "1px solid #E3EAF8", fontSize: 13, color: "#3A4A78" };
 const compareLabel: CSSProperties = { display: "flex", alignItems: "center", gap: 8, height: 44, boxSizing: "content-box", padding: "0 12px", borderRadius: 12, border: "1px solid #D3DDF2", fontSize: 14, color: "#0D1B4A", cursor: "pointer" };
 
-/** 혜택으로 찾기: 혜택 요약에 그 카테고리 낱말(스타벅스·커피·편의점 등)이 있거나 구간표가 있는 카드 */
-function hasBenefit(c: CatalogListing, cat: string): boolean {
+/** 혜택으로 찾기: 원문 정제 혜택 표에 그 카테고리 혜택(계산 제외 빼고)이 있는 카드.
+ *  혜택 표를 받기 전이거나 없는 카드는 혜택 요약에 그 카테고리 낱말(스타벅스·커피·편의점 등)이 있거나 구간표가 있는 카드 */
+function hasBenefit(c: CatalogListing, cat: string, view: CardViewEntry | undefined): boolean {
+  if (view) return view.b.some((b) => b.c === cat && b.st !== "no_calc");
   if (c.categoryTiers?.some((t) => t.category === cat)) return true;
   const text = (c.benefitSummary ?? "").toLowerCase();
   return (KEYWORD_MAP[cat] ?? []).some((k) => k.length >= 2 && text.includes(k.toLowerCase()));
@@ -121,6 +125,10 @@ export default function Cards() {
   const [showDisc, setShowDisc] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [detail, setDetail] = useState<CatalogListing | null>(null);
+  const closeDetail = useCallback(() => setDetail(null), []);
+  // 원문 정제 혜택 표 요약(혜택 칩·실적 조건·상세 창). 받는 동안은 카드고릴라 요약 칩을 보여 준다
+  const views = useCardView();
+  const viewOf = (sid: number) => views?.cards[String(sid)];
   const dq = useDebounce(q, 250);
   const owned = useMemo(() => new Set(myCards.ids), [myCards.ids]);
   const spend = useMemo(() => Object.fromEntries(Object.entries(spending).filter(([, v]) => v > 0)), [spending]);
@@ -134,10 +142,11 @@ export default function Cards() {
     let l = catalogCards;
     if (tab === "mine") l = l.filter((c) => owned.has(c.sourceId));
     else if (!showDisc) l = l.filter((c) => !isDiscontinued(c) || owned.has(c.sourceId));
-    if (dq.trim()) l = l.filter((c) => matchesCard(c, dq.trim()));
+    // 카드 이름·카드사·별명, 그리고 혜택 제목·가맹점('스타벅스')으로 찾는다
+    if (dq.trim()) l = l.filter((c) => matchesCard(c, dq.trim()) || matchesBenefit(views?.cards[String(c.sourceId)], dq.trim()));
     if (kind !== "all") l = l.filter((c) => c.category === kind);
     if (issuer) l = l.filter((c) => c.issuer === issuer);
-    if (benefit) l = l.filter((c) => hasBenefit(c, benefit));
+    if (benefit) l = l.filter((c) => hasBenefit(c, benefit, views?.cards[String(c.sourceId)]));
     const out = [...l];
     if (sort === "feeLow") out.sort((a, b) => (a.annualFee ?? 0) - (b.annualFee ?? 0));
     else if (sort === "feeHigh") out.sort((a, b) => (b.annualFee ?? 0) - (a.annualFee ?? 0));
@@ -146,7 +155,7 @@ export default function Cards() {
     // 원문 확인 카드 먼저(지출이 없을 때의 '유리한 순'도 같은 순서): 혜택 표를 원문과 대조한 카드 → 나머지, 각각 최신순
     else out.sort((a, b) => Number(isVerified(b)) - Number(isVerified(a)) || b.sourceId - a.sourceId);
     return out;
-  }, [tab, owned, showDisc, dq, kind, issuer, benefit, sort, netBy]);
+  }, [tab, owned, showDisc, dq, kind, issuer, benefit, sort, netBy, views]);
 
   const sortLabel =
     sort === "fit" && !hasSpend
@@ -230,7 +239,7 @@ export default function Cards() {
                 id="g-search"
                 type="search"
                 value={q}
-                placeholder="카드 이름, 카드사, 별명으로 찾기"
+                placeholder="카드 이름, 카드사, 혜택(스타벅스 등)으로 찾기"
                 onChange={(e) => {
                   setQ(e.target.value);
                   reset();
@@ -340,8 +349,21 @@ export default function Cards() {
               const mine = owned.has(c.sourceId);
               const disc = isDiscontinued(c);
               const inCompare = compare.includes(c.sourceId);
+              const v = viewOf(c.sourceId);
+              const vChips = v ? benefitChips(v, 3, benefit || undefined) : [];
+              // 정리된 혜택이 없거나 크기를 못 읽은 카드는 카드고릴라 요약 칩으로
+              const chips = vChips.length ? vChips : summaryChips(c);
+              // 혜택으로 찾았으면 걸린 혜택을 맨 앞에 강조해서 보여 준다(이름으로 찾은 카드는 그대로)
+              const hit = dq.trim() && !matchesCard(c, dq.trim()) ? matchedChip(v, dq.trim()) : null;
               return (
-                <article key={c.sourceId} style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                <article
+                  key={c.sourceId}
+                  // 카드 칸 어디를 눌러도 상세 창이 열린다(담기·비교 버튼은 제외). 키보드는 카드 이름 버튼으로
+                  onClick={(e) => {
+                    if (!(e.target as HTMLElement).closest("button, a, label, input")) setDetail(c);
+                  }}
+                  style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 20, display: "flex", flexDirection: "column", gap: 14, cursor: "pointer" }}
+                >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                     <CardImage sid={c.sourceId} width={128} />
                     {mine ? (
@@ -358,15 +380,18 @@ export default function Cards() {
                     </h3>
                     <div style={{ marginTop: 2, fontSize: 13, color: "#5E6D96" }}>
                       {c.issuer} · {c.category} · {c.annualFee ? `연회비 ${num(c.annualFee)}원` : feeLabel(c)}
+                      {v && ` · ${perfText(v)}`}
                     </div>
                     {showNet && <NetLine sid={c.sourceId} net={netBy.get(c.sourceId)} verified={isVerified(c)} />}
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {summaryChips(c).map((s, i) => (
+                    {hit && <span style={{ ...chip, background: "#E8EEFF", border: "1px solid #C9D6F5", color: "#1747D6", fontWeight: 700 }}>{hit}</span>}
+                    {chips.slice(0, hit ? 2 : 3).map((s, i) => (
                       <span key={`${i}-${s}`} style={chip}>
                         {s}
                       </span>
                     ))}
+                    {v && vChips.length > 0 && v.b.length > chips.length && <span style={{ ...chip, background: "transparent", border: "none", color: "#2457F5", fontWeight: 700 }}>혜택 {v.b.length}개 보기</span>}
                   </div>
                   <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 8 }}>
                     {disc && !mine ? (
@@ -443,9 +468,18 @@ export default function Cards() {
         )}
       </PageMain>
       {detail && (
-        <Suspense fallback={null}>
-          <CardDetailModal entry={detail} onClose={() => setDetail(null)} inMyCards={owned.has(detail.sourceId)} onToggleMyCards={(e) => myCards.toggle(e.sourceId)} />
-        </Suspense>
+        <CardDetailSheet
+          entry={detail}
+          view={viewOf(detail.sourceId)}
+          loading={!views}
+          mine={owned.has(detail.sourceId)}
+          discontinued={isDiscontinued(detail)}
+          inCompare={compare.includes(detail.sourceId)}
+          net={showNet ? netBy.get(detail.sourceId) : undefined}
+          onToggleMine={() => myCards.toggle(detail.sourceId)}
+          onToggleCompare={() => toggleCompare(detail.sourceId)}
+          onClose={closeDetail}
+        />
       )}
     </>
   );

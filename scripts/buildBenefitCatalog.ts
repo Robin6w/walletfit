@@ -19,6 +19,7 @@ import path from "node:path";
 import { toWalletCard } from "../src/domain/engine/cardConverter";
 import type { CatalogListing } from "../src/domain/types/catalog";
 import { autoRecord } from "./autoRecord";
+import { buildCardView } from "./buildCardView";
 import { summaryRecord, type SummaryLabel } from "./summaryRecord";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -121,6 +122,8 @@ function main() {
     cards,
   };
   writeFileSync(OUT, JSON.stringify(out));
+  // 전체 카드 화면·카드 상세 창용 요약(혜택 표를 화면에서 통째로 읽지 않으려고 따로 둔다)
+  writeFileSync(path.join(ROOT, "data/catalog/card-view.json"), JSON.stringify(buildCardView(cards, out.generatedAt)));
   // 화면이 '검수한 카드'를 가려낼 때 쓰는 작은 목록(혜택 표 3MB를 화면에서 읽지 않으려고 따로 둔다)
   const verified = Object.fromEntries(cards.filter((c) => c.status !== "auto").map((c) => [String(c.sid), c.status]));
   // 자동 변환에서 혜택을 하나도 못 읽은 카드: 화면이 0원 대신 '혜택 정보 없음'으로 보여준다

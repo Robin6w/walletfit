@@ -162,6 +162,9 @@ const CAT_SHORT: Record<string, string> = {
   education: "교육",
   beautyFitness: "뷰티",
   department: "백화점",
+  travel: "여행",
+  medical: "병원·약국",
+  household: "생활용품",
   etc: "그 밖의 결제",
 };
 export function catShort(cat: string): string {

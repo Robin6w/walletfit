@@ -14,5 +14,11 @@
   { "id": "beautyFitness", "label": "뷰티/피트니스" },
   { "id": "golf", "label": "골프" },
   { "id": "department", "label": "백화점/의류" },
+  { "id": "delivery", "label": "배달" },
+  { "id": "travel", "label": "여행/숙박" },
+  { "id": "medical", "label": "병원/약국" },
+  { "id": "bills", "label": "생활요금" },
+  { "id": "books", "label": "도서" },
+  { "id": "household", "label": "생활용품" },
   { "id": "etc", "label": "그 외 일반가맹점" }
 ]

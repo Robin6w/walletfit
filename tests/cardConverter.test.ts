@@ -249,7 +249,7 @@ describe("toWalletCard", () => {
     expect(cafeBenefit?.rate).toBeCloseTo(0.2);
   });
 
-  it("쿠팡이츠처럼 온라인쇼핑 키워드 '쿠팡'을 통째로 포함하는 외식 혜택을 온라인쇼핑으로 잘못 분류하지 않는다", () => {
+  it("쿠팡이츠처럼 온라인쇼핑 키워드 '쿠팡'을 통째로 포함하는 배달 혜택을 온라인쇼핑으로 잘못 분류하지 않는다", () => {
     const entry: CatalogListing = {
       sourceId: 112,
       sourceUrl: "http://example.com/112",
@@ -263,7 +263,7 @@ describe("toWalletCard", () => {
     const card = toWalletCard(entry);
     const benefits = card.tiers[0].benefits;
 
-    expect(benefits.find((b) => b.category === "dining")).toBeDefined();
+    expect(benefits.find((b) => b.category === "delivery")).toBeDefined(); // 10-30부터 배달 앱은 외식이 아니라 배달
     expect(benefits.find((b) => b.category === "onlineShopping")).toBeUndefined();
   });
 

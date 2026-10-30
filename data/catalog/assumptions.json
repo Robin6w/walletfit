@@ -29,6 +29,12 @@
     "beautyFitness": 30000,
     "golf": 100000,
     "department": 80000,
+    "delivery": 25000,
+    "travel": 150000,
+    "medical": 30000,
+    "bills": 60000,
+    "books": 20000,
+    "household": 15000,
     "etc": 25000
   },
   "single_txn_categories": {

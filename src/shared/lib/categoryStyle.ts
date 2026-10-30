@@ -14,6 +14,12 @@ import {
   Dumbbell,
   Flag,
   Building2,
+  Bike,
+  Plane,
+  Stethoscope,
+  Receipt,
+  BookOpen,
+  Package,
   MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
@@ -39,6 +45,12 @@ const CATEGORY_COLOR_BY_ID: Record<string, string> = {
   beautyFitness: "#b5651d",
   golf: "#0f766e",
   department: "#be185d",
+  delivery: "#b5651d",
+  travel: "#0f766e",
+  medical: "#be185d",
+  bills: "#4b5aa8",
+  books: "#b5651d",
+  household: "#0f766e",
   etc: "#4b5aa8",
 };
 
@@ -58,6 +70,12 @@ const CATEGORY_ICON_BY_ID: Record<string, LucideIcon> = {
   beautyFitness: Dumbbell,
   golf: Flag,
   department: Building2,
+  delivery: Bike,
+  travel: Plane,
+  medical: Stethoscope,
+  bills: Receipt,
+  books: BookOpen,
+  household: Package,
   etc: MoreHorizontal,
 };
 

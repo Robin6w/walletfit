@@ -31,7 +31,9 @@ export interface Conditions {
 }
 
 const COND_KEY = "walletfit:v2:conditions";
-const DEFAULT_COND: Conditions = { mode: "maxBenefit", maxCards: 5, feeCap: null, excludedIssuers: [], kinds: ["credit", "check"], pinned: [] };
+// 기본 최대 3장(2026-10-30): 지출 20가지 측정에서 4장 이상이 이득인 경우는 적고(+1~3%), 4~5장 계산은 오래 걸려
+// 결과 화면의 '4~5장 조합도 찾아보기'로 따로 연다
+const DEFAULT_COND: Conditions = { mode: "maxBenefit", maxCards: 3, feeCap: null, excludedIssuers: [], kinds: ["credit", "check"], pinned: [] };
 let cond: Conditions = { ...DEFAULT_COND, ...readSession<Partial<Conditions>>(COND_KEY, {}) };
 if (!Array.isArray(cond.pinned)) cond = { ...cond, pinned: [] };
 const condListeners = new Set<() => void>();

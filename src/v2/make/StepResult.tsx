@@ -3,7 +3,7 @@ import type { EnginePack, RecommendResponse } from "@/domain/types/engine";
 import { CardDetailModal } from "@/features/catalog/CardDetailModal";
 import { catalogBySourceId } from "@/v1/catalog";
 import { useToast } from "@/shared/hooks/useToast";
-import { useEngine } from "@/v2/app/engine";
+import { useEngine, useEngineProgressive } from "@/v2/app/engine";
 import { useEngineState } from "@/domain/engine/walletEngine";
 import { useAppData } from "@/v2/app/AppData";
 import { paths, type Flow } from "@/v2/app/paths";
@@ -99,6 +99,8 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const [proof, setProof] = useState<number | null>(null);
   const [issueSid, setIssueSid] = useState<number | null>(null);
   const [retry, setRetry] = useState(0);
+  // '4~5장 조합도 찾아보기'를 눌렀는지. 누르면 빠른 결과를 3장까지로 잡아(엔진이 앞 결과에 이어 풀어 바로 나온다) 2장으로 되돌아가 보이지 않게 한다
+  const [expanded, setExpanded] = useState(false);
 
   const viaStatement = source === "statement" && !!inp.statement;
   const effSource: "manual" | "statement" = viaStatement ? "statement" : "manual";
@@ -122,7 +124,10 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const pinArgs = pinned.length ? { fixed: pinned, maxCards: Math.max(c.maxCards, pinned.length) } : {};
   const newArgs = flow === "new" && inp.total && inp.newTypes.length && newIds.length ? { ids: newIds, margin, withAlt: false, ...common, ...pinArgs, ...extra } : null;
 
-  const recOwn = useEngine<RecommendResponse>("recommend", ownArgs);
+  // 점진적 결과: 2장까지 빠른 계산을 먼저 보여 주고 3장 이상은 이어서 계산한다(3장 이상은 장수마다 최대 8초)
+  const quickK = expanded ? 3 : 2;
+  const quickOf = (a: { maxCards: number } | null) => (a && a.maxCards > quickK ? { ...a, kLimit: quickK } : null);
+  const recOwn = useEngineProgressive<RecommendResponse>("recommend", ownArgs, quickOf(ownArgs));
   const base = recOwn.data && !recOwn.data.empty ? recOwn.data : null;
   const rec0Args = noMargin && ownArgs ? { ...ownArgs, margin: 0, withAlt: false } : null;
   const rec0 = useEngine<RecommendResponse>("recommend", rec0Args);
@@ -133,7 +138,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const altEx = useEngine<Explain>("explain", altArgs);
   const baseExArgs = noMargin && base ? { ids: base.result.sids, spending, margin: 0, brandShare, ...extra } : null;
   const baseEx = useEngine<Explain>("explain", baseExArgs);
-  const recNew = useEngine<RecommendResponse>("recommend", newArgs);
+  const recNew = useEngineProgressive<RecommendResponse>("recommend", newArgs, quickOf(newArgs));
 
   // 화면에 그릴 결과(보호 장치 적용). 계산이 끝나지 않았으면 null
   const view: View | null = useMemo(() => {
@@ -153,6 +158,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow, noMargin, base, rec0.data, rec0.error, altQ.data, altQ.error, altEx.data, altEx.error, baseEx.data, baseEx.error, recNew.data, recOwn.error, inp.owned, pinned.join(",")]);
 
+  const refining = (flow === "new" ? recNew.refining : recOwn.refining) && !noMargin;
   const busy = recOwn.isComputing || rec0.isComputing || altQ.isComputing || altEx.isComputing || baseEx.isComputing || recNew.isComputing;
   const error = (flow === "own" ? recOwn.error ?? rec0.error : recNew.error ?? recOwn.error) ?? null;
   const effMargin = noMargin ? 0 : margin;
@@ -195,7 +201,8 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   };
 
   const save = (stay: boolean) => {
-    if (!view) return;
+    // 3장 이상 조합을 찾는 중에는 저장하지 않는다(빠른 2장 결과를 저장하면 더 좋은 조합을 놓친다)
+    if (!view || refining) return;
     const todos = todoList(view.pack, view.newSids).map((t) => ({ ...t, done: wallet?.todos.find((x) => x.id === t.id)?.done ?? false }));
     const w: SavedWalletV2 = {
       savedAt: new Date().toISOString(),
@@ -226,7 +233,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const backTo = viaStatement ? paths.make(flow, "statement") : paths.make(flow, "spend");
   const backLabel = viaStatement ? "← 명세서 다시 올리기" : "← 지출 다시 입력";
   const resultQ = (q: Record<string, string | number | undefined>) => paths.make(flow, "result", { from: viaStatement ? "statement" : undefined, ...q });
-  const saveLabel = noMargin ? "이 조합으로 내 지갑에 저장" : "내 지갑에 저장";
+  const saveLabel = refining ? "더 좋은 조합을 찾는 중…" : noMargin ? "이 조합으로 내 지갑에 저장" : "내 지갑에 저장";
   // 소득으로 채운 지출의 카드 수: 결과 화면 추천과 같은 카드·조건·브랜드 비중으로 계산한다
   const calcIds = flow === "own" ? inp.ownIds : newIds;
   const countArgs = calcIds.length
@@ -313,6 +320,12 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const todos = todoList(pack, newSids);
   const perf = perfVM(pack);
   const barV = barVM(bar, pack);
+  // 기본은 3장까지만 계산한다(2026-10-30). 엔진이 '더 넣으면 늘 만한 카드가 있음'이라고 하면 4~5장도 찾아보게 한다
+  const moreCards = !refining && !busy && !!shown.rec.moreCards && c.maxCards < 5;
+  const findMore = () => {
+    setExpanded(true);
+    inp.setConditions({ maxCards: 5 });
+  };
   const used = usedValuesVM(pack, ctx);
   const nm = noMargin && shown.base ? noMarginVM(shown.base, pack, margin) : null;
   const proofCard = proof !== null ? pack.cards.find((x) => x.sid === proof) : undefined;
@@ -320,6 +333,12 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
 
   return (
     <>
+      {!busy && refining && (
+        <div role="status" style={{ position: "sticky", top: 96, zIndex: 15, alignSelf: "center", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 999, background: "#FFFFFF", boxShadow: SHADOW, fontSize: 14, color: "#3A4A78" }}>
+          <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-[#2457F5] border-t-transparent" />
+          {quickK}장까지 본 결과예요. {quickK + 1}장 이상 조합을 더 찾고 있어요
+        </div>
+      )}
       {busy && (
         <div role="status" style={{ position: "sticky", top: 96, zIndex: 15, alignSelf: "center", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 999, background: "#FFFFFF", boxShadow: SHADOW, fontSize: 14, color: "#3A4A78" }}>
           <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-[#2457F5] border-t-transparent" />
@@ -335,12 +354,17 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "#3A4A78" }}>{hero.lead}</p>
             {hero.notice && <p style={{ margin: 0, padding: "10px 14px", borderRadius: 12, background: "#E8EEFF", fontSize: 14, fontWeight: 600, color: "#1747D6" }}>{hero.notice}</p>}
             <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <button type="button" onClick={() => save(false)} disabled={!view} style={primaryBtn}>
+              <button type="button" onClick={() => save(false)} disabled={!view || refining} style={primaryBtn}>
                 {saveLabel}
               </button>
               <button type="button" onClick={scrollToMore} style={outlineBtn}>
                 계산 자세히 보기
               </button>
+              {moreCards && (
+                <button type="button" onClick={findMore} style={outlineBtn}>
+                  4~5장 조합도 찾아보기
+                </button>
+              )}
             </div>
           </div>
           <HeroCardStack sids={hero.sids} newSids={newSids} />
@@ -462,7 +486,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             <button
               type="button"
               onClick={() => save(true)}
-              disabled={!view}
+              disabled={!view || refining}
               style={{ height: 44, padding: "0 16px", borderRadius: 22, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}
             >
               할 일 저장
@@ -494,6 +518,22 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             <>
               <br />
               {barV.note}
+            </>
+          )}
+          {!barV.note && !refining && c.maxCards < 5 && (
+            <>
+              <br />
+              {shown.rec.moreCards
+                ? `지금은 최대 ${c.maxCards}장까지 계산했어요. 카드를 더 넣으면 혜택이 늘 수 있어요.`
+                : `${c.maxCards}장까지만 계산했어요.`}
+              {shown.rec.moreCards && (
+                <>
+                  {" "}
+                  <button type="button" onClick={findMore} style={{ padding: 0, border: 0, background: "none", font: "inherit", fontWeight: 700, color: "#2457F5", cursor: "pointer" }}>
+                    4~5장 조합도 찾아보기
+                  </button>
+                </>
+              )}
             </>
           )}
         </DetailsItem>
@@ -537,7 +577,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         <Link to={backTo} style={{ display: "flex", alignItems: "center", height: 44, fontSize: 15, fontWeight: 500, color: "#3A4A78", textDecoration: "none" }}>
           {backLabel}
         </Link>
-        <button type="button" onClick={() => save(false)} disabled={!view} style={{ ...primaryBtn, height: 52, padding: "0 28px", borderRadius: 26, fontSize: 16 }}>
+        <button type="button" onClick={() => save(false)} disabled={!view || refining} style={{ ...primaryBtn, height: 52, padding: "0 28px", borderRadius: 26, fontSize: 16 }}>
           {saveLabel}
         </button>
       </div>

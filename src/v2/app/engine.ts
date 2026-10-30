@@ -84,6 +84,61 @@ export interface EngineState<T> {
   error: string | null;
 }
 
+export interface ProgressiveState<T> extends EngineState<T> {
+  /** 빠른 결과를 보여 주면서 전체 계산을 하는 중 */
+  refining: boolean;
+}
+
+/**
+ * 점진적 결과(2026-10-30): 전체 결과가 저장돼 있지 않으면 quickArgs(장수를 줄인 빠른 계산)를 먼저 보여 주고,
+ * 이어서 전체(args)를 계산해 바꾼다. 3장 이상 계산이 20초 넘게 걸려도 몇 초 안에 첫 결과가 나온다.
+ * 전체 계산이 실패하면 빠른 결과를 그대로 둔다.
+ */
+export function useEngineProgressive<T extends { ok: boolean; error?: string }>(
+  fn: EngineFn,
+  args: unknown | null,
+  quickArgs: unknown | null,
+): ProgressiveState<T> {
+  const key = args === null ? "" : keyOf(fn, args);
+  const [state, setState] = useState<ProgressiveState<T>>(() => {
+    const hit = args === null ? null : peekEngine<T>(fn, args);
+    const quick = hit || quickArgs === null ? null : peekEngine<T>(fn, quickArgs);
+    const data = hit ?? quick;
+    return { data, lastGood: data, isComputing: args !== null && !data, error: null, refining: !hit && !!quick };
+  });
+  const gen = useRef(0);
+  useEffect(() => {
+    const mine = ++gen.current;
+    if (args === null) {
+      setState((s) => ({ ...s, data: null, isComputing: false, error: null, refining: false }));
+      return;
+    }
+    const hit = peekEngine<T>(fn, args);
+    if (hit) {
+      setState({ data: hit, lastGood: hit, isComputing: false, error: null, refining: false });
+      return;
+    }
+    let fullDone = false;
+    setState((s) => ({ ...s, data: null, isComputing: true, error: null, refining: false }));
+    if (quickArgs !== null) {
+      cachedEngineCall<T>(fn, quickArgs).then((res) => {
+        if (gen.current !== mine || fullDone || !res || !res.ok) return;
+        setState({ data: res, lastGood: res, isComputing: false, error: null, refining: true });
+      });
+    }
+    cachedEngineCall<T>(fn, args).then((res) => {
+      fullDone = true;
+      if (gen.current !== mine) return;
+      if (!res || !res.ok)
+        setState((s) => (s.data ? { ...s, isComputing: false, refining: false } : { ...s, isComputing: false, refining: false, error: res?.error ?? "계산하지 못했어요" }));
+      else setState({ data: res, lastGood: res, isComputing: false, error: null, refining: false });
+    });
+    // key가 args 내용 전체를 담는다(quickArgs는 args에서 만든다)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fn, key]);
+  return state;
+}
+
 /** args가 null이면 계산하지 않는다. key가 바뀌면 다시 계산하고 마지막으로 시작한 계산만 반영한다 */
 export function useEngine<T extends { ok: boolean; error?: string }>(fn: EngineFn, args: unknown | null): EngineState<T> {
   const key = args === null ? "" : keyOf(fn, args);

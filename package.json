@@ -16,6 +16,7 @@
     "catalog:from-detail": "tsx scripts/buildCatalogFromDetail.ts",
     "build:catalog": "tsx scripts/buildTieredCatalog.ts",
     "build:benefit": "tsx --tsconfig tsconfig.app.json scripts/buildBenefitCatalog.ts",
+    "build:cardview": "tsx --tsconfig tsconfig.app.json scripts/buildCardView.ts",
     "extract:azu": "node scripts/extractWithAzuLlm.mjs",
     "test:py": "cd 1_혜택정보구조화 && python tests/test_calc.py && cd .. && python scripts/testEngine.py"
   },

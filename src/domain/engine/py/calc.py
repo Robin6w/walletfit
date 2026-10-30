@@ -25,6 +25,45 @@ def _norm_m(s):
     return "".join((s or "").split()).lower()
 
 
+def usable(b):
+    """계산에 넣는 혜택인지. 사람 확인(review)·계산 제외(no_calc)는 빼고, 상태가 없는 예전 레코드는 넣는다"""
+    return b.get("status", "auto") == "auto"
+
+
+def channel_share(sc, cat, A):
+    """온라인·오프라인 한정 혜택의 대상 비중(카테고리 지출 중 그 채널 결제 비중). 가정값이 없으면 1(예전 동작)"""
+    ch = sc.get("channel") or "any"
+    on = (A.get("online_share") or {}).get(cat)
+    if ch == "any" or on is None:
+        return 1.0
+    return on if ch == "online" else 1.0 - on
+
+
+def splits_spend(b):
+    """같은 카테고리 '업종 전체' 혜택끼리 지출을 나눠 가지는지. 겹쳐 받는(stacks) 혜택은 같은 지출에 더해 주므로 나누지 않는다"""
+    sc = b["scope"]
+    return (sc["region"] != "overseas" and sc["specificity"] == "category" and bool(sc["app_category"])
+            and b.get("stacking", "exclusive") == "exclusive")
+
+
+def _chans(b):
+    ch = b["scope"].get("channel") or "any"
+    return ("online", "offline") if ch == "any" else (ch,)
+
+
+def category_scales(benefits):
+    """같은 카테고리 '업종 전체' 혜택끼리 지출을 나눠 가지는 비율. 온라인 한정과 오프라인 한정은 지출이 겹치지 않으므로
+    채널별로 센다('모든 채널' 혜택은 양쪽에 다 셈). 반환: {혜택 id: 비율(1 이하)}"""
+    cnt = {}
+    for b in benefits:
+        if splits_spend(b):
+            for ch in _chans(b):
+                k = (b["scope"]["app_category"], ch)
+                cnt[k] = cnt.get(k, 0) + 1
+    return {b["id"]: 1.0 / max(cnt[(b["scope"]["app_category"], ch)] for ch in _chans(b))
+            for b in benefits if splits_spend(b)}
+
+
 def _elig_share(sc, A):
     """브랜드·가맹점 묶음 혜택의 대상 비중. 사용자가 브랜드 비중을 입력했으면(user_brand_share) 그 값을 쓰고,
     입력이 없으면 기본 가정값(eligible_share_by_specificity)을 쓴다. 반환: (비중, 사용자 입력 여부)"""
@@ -181,22 +220,52 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
     lim = _count_limit(cond)
     exclusive_base = sc["specificity"] == "all_merchants" and rw["type"] in ("percent", "per_unit_spend", "won_per_liter") \
         and b.get("stacking", "exclusive") == "exclusive"
-    for cat in cats:
+    def _target(cat):
         scale = 1.0
         if sc["specificity"] in ("brand", "merchant_group"):
             scale = (share_scale or {}).get(cat, 1.0)
-        elif sc["specificity"] == "category":
-            scale = (category_scale or {}).get(cat, 1.0)
-            if scale < 1.0:
-                flags.add(f"{b['id']}: 같은 카테고리 업종 혜택 {round(1 / scale)}개가 지출을 나눠 가짐")
-        s = spending.get(cat, 0) * share * scale * day_share
+        elif splits_spend(b):
+            scale = (category_scale or {}).get(b["id"], 1.0)
+        s = spending.get(cat, 0) * share * scale * day_share * channel_share(sc, cat, A)
         if exclusive_base and covered:
             s = max(0.0, s - covered.get(cat, 0.0))
+        return s, scale
+
+    # 횟수 제한(월 N회)은 혜택 하나에 걸린다: 여러 카테고리에 걸친 혜택(모든 가맹점 등)은 N회를 카테고리끼리 나눠 쓴다.
+    # 건당 혜택이 큰 카테고리부터 채운다(MILP의 'Σ 카테고리별 횟수 ≤ N' 최적과 같음)
+    alloc = None
+    if lim is not None and rw["type"] in ("percent", "won_per_txn", "free_item") and len(cats) > 1:
+        cnt = {}
+        for cat in cats:
+            s, _ = _target(cat)
+            if s <= 0:
+                continue
+            if rw["type"] == "percent":
+                n, _, per = _txn_model(s, cat, A, v, cond.get("min_txn_won"), cond.get("max_counted_txn_won"), cond.get("max_benefit_per_txn_won"))
+            else:
+                n, _, _ = _txn_model(s, cat, A, None, cond.get("min_txn_won"))
+                per = 1.0
+            cnt[cat] = (n, per)
+        alloc, left = {}, lim
+        for cat, (n, per) in sorted(cnt.items(), key=lambda kv: -kv[1][1]):
+            alloc[cat] = min(n, left)
+            left -= alloc[cat]
+        if sum(n for n, _ in cnt.values()) > lim:
+            flags.add(f"{b['id']}: 월 {lim:g}회 제한을 카테고리끼리 나눠 씀")
+
+    for cat in cats:
+        s, scale = _target(cat)
+        if scale < 1.0 and splits_spend(b):
+            flags.add(f"{b['id']}: 같은 카테고리 업종 혜택 {round(1 / scale)}개가 지출을 나눠 가짐")
+        chs = channel_share(sc, cat, A)
+        if chs < 1.0:
+            flags.add(f"{b['id']}: {'온라인' if sc.get('channel') == 'online' else '오프라인'} 한정 → {cat} 지출의 {chs:.0%}만 대상으로 가정")
         if s <= 0:
             continue
         if log is not None and sc["specificity"] != "all_merchants":
             parts = [f"{cat} 지출 {spending.get(cat, 0):,.0f}원"]
             if share < 1: parts.append(f"대상 비중 {share:.0%}")
+            if chs < 1: parts.append(f"{sc.get('channel')} 비중 {chs:.0%}")
             if scale < 1: parts.append(f"나눠 가짐 {scale:.0%}")
             if day_share < 1: parts.append(f"요일·시간대 {day_share:.0%}")
             if exclusive_base and covered and covered.get(cat): parts.append(f"특정 혜택 받은 {covered[cat]:,.0f}원 제외")
@@ -204,11 +273,11 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         typ = rw["type"]
         if typ == "percent":
             n, base, per = _txn_model(s, cat, A, v, cond.get("min_txn_won"), cond.get("max_counted_txn_won"), cond.get("max_benefit_per_txn_won"))
-            k = n if lim is None else min(n, lim)
+            k = n if lim is None else alloc.get(cat, 0.0) if alloc is not None else min(n, lim)
             amt, elig = per * k, base * k
         elif typ in ("won_per_txn", "free_item"):
             n, base, _ = _txn_model(s, cat, A, None, cond.get("min_txn_won"))
-            k = n if lim is None else min(n, lim)
+            k = n if lim is None else alloc.get(cat, 0.0) if alloc is not None else min(n, lim)
             unit = v
             if typ == "free_item":
                 unit = v * A["item_prices"][rw["item_key"]]
@@ -322,7 +391,7 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
 
     in_options = {x for g in groups for o in g["options"] for x in o["benefit_ids"]}
     chosen = {x for g in groups for o in g["options"] if o["id"] in (option_ids or []) for x in o["benefit_ids"]}
-    active = [b for b in rec["benefits"] if b["id"] not in in_options or b["id"] in chosen]
+    active = [b for b in rec["benefits"] if (b["id"] not in in_options or b["id"] in chosen) and usable(b)]
 
     perf = rec["performance"]
     excl = set(perf.get("excluded_app_categories", []))
@@ -341,13 +410,8 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
             share_sum[sc["app_category"]] = share_sum.get(sc["app_category"], 0) + _elig_share(sc, A)[0]
     share_scale = {c: (1.0 / v if v > 1 else 1.0) for c, v in share_sum.items()}
     # 같은 카테고리에 '업종 전체' 혜택이 여러 개면(예: 버스·지하철 10% / 택시 10%를 따로 적은 경우)
-    # 같은 지출을 두 번 세지 않도록 나눠 가진다
-    cat_count = {}
-    for b in active:
-        sc = b["scope"]
-        if sc["region"] != "overseas" and sc["specificity"] == "category" and sc["app_category"]:
-            cat_count[sc["app_category"]] = cat_count.get(sc["app_category"], 0) + 1
-    category_scale = {c: 1.0 / n for c, n in cat_count.items() if n > 1}
+    # 같은 지출을 두 번 세지 않도록 나눠 가진다(겹쳐 받는 혜택은 빼고, 채널별로 센다)
+    category_scale = category_scales(active)
     is_general = lambda b: b["scope"]["specificity"] == "all_merchants" and b["scope"].get("days", "any") == "any"
     specific = [b for b in active if not is_general(b)]
     general = [b for b in active if is_general(b)]

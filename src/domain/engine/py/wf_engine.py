@@ -30,6 +30,13 @@ K3_TIME_LIMIT = 8
 # SAFETY_TIME_LIMIT은 아주 느린 기기에서 끝없이 기다리지 않게 하는 마지막 안전장치
 NODE_LIMIT = 0
 SAFETY_TIME_LIMIT = 60
+# 4~5장은 교체 탐색(2026-10-30): 후보 20장으로 4~5장 MILP를 풀면 8초 제한에 걸려 기기 속도마다 결과가 달랐다.
+# 앞 장수의 조합 + '넣으면 늘 만한' 후보 SWAP_ADD장만으로 작은 MILP를 SWAP_ROUNDS번 푼다(고정-최적화, 커널 서치와 같은 생각).
+# 문제가 작아 매번 끝까지 풀리므로 어느 기기에서나 같은 결과가 나온다
+MILP_MAX_K = 3
+SWAP_ADD = 10
+SWAP_POOL = 6
+SWAP_ROUNDS = 2
 
 STATE = {"records": {}, "status": {}, "A": None}
 _SEED = {}  # 점진적 결과: 빠른 계산(kLimit)의 후보와 장수별 결과. 전체 계산이 이어받는다
@@ -175,10 +182,13 @@ def _refine(ev, X, spending, budget_s=3.0):
     return best_X
 
 
-def _solve_k(recs_sel, spending, A, K, fee_cap=None, fixed=(), lb=None, time_limit=10, node_limit=None):
+def _solve_k(recs_sel, spending, A, K, fee_cap=None, fixed=(), lb=None, time_limit=10, node_limit=None, status=None):
+    """status에 list를 주면 MILP 상태(1 = 시간 제한에 걸림)를 넣어 준다"""
     split = len(recs_sel) <= SPLIT_MAX_POOL
     res = milp.solve(recs_sel, spending, A, K=K, split=split, whole_cats=WHOLE_CATS, time_limit=time_limit,
                      lb=lb, fee_cap=fee_cap, fixed=fixed, node_limit=node_limit)
+    if status is not None:
+        status.append(res.get("status"))
     if not res.get("cards"):
         return None, res.get("objective")
     X = {c["sid"]: {k: float(v) for k, v in c["assign"].items() if v > 0.5} for c in res["cards"]}
@@ -238,9 +248,9 @@ def _shortlist(ids, spending, A, margin, fixed=(), rows=None):
     return keep[:SHORTLIST_MAX + len(fixed)]
 
 
-def _price_in(rows, X, pool, spending, n=PRICE_ADD):
-    """커널 서치의 '묶음 넣기'를 가볍게 한 것: 지금 조합에서 카테고리를 맡은 카드보다 그 카테고리 혜택이 큰 카드를
-    (더 받는 혜택 − 연회비)가 큰 순으로 n장 고른다. 후보에 없던 카드 중 조합을 낫게 할 만한 것만 MILP에 다시 넣는다."""
+def _gains(rows, X, skip, spending):
+    """지금 조합 X에서 카테고리를 맡은 카드보다 그 카테고리 혜택이 큰 카드의 (더 받는 혜택 − 연회비)를 큰 순으로.
+    카드 한 장에 전부 냈을 때 기준이라 어림값이다. skip에 든 카드는 뺀다."""
     by = {r[0]: r for r in rows}
     holder = {}
     for c in spending:
@@ -249,12 +259,47 @@ def _price_in(rows, X, pool, spending, n=PRICE_ADD):
             holder[c] = by[s][2].get(c, 0)
     gains = []
     for sid, net, bc, fee in rows:
-        if sid in pool:
+        if sid in skip:
             continue
         g = sum(max(0.0, bc.get(c, 0) - v) for c, v in holder.items()) - fee
         if g > PRICE_MIN_GAIN:
             gains.append((g, sid))
-    return [s for _, s in sorted(gains, reverse=True)[:n]]
+    return [s for _, s in sorted(gains, key=lambda x: (-x[0], x[1]))]
+
+
+def _price_in(rows, X, pool, spending, n=PRICE_ADD):
+    """커널 서치의 '묶음 넣기'를 가볍게 한 것: 후보에 없던 카드 중 조합을 낫게 할 만한 것 n장을 MILP에 다시 넣는다."""
+    return _gains(rows, X, set(pool), spending)[:n]
+
+
+def _swap_k(rows, pool, X_prev, K, spending, A, margin, fee_cap=None, fixed=(), lb=None, time_limit=10):
+    """K장 교체 탐색: K-1장 조합 + 넣어 볼 후보로 K장 MILP를 푼다. 작은 MILP 안에서 넣기·바꾸기(1장 빼고 2장 넣기 등)를 한 번에 본다.
+    후보는 먼저 어림 이득 상위 SWAP_ADD장(나아지면 그 조합에서 다시, SWAP_ROUNDS번까지), 더 나아지지 않으면 마지막으로
+    기존 후보 순혜택 상위 SWAP_POOL장. 한 카테고리를 두 카드에 나눠 한도를 채우는 조합은 어림 이득에 안 보여서다.
+    2026-10-30 지출 20가지: 둘 중 하나만 쓰면 어느 쪽이든 놓치는 조합이 있었다. 나아지지 않으면 None을 돌려준다."""
+    best_X, best_obj, tried = X_prev, lb, set()
+    net = {r[0]: r[1] for r in rows}
+    steps = ["gain"] * SWAP_ROUNDS + ["pool"]
+    i = 0
+    while i < len(steps):
+        base = [s for s in best_X if sum(best_X[s].values()) > 0.5]
+        if steps[i] == "gain":
+            cand = _gains(rows, best_X, tried | set(base), spending)[:SWAP_ADD]
+        else:
+            cand = [s for s in sorted(pool, key=lambda s: (-net.get(s, 0), s)) if s not in tried and s not in base][:SWAP_POOL]
+        i += 1
+        if not cand:
+            continue
+        tried |= set(cand)
+        sub = sorted(set(base) | set(cand) | set(fixed))
+        recs = {s: _raised(STATE["records"][s], margin) for s in sub}
+        X, obj = _solve_k(recs, spending, A, min(K, len(sub)), fee_cap=fee_cap, fixed=fixed, lb=best_obj, time_limit=time_limit)
+        if X is None or (best_obj is not None and obj is not None and obj <= best_obj + 1):
+            if steps[i - 1] == "gain":
+                i = steps.index("pool")  # 어림 이득으로는 더 안 늘면 기존 후보로 한 번
+            continue
+        best_X, best_obj = X, obj
+    return (None, lb) if best_X is X_prev else (best_X, best_obj)
 
 
 def _card_view(sid, alloc, A, margin, ev_total):
@@ -356,26 +401,33 @@ def recommend_json(payload_text):
         return json.dumps({"ok": True, "empty": True})
 
     # 점진적 결과(2026-10-30): 화면이 먼저 kLimit=2로 빨리(몇 초) 받아 보여 주고, 이어서 전체 장수를 계산해 바꾼다.
-    # 빠른 계산의 후보와 1~2장 결과를 남겨 두고 전체 계산은 3장부터 이어서 한다(같은 계산을 두 번 하지 않게)
+    # 앞선 계산의 후보와 장수별 결과를 남겨 두고 다음 계산은 그다음 장수부터 이어서 한다(같은 계산을 두 번 하지 않게).
+    # 장수 상한을 3 → 5로 올려 다시 부를 때도 4장부터 이어서 푼다
     k_limit = int(p["kLimit"]) if p.get("kLimit") else None
-    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare")], sort_keys=True)
-    seed = None if k_limit else _SEED.get(seed_key)
+    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), mode], sort_keys=True)
+    seed = _SEED.get(seed_key)
     if seed:
         rows, pool = seed["rows"], list(seed["pool"])
     else:
         rows = _score_rows(ids, spending, A, margin) if len(ids) > SHORTLIST else None
         pool = _shortlist(ids, spending, A, margin, fixed, rows=rows)
 
-    def run(pool, seed=None):
+    def run(pool, seed=None, save=True):
         recs_sel = {s: _raised(STATE["records"][s], margin) for s in pool}
         ev = Evaluator(recs_sel, A)
-        k_top = min(len(pool), max(MAX_BAR, max_cards))
+        # 2026-10-30: 예전엔 장수 상한과 관계없이 늘 5장까지 풀었다. 이제 상한까지만 풀고(기본 3장),
+        # 4~5장은 화면의 '4~5장 조합도 찾아보기'로 상한을 올려 다시 부를 때 앞 결과에 이어서 푼다
+        k_top = min(len(pool), max_cards)
         if k_limit:
             k_top = min(k_top, max(k_limit, len(fixed)))
         by_k, X_prev, obj_prev = {}, None, None
         k_start = max(1, len(fixed))
         if seed and seed["pool"] == pool:
-            by_k = copy.deepcopy(seed["by_k"])
+            by_k = copy.deepcopy({k: v for k, v in seed["by_k"].items() if k <= k_top})
+            for v in by_k.values():
+                for s in v["X"]:
+                    if s not in recs_sel:  # 교체 탐색이 후보 밖에서 넣은 카드
+                        recs_sel[s] = _raised(STATE["records"][s], margin)
             if seed["stopped"] or not by_k:
                 # 빠른 계산에서 이미 '한 장 더 넣어도 늘지 않음'으로 멈췄으면 전체도 같은 조합
                 last = max(by_k) if by_k else None
@@ -387,12 +439,28 @@ def recommend_json(payload_text):
             X_prev, obj_prev = copy.deepcopy(by_k[max(by_k)]["X"]), seed["obj"]
         stopped = False
         for K in range(k_start, k_top + 1):
-            if NODE_LIMIT:
+            swap = K > MILP_MAX_K and rows and X_prev is not None
+            if swap:
+                X, obj = _swap_k(rows, pool, X_prev, K, spending, A, margin, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
+                                 time_limit=time_limit)
+            elif NODE_LIMIT:
                 X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
                                   time_limit=SAFETY_TIME_LIMIT, node_limit=NODE_LIMIT)
             else:
+                st = []
                 X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
-                                  time_limit=time_limit if K <= 2 else min(time_limit, K3_TIME_LIMIT))
+                                  time_limit=time_limit if K <= 2 else min(time_limit, K3_TIME_LIMIT), status=st)
+                if st == [1] and K > 2 and rows and X_prev is not None:
+                    # 3장 MILP가 시간 제한에 걸리면(큰 지출·느린 기기) 교체 탐색 결과와 비교해 더 좋은 쪽을 쓴다.
+                    # 교체 탐색은 기기 속도와 관계없이 같은 결과라, 적어도 그만큼은 어느 기기에서나 나온다
+                    Xs, objs = _swap_k(rows, pool, X_prev, K, spending, A, margin, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
+                                       time_limit=time_limit)
+                    if Xs is not None and (obj is None or objs > obj + 1):
+                        X, obj, swap = Xs, objs, True
+            if swap and X is not None:
+                for s in X:
+                    if s not in recs_sel:
+                        recs_sel[s] = _raised(STATE["records"][s], margin)  # 후보 밖에서 넣은 카드. ev도 같은 dict를 본다
             if X is None:
                 if X_prev is None:
                     continue
@@ -407,7 +475,8 @@ def recommend_json(payload_text):
                 break
             by_k[K] = {"X": X, "netSel": net}
             X_prev, obj_prev = X, obj
-        if k_limit:
+        if save and (not seed or max(by_k, default=0) > max(seed["by_k"], default=0) or stopped):
+            _SEED.pop(seed_key, None)
             _SEED[seed_key] = {"rows": rows, "pool": list(pool), "stopped": stopped, "obj": obj_prev,
                                "by_k": copy.deepcopy({k: v for k, v in by_k.items() if not v.get("same")})}
             while len(_SEED) > 4:
@@ -420,7 +489,7 @@ def recommend_json(payload_text):
         best = max(by_k.values(), key=lambda v: v["netSel"])
         extra = _price_in(rows, best["X"], pool, spending)
         if extra:
-            by_k2, recs2, ev2 = run(pool + extra)
+            by_k2, recs2, ev2 = run(pool + extra, save=False)
             if by_k2 and max(v["netSel"] for v in by_k2.values()) > best["netSel"] + 1:
                 by_k, recs_sel, ev, pool = by_k2, recs2, ev2, pool + extra
 
@@ -453,6 +522,12 @@ def recommend_json(payload_text):
             bar.append({"k": k, "net": real, "cards": len(used), "same": bool(by_k[k].get("same")), "sids": used})
     rec_pack = _pack(by_k[k_rec]["X"], A, margin)
 
+    # 4장 이상 여지(2026-10-30): 상한 장수까지 한 장 넣을 때마다 혜택이 늘었으면 더 넣어도 늘 수 있으니
+    # 화면이 '4~5장 조합도 찾아보기'를 보여 준다. 그 전에 멈췄으면(더 넣어도 그대로) 보여 주지 않는다
+    k_hi = max(by_k)
+    more_cards = bool(not k_limit and k_hi < MAX_BAR and k_hi == max_cards and not by_k[k_hi].get("same")
+                      and len(pool) > k_hi)
+
     alt = None
     if margin > 0 and p.get("withAlt", False):
         alt = _alt_of(pool, spending, A, k_rec, fee_cap=fee_cap, fixed=fixed, time_limit=time_limit)
@@ -460,7 +535,7 @@ def recommend_json(payload_text):
     return json.dumps({
         "ok": True, "k": k_rec, "mode": mode, "margin": margin, "efficientCeiling": efficient_ceiling,
         "result": rec_pack, "bar": bar, "alt": alt, "pool": pool, "spending": spending,
-        "elapsed": round(time.time() - t0, 2), "partial": bool(k_limit),
+        "elapsed": round(time.time() - t0, 2), "partial": bool(k_limit), "moreCards": more_cards,
     })
 
 

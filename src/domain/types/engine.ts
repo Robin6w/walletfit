@@ -119,6 +119,8 @@ export interface RecommendResponse {
   elapsed: number;
   /** kLimit으로 장수를 줄여 빨리 낸 결과(점진적 결과의 첫 단계). 전체 계산이 끝나면 바뀐다 */
   partial?: boolean;
+  /** 장수 상한까지 한 장 넣을 때마다 혜택이 늘었음 = 더 넣어도 늘 수 있음(화면의 '4~5장 조합도 찾아보기') */
+  moreCards?: boolean;
 }
 
 export interface RecommendArgs {

@@ -225,7 +225,7 @@ async function answerNoMargin(ctx: ChatContext, call: EngineCall): Promise<ChatM
   // 이미 여유 없이 계산한 결과면 기본 추천(여유 2만원)과, 아니면 여유 없이 계산한 조합과 비교한다
   if (ctx.margin === 0) {
     const ids = ctx.ownedIds.length ? ctx.ownedIds : pack.sids;
-    const base = (await call("recommend", { ids, spending: ctx.spending, margin: 20000, mode: "maxBenefit", maxCards: 5, brandShare: ctx.brandShare, withAlt: false })) as unknown as RecommendResponse;
+    const base = (await call("recommend", { ids, spending: ctx.spending, margin: 20000, mode: "maxBenefit", maxCards: 3, brandShare: ctx.brandShare, withAlt: false })) as unknown as RecommendResponse;
     if (!base.ok || !base.result?.cards?.length) return { role: "model", text: "기본 추천을 다시 계산하지 못했어요. 결과 화면에서 '여유 두고 계산하기'를 눌러 비교해 보세요." };
     const vm = noMarginVM(base.result, pack, 20000);
     return {

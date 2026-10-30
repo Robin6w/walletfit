@@ -99,6 +99,8 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const [proof, setProof] = useState<number | null>(null);
   const [issueSid, setIssueSid] = useState<number | null>(null);
   const [retry, setRetry] = useState(0);
+  // '4~5장 조합도 찾아보기'를 눌렀는지. 누르면 빠른 결과를 3장까지로 잡아(엔진이 앞 결과에 이어 풀어 바로 나온다) 2장으로 되돌아가 보이지 않게 한다
+  const [expanded, setExpanded] = useState(false);
 
   const viaStatement = source === "statement" && !!inp.statement;
   const effSource: "manual" | "statement" = viaStatement ? "statement" : "manual";
@@ -123,7 +125,8 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const newArgs = flow === "new" && inp.total && inp.newTypes.length && newIds.length ? { ids: newIds, margin, withAlt: false, ...common, ...pinArgs, ...extra } : null;
 
   // 점진적 결과: 2장까지 빠른 계산을 먼저 보여 주고 3장 이상은 이어서 계산한다(3장 이상은 장수마다 최대 8초)
-  const quickOf = (a: { maxCards: number } | null) => (a && a.maxCards > 2 ? { ...a, kLimit: 2 } : null);
+  const quickK = expanded ? 3 : 2;
+  const quickOf = (a: { maxCards: number } | null) => (a && a.maxCards > quickK ? { ...a, kLimit: quickK } : null);
   const recOwn = useEngineProgressive<RecommendResponse>("recommend", ownArgs, quickOf(ownArgs));
   const base = recOwn.data && !recOwn.data.empty ? recOwn.data : null;
   const rec0Args = noMargin && ownArgs ? { ...ownArgs, margin: 0, withAlt: false } : null;
@@ -317,6 +320,12 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const todos = todoList(pack, newSids);
   const perf = perfVM(pack);
   const barV = barVM(bar, pack);
+  // 기본은 3장까지만 계산한다(2026-10-30). 엔진이 '더 넣으면 늘 만한 카드가 있음'이라고 하면 4~5장도 찾아보게 한다
+  const moreCards = !refining && !busy && !!shown.rec.moreCards && c.maxCards < 5;
+  const findMore = () => {
+    setExpanded(true);
+    inp.setConditions({ maxCards: 5 });
+  };
   const used = usedValuesVM(pack, ctx);
   const nm = noMargin && shown.base ? noMarginVM(shown.base, pack, margin) : null;
   const proofCard = proof !== null ? pack.cards.find((x) => x.sid === proof) : undefined;
@@ -327,7 +336,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
       {!busy && refining && (
         <div role="status" style={{ position: "sticky", top: 96, zIndex: 15, alignSelf: "center", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 999, background: "#FFFFFF", boxShadow: SHADOW, fontSize: 14, color: "#3A4A78" }}>
           <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-[#2457F5] border-t-transparent" />
-          2장까지 본 결과예요. 3장 이상 조합을 더 찾고 있어요
+          {quickK}장까지 본 결과예요. {quickK + 1}장 이상 조합을 더 찾고 있어요
         </div>
       )}
       {busy && (
@@ -351,6 +360,11 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
               <button type="button" onClick={scrollToMore} style={outlineBtn}>
                 계산 자세히 보기
               </button>
+              {moreCards && (
+                <button type="button" onClick={findMore} style={outlineBtn}>
+                  4~5장 조합도 찾아보기
+                </button>
+              )}
             </div>
           </div>
           <HeroCardStack sids={hero.sids} newSids={newSids} />
@@ -504,6 +518,22 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             <>
               <br />
               {barV.note}
+            </>
+          )}
+          {!barV.note && !refining && c.maxCards < 5 && (
+            <>
+              <br />
+              {shown.rec.moreCards
+                ? `지금은 최대 ${c.maxCards}장까지 계산했어요. 카드를 더 넣으면 혜택이 늘 수 있어요.`
+                : `${c.maxCards}장까지만 계산했어요.`}
+              {shown.rec.moreCards && (
+                <>
+                  {" "}
+                  <button type="button" onClick={findMore} style={{ padding: 0, border: 0, background: "none", font: "inherit", fontWeight: 700, color: "#2457F5", cursor: "pointer" }}>
+                    4~5장 조합도 찾아보기
+                  </button>
+                </>
+              )}
             </>
           )}
         </DetailsItem>

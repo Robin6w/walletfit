@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
-import { AzuLlmConfigError, azuLlmErrorReason, requestAzuLlmChatStream } from "@/features/chatbot/azuLlmClient";
+import { AzuLlmConfigError, azuLlmErrorReason, requestAzuLlmChat } from "@/features/chatbot/azuLlmClient";
 import { renderLiteMarkdown } from "@/features/chatbot/chatFormatting";
 import { catalogBySourceId, categories } from "@/v1/catalog";
 import { useAppData } from "@/v2/app/AppData";
@@ -10,7 +11,10 @@ import { paths } from "@/v2/app/paths";
 import { navigate, useRoute } from "@/v2/app/router";
 import { useBrandPicks } from "@/v2/app/state";
 import { chatStore, useChatState } from "@/v2/chat/chatStore";
-import { answerLocal, buildMessages, classify, contextLine, introText, suggestions, type ChatAction, type ChatBlock, type ChatContext, type ChatMsg, type ChatPage, type EngineCall } from "@/v2/chat/chatModel";
+import { answerChoice, answerTyped, choiceDelay, clockText, contextLine, introText, maskPrivateInfo, MENUS, screenName, TYPED_MIN_DELAY, withChoices, type AskAi, type ChatAction, type ChatBlock, type ChatChoice, type ChatContext, type ChatMsg, type ChatPage, type EngineCall, type MenuId } from "@/v2/chat/chatModel";
+import { LIMITS } from "@/v2/chat/chatRules";
+import { Fitfit, type FitfitMood } from "@/v2/chat/Fitfit";
+import { NavTransition } from "@/v2/chat/NavTransition";
 import { conditionsStore } from "@/v2/make/flow";
 import { picksToBrandShare } from "@/v2/model/brands";
 import type { CardMeta } from "@/v2/model/compareView";
@@ -19,19 +23,14 @@ import cardMetaFile from "@data/catalog/card-meta.json";
 
 /**
  * 카드 상담 창(디자인 ChatPanel, 2026-10-29 v2). 어느 화면에서든 오른쪽에 열린다.
- * 답의 숫자·표·버튼은 계산 엔진 결과로 만들고(chatModel.answerLocal), 아주LLM이 연결되어 있으면 문장만 다듬는다.
- * 정해진 유형에 맞지 않는 질문은 아주LLM이 계산 기록·카드 혜택 표를 근거로 직접 답한다(표·버튼 없이, 2026-10-29).
+ * 버튼(선택지)은 chatModel.answerChoice, 직접 입력은 chatModel.answerTyped로 답한다(2026-10-31). 같은 뜻의 질문이면
+ * 버튼이든 직접 입력이든 같은 답이 나오고, 아주LLM은 분류와 짧은 답에만 쓴다. 대화 규칙은 chatRules.ts에 모여 있다.
  */
 
 const CARD_META = (cardMetaFile as { cards: Record<string, CardMeta> }).cards;
 const HAS_GATEWAY = Boolean((import.meta.env.VITE_AZU_LLM_BASE_URL as string | undefined)?.trim());
 const NUMF = "Outfit, 'IBM Plex Sans KR', sans-serif";
 const svg = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
-const Bubble = ({ size }: { size: number }) => (
-  <svg width={size} height={size} {...svg}>
-    <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
-  </svg>
-);
 
 const call: EngineCall = (fn, args) => cachedEngineCall(fn, args) as ReturnType<EngineCall>;
 
@@ -84,18 +83,45 @@ function useChatContext(): ChatContext {
   };
 }
 
+/** 창이 오른쪽에서 밀려 들어오고 나가는 시간(2026-10-31). 움직임 줄이기 설정과 관계없이 항상 밀린다(팀 결정) */
+const SLIDE_MS = 240;
+
 export default function ChatDock() {
   const { open, msgs, pending } = useChatState();
-  if (!open) return null;
-  return <ChatPanel msgs={msgs} pending={pending} />;
+  // 닫을 때 바로 지우지 않고, 오른쪽으로 밀려 나간 뒤에 지운다
+  const [mounted, setMounted] = useState(open);
+  const [entered, setEntered] = useState(false);
+  if (open && !mounted) setMounted(true);
+  useEffect(() => {
+    if (open) {
+      const id = requestAnimationFrame(() => setEntered(true));
+      return () => cancelAnimationFrame(id);
+    }
+    const t = setTimeout(
+      () => {
+        setMounted(false);
+        setEntered(false);
+      },
+      SLIDE_MS,
+    );
+    return () => clearTimeout(t);
+  }, [open]);
+  if (!mounted) return null;
+  return <ChatPanel msgs={msgs} pending={pending} shown={open && entered} />;
 }
 
-function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null }) {
+function ChatPanel({ msgs, pending, shown }: { msgs: ChatMsg[]; pending: string | null; shown: boolean }) {
   const ctx = useChatContext();
   const { azuLlm } = useAppData();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [openedAt, setOpenedAt] = useState(() => Date.now());
+  const confirmRef = useRef(false);
+  useEffect(() => {
+    confirmRef.current = confirmReset;
+  }, [confirmReset]);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const ctxRef = useRef(ctx);
@@ -109,8 +135,11 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
   }, [msgs]);
   useEffect(() => {
     inputRef.current?.focus();
+    // Esc: 다시 시작 확인 창이 떠 있으면 그것만 닫고, 아니면 상담 창을 닫는다
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") chatStore.setOpen(false);
+      if (e.key !== "Escape") return;
+      if (confirmRef.current) setConfirmReset(false);
+      else chatStore.setOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -122,38 +151,49 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
     setText("");
     setBusy(true);
     const history = chatStore.get().msgs;
-    chatStore.setMsgs((m) => [...m, { role: "user", text: q }, { role: "model", text: "계산 결과와 카드사 원문을 확인하고 있어요…", pending: true }]);
-    const replaceLast = (msg: ChatMsg, persist = true) => chatStore.setMsgs((m) => [...m.slice(0, -1), msg], persist);
-    const intent = classify(q, ctxRef.current);
-    let local: ChatMsg;
+    // 기다리는 동안은 '입력 중' 점만(2026-10-31). 개인정보가 든 말은 숫자를 가려서 남긴다
+    chatStore.setMsgs((m) => [...m, { role: "user", text: maskPrivateInfo(q), at: Date.now() }, { role: "model", text: "", pending: true }]);
+    // 최소 대기(TYPED_MIN_DELAY): 답이 먼저 와도 2초까지는 점을 보여 주고, 더 오래 걸리면 그대로 기다린다
+    const startedAt = Date.now();
+    // 아주LLM은 입력 판단(앞 대화를 보고 의도 고르기)과 짧은 답에만 쓴다(answerTyped, 규칙은 chatRules.ts, 의도 정의서는 intents.ts).
+    // 답이 JSON 한 줄이라 스트리밍하지 않고 다 받은 뒤 보여 준다
+    const ai: AskAi | null = online
+      ? async (messages) => {
+          try {
+            return await requestAzuLlmChat(messages, { apiKey: azuLlm.apiKey, maxTokens: LIMITS.aiMaxTokens });
+          } catch (e) {
+            if (!(e instanceof AzuLlmConfigError)) console.warn("[상담] 아주LLM 호출 실패", e instanceof Error ? e.message : e);
+            throw new Error(azuLlmErrorReason(e));
+          }
+        }
+      : null;
+    let answer: ChatMsg;
     try {
-      local = await answerLocal(q, ctxRef.current, call);
+      answer = await answerTyped(q, ctxRef.current, call, ai, history);
     } catch {
-      local = { role: "model", text: "계산하지 못했어요. 잠시 뒤에 다시 물어봐 주세요." };
+      answer = withChoices({ role: "model", text: "계산하지 못했어요. 잠시 뒤에 다시 물어봐 주세요.", mood: "sorry" });
     }
-    if (!online) {
-      replaceLast(local);
-      setBusy(false);
-      return;
-    }
-    try {
-      const final = (
-        await requestAzuLlmChatStream(buildMessages(ctxRef.current, history, q, local, intent), { apiKey: azuLlm.apiKey, maxTokens: 1200 }, (acc) =>
-          replaceLast({ role: "model", text: acc, pending: true }, false),
-        )
-      ).trim();
-      // 자유 질문은 아주LLM 답만(요약 표·버튼은 질문과 맞지 않을 수 있음). 빈 답이면 계산 결과 답
-      if (intent === "free") replaceLast(final ? { role: "model", text: final } : local);
-      else replaceLast({ ...local, text: final || local.text });
-    } catch (e) {
-      // 실패 이유를 짧게 붙이고(키·주소·모델·한도), 전체 오류는 콘솔에 남긴다(2026-10-29)
-      if (!(e instanceof AzuLlmConfigError)) console.warn("[상담] 아주LLM 호출 실패, 계산 결과로 답합니다.", e instanceof Error ? e.message : e);
-      const note = e instanceof AzuLlmConfigError ? "" : `(아주LLM 답을 받지 못했어요: ${azuLlmErrorReason(e)}. 계산 결과로 바로 답했어요) `;
-      replaceLast({ ...local, text: note + local.text });
-    } finally {
-      setBusy(false);
-    }
+    await new Promise((r) => setTimeout(r, Math.max(0, startedAt + TYPED_MIN_DELAY - Date.now())));
+    chatStore.setMsgs((m) => [...m.slice(0, -1), { ...answer, at: Date.now() }]);
+    setBusy(false);
   }
+
+  // 선택지(큰 메뉴·질문형 버튼): 누른 문장을 내 말풍선으로 넣고, 아주LLM 없이 계산 결과로 답한다(2026-10-31).
+  // 바로 뜨면 대화하는 느낌이 없어서 '입력 중' 점을 choiceDelay만큼 보여 준 뒤 답한다
+  async function choose(choice: ChatChoice) {
+    if (busy) return;
+    setBusy(true);
+    chatStore.setMsgs((m) => [...m, { role: "user", text: choice.label, at: Date.now() }, { role: "model", text: "", pending: true }]);
+    let answer: ChatMsg;
+    try {
+      [answer] = await Promise.all([answerChoice(choice.id, ctxRef.current, call), new Promise((r) => setTimeout(r, choiceDelay(choice.id)))]);
+    } catch {
+      answer = withChoices({ role: "model", text: "계산하지 못했어요. 잠시 뒤에 다시 골라 주세요.", mood: "sorry" });
+    }
+    chatStore.setMsgs((m) => [...m.slice(0, -1), { ...answer, at: Date.now() }]);
+    setBusy(false);
+  }
+  const chooseMenu = (id: MenuId) => void choose({ id: `menu:${id}`, label: MENUS.find((m) => m.id === id)?.label ?? id });
 
   // 다른 화면의 '물어보기' 버튼: 창이 열리면 그 질문을 바로 보낸다
   useEffect(() => {
@@ -163,70 +203,89 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending, busy]);
 
+  // 이동 버튼: 바로 옮기지 않고 핏핏 완성 장면(NavTransition, 1.5초)을 띄운 뒤 그 뒤에서 화면을 바꾼다(2026-11-01). 상담 창은 열어 둔다
+  const [moving, setMoving] = useState<{ to: string; before?: () => void } | null>(null);
   const act = (a: ChatAction) => {
-    if ("to" in a) navigate(a.to);
-    else if (a.id === "pin") {
-      conditionsStore.set({ pinned: [a.sid] });
-      navigate(paths.start("new"));
-    } else chatStore.setMsgs((m) => [...m, { role: "user", text: "지금 조합 유지할게요" }, { role: "model", text: "좋아요. 지금 조합 그대로 두고, 실적 여유도 그대로 계산할게요. 조건을 바꾸고 싶으면 언제든 물어보세요." }]);
+    if (moving) return;
+    if ("to" in a) setMoving({ to: a.to });
+    else if (a.id === "pin") setMoving({ to: paths.start("new"), before: () => conditionsStore.set({ pinned: [a.sid] }) });
+    else chatStore.setMsgs((m) => [...m, { role: "user", text: "지금 조합 유지할게요", at: Date.now() }, { role: "model", text: "좋아요. 지금 조합 그대로 두고, 실적 여유도 그대로 계산할게요. 조건을 바꾸고 싶으면 언제든 물어보세요.", at: Date.now() }]);
   };
+  // 첫 인사 시각: 대화가 있으면 첫 말풍선 시각, 없으면 창을 열었을(또는 다시 시작한) 때
+  const greetAt = msgs.find((m) => m.at)?.at ?? openedAt;
 
   const canSend = !!text.trim() && !busy;
   return (
-    <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 40, width: "min(420px, 100vw)", display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 40, width: "min(420px, 100vw)", display: "flex", flexDirection: "column", transform: shown ? "translateX(0)" : "translateX(100%)", transition: `transform ${SLIDE_MS}ms ease` }}>
       <aside
         id="w-chat-panel"
         aria-label="카드 상담"
         style={{ width: "100%", height: "100vh", minHeight: "min(640px, 100vh)", boxSizing: "border-box", display: "flex", flexDirection: "column", background: "#FFFFFF", color: "#0D1B4A", fontFamily: "'IBM Plex Sans KR', system-ui, sans-serif", wordBreak: "keep-all", borderLeft: "1px solid #E3EAF8", boxShadow: "-18px 0 40px rgba(13, 40, 120, 0.12)", lineHeight: "normal" }}
       >
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "16px 12px 16px 20px", borderBottom: "1px solid #EDF2FC" }}>
-          <span aria-hidden="true" style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 14, background: "#2457F5", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Bubble size={20} />
+          {/* 핏핏: 창을 열 때마다 손을 3번 흔든다(2026-10-31) */}
+          <span aria-hidden="true" style={{ flexShrink: 0, width: 44, height: 44, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Fitfit variant="full" mood="hello" wave size={38} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>카드 상담</h2>
-            <div style={{ fontSize: 13, color: "#5E6D96" }}>계산 결과와 카드사 원문으로 답해요</div>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>카드 상담사 핏핏</h2>
+            <div style={{ fontSize: 12, color: "#5E6D96" }}>WalletFit AI 챗봇</div>
           </div>
-          <button type="button" aria-label="새 상담" onClick={() => chatStore.reset()} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 22, border: "none", background: "transparent", color: "#3A4A78", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <button type="button" aria-label="상담 다시 시작" title="상담 다시 시작" onClick={() => setConfirmReset(true)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 22, border: "none", background: "transparent", color: "#3A4A78", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <svg width={20} height={20} {...svg}>
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+              <path d="M3 3v5h5" />
             </svg>
           </button>
-          <button type="button" aria-label="카드 상담 닫기" onClick={() => chatStore.setOpen(false)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 22, border: "none", background: "#F3F7FF", color: "#0D1B4A", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <button type="button" aria-label="카드 상담 닫기" title="닫기" onClick={() => chatStore.setOpen(false)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 22, border: "none", background: "#F3F7FF", color: "#0D1B4A", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <svg width={20} height={20} {...svg}>
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
+              <path d="m9 6 6 6-6 6" />
             </svg>
           </button>
         </div>
+        {moving && (
+          <NavTransition
+            screen={screenName(moving.to)}
+            onNavigate={() => {
+              moving.before?.();
+              navigate(moving.to);
+            }}
+            onDone={() => setMoving(null)}
+          />
+        )}
+        {confirmReset && (
+          <ResetConfirm
+            onYes={() => {
+              chatStore.reset();
+              setOpenedAt(Date.now());
+              setConfirmReset(false);
+              inputRef.current?.focus();
+            }}
+            onNo={() => setConfirmReset(false)}
+          />
+        )}
         <div style={{ flex: "none", padding: "10px 20px", background: "#F7FAFF", borderBottom: "1px solid #EDF2FC", fontSize: 13, lineHeight: 1.5, color: "#3A4A78" }}>
-          <b style={{ color: "#0D1B4A" }}>상담 기준</b> · {contextLine(ctx)}
+          <ContextStrip line={contextLine(ctx)} />
         </div>
         <div ref={listRef} aria-live="polite" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 18, padding: 20 }}>
-          <BotMsg>{introText(ctx)}</BotMsg>
+          <BotMsg mood="hello" at={greetAt} extra={<MenuGrid onPick={chooseMenu} disabled={busy} />}>
+            {introText()}
+          </BotMsg>
           {msgs.map((m, i) =>
             m.role === "user" ? (
               <div key={i} style={{ display: "flex", justifyContent: "flex-end" }}>
                 <div style={{ maxWidth: "85%", padding: "10px 14px", borderRadius: "16px 16px 4px 16px", background: "#2457F5", color: "#FFFFFF", fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.text}</div>
               </div>
             ) : (
-              <BotMsg key={i} muted={m.pending}>
-                {renderLiteMarkdown(m.text)}
-                {!m.pending && m.blocks?.map((b, j) => <Block key={j} block={b} onAction={act} />)}
+              <BotMsg key={i} muted={m.pending} at={m.pending ? undefined : m.at} mood={m.pending ? undefined : (m.mood ?? "happy")} extra={!m.pending && m.blocks?.map((b, j) => <Block key={j} block={b} onAction={act} onChoose={(c) => void choose(c)} onMenu={chooseMenu} busy={busy} />)}>
+                {m.pending && !m.text ? <TypingDots /> : renderLiteMarkdown(m.text)}
               </BotMsg>
             ),
           )}
         </div>
         <div style={{ flex: "none", padding: "12px 16px 16px", borderTop: "1px solid #EDF2FC", display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {suggestions(ctx).map((sg) => (
-              <button key={sg} type="button" disabled={busy} onClick={() => void send(sg)} style={{ minHeight: 36, padding: "6px 12px", borderRadius: 18, border: "1px solid #C9D6F5", background: "#F5F8FF", fontFamily: "inherit", fontSize: 13, color: "#2457F5", cursor: busy ? "default" : "pointer", textAlign: "left" }}>
-                {sg}
-              </button>
-            ))}
-          </div>
-          <div className="w-field" style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 8, padding: "8px 8px 8px 14px", border: "1px solid #D3DDF2", borderRadius: 18, background: "#FFFFFF" }}>
+          {/* 포커스 표시: 공용 .w-field는 테두리를 진한 파랑으로 바꿔 안쪽에 검은 선처럼 보여서, 상담 입력칸은 연한 바깥 링만 둔다(2026-10-31) */}
+          <div className="transition-shadow focus-within:shadow-[0_0_0_3px_rgba(36,87,245,0.18)]" style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 8, padding: "8px 8px 8px 14px", border: "1px solid #D3DDF2", borderRadius: 18, background: "#FFFFFF" }}>
             <label htmlFor="panel-input" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
               질문 입력
             </label>
@@ -234,7 +293,7 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
               ref={inputRef}
               id="panel-input"
               rows={2}
-              placeholder="보고 있는 화면에 대해 물어보세요"
+              placeholder="원하는 질문이 위에 없으면 직접 입력해 주세요"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
@@ -276,20 +335,178 @@ function ChatPanel({ msgs, pending }: { msgs: ChatMsg[]; pending: string | null 
   );
 }
 
-function BotMsg({ children, muted }: { children: ReactNode; muted?: boolean }) {
+/** 위 띠: 모두 보통 굵기, 숫자(value)만 진한 색. 칸 사이는 ' / ' */
+function ContextStrip({ line }: { line: ReturnType<typeof contextLine> }) {
   return (
-    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-      <span aria-hidden="true" style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 16, background: "#E8EEFF", color: "#2457F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Bubble size={16} />
-      </span>
-      <div style={{ flex: 1, minWidth: 0, fontSize: 14, lineHeight: 1.7, color: muted ? "#5E6D96" : "#0D1B4A" }}>{children}</div>
+    <>
+      {line.label}:{" "}
+      {line.items.map((it, i) => (
+        <span key={i}>
+          {i > 0 && " / "}
+          {it.pre}
+          {it.value && <span style={{ color: "#0D1B4A", fontWeight: 600 }}>{it.value}</span>}
+        </span>
+      ))}
+    </>
+  );
+}
+
+/** 선택지를 누른 뒤 기다리는 동안 말풍선 안 '입력 중' 점 3개(차례로 깜빡임) */
+function TypingDots() {
+  return (
+    <output aria-label="답을 쓰는 중" style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 24 }}>
+      <style>{"@keyframes wf-typing{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}"}</style>
+      {[0, 1, 2].map((i) => (
+        <span key={i} style={{ width: 7, height: 7, borderRadius: 4, background: "#5E6D96", animation: `wf-typing 1s ease-in-out ${i * 0.15}s infinite` }} />
+      ))}
+    </output>
+  );
+}
+
+const CONFIRM_BTN =
+  "h-11 flex-1 cursor-pointer rounded-[22px] border border-[#D3DDF2] bg-white text-[15px] font-bold text-[#0D1B4A] transition-colors hover:border-w-primary hover:bg-w-primary hover:text-white focus-visible:border-w-primary focus-visible:bg-w-primary focus-visible:text-white focus-visible:outline-none";
+
+/**
+ * '상담 다시 시작' 확인 창(2026-10-31). 화면 가운데 흰 창, 뒤는 흐리게.
+ * 상담 창은 밀려 들어오는 움직임(transform) 때문에 그 안의 fixed가 창 기준이 되므로 body에 띄운다
+ */
+function ResetConfirm({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
+  // 처음 포커스는 창 자체에 둔다(버튼에 두면 마우스를 올리기 전부터 파랗게 보임). Tab으로 버튼을 고를 수 있다
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    boxRef.current?.focus();
+  }, []);
+  return createPortal(
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(13, 27, 74, 0.25)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
+      <div
+        ref={boxRef}
+        tabIndex={-1}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="reset-title"
+        aria-describedby="reset-desc"
+        style={{ outline: "none", width: "min(360px, 100%)", boxSizing: "border-box", padding: "28px 20px 20px", borderRadius: 20, background: "#FFFFFF", color: "#0D1B4A", boxShadow: "0 24px 60px -12px rgba(13, 40, 120, 0.35)", fontFamily: "'IBM Plex Sans KR', system-ui, sans-serif", textAlign: "center", wordBreak: "keep-all" }}
+      >
+        <h3 id="reset-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+          상담을 다시 시작하시겠습니까?
+        </h3>
+        <p id="reset-desc" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6, color: "#3A4A78" }}>
+          지금까지 나눈 대화가 모두 사라집니다.
+        </p>
+        <div style={{ display: "flex", gap: 8, marginTop: 22 }}>
+          <button type="button" className={CONFIRM_BTN} onClick={onNo}>
+            아니오
+          </button>
+          <button type="button" className={CONFIRM_BTN} onClick={onYes}>
+            예
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * 상담 답: 연한 파랑 말풍선(위 '최근에 저장된 정보' 띠와 같은 색, 2026-10-31). 표·버튼(extra)은 말풍선 밖 아래에 넓게.
+ * 오른쪽 위 모서리에 핏핏 얼굴을 작게 걸친다(카카오톡 알림 말풍선처럼). 표정 = 그 답의 상태(mood).
+ * 답을 쓰는 중에는 mood를 주지 않아 핏핏 없이 말풍선 안 '입력 중' 점만 보인다
+ */
+function BotMsg({ children, muted, extra, mood, at }: { children: ReactNode; muted?: boolean; extra?: ReactNode; mood?: FitfitMood; at?: number }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+      {/* 말풍선 + 오른쪽 아래 시각(카톡처럼 말풍선 바깥, 상담 답에만, 2026-10-31) */}
+      {/* 줄 폭을 창 폭에 고정해야 말풍선 maxWidth(%)가 내용 폭이 아니라 창 폭 기준이 된다 */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, width: "100%" }}>
+        <div style={{ position: "relative", maxWidth: "calc(100% - 64px)", padding: "10px 20px 10px 14px", boxSizing: "border-box", borderRadius: "16px 16px 16px 4px", background: "#F7FAFF", border: "1px solid #EDF2FC", fontSize: 14, lineHeight: 1.7, color: muted ? "#5E6D96" : "#0D1B4A" }}>
+          {children}
+          {mood && (
+            <span style={{ position: "absolute", top: -14, right: -12, pointerEvents: "none" }}>
+              <Fitfit mood={mood} size={30} />
+            </span>
+          )}
+        </div>
+        {at && <span style={{ flexShrink: 0, paddingBottom: 2, fontSize: 11, color: "#5E6D96", whiteSpace: "nowrap" }}>{clockText(at)}</span>}
+      </div>
+      {extra && <div style={{ width: "100%" }}>{extra}</div>}
     </div>
   );
 }
 
 const amountStyle: CSSProperties = { fontFamily: NUMF, fontVariantNumeric: "tabular-nums", fontWeight: 700 };
 
-function Block({ block, onAction }: { block: ChatBlock; onAction: (a: ChatAction) => void }) {
+/** 큰 메뉴 아이콘(지갑 만들기 / 지갑 확인 / 자주 묻는 질문). 색은 글자색을 따른다 */
+const MENU_ICON: Record<MenuId, ReactNode> = {
+  make: (
+    <>
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h8" />
+      <path d="M18 15v6" />
+      <path d="M15 18h6" />
+    </>
+  ),
+  check: (
+    <>
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+    </>
+  ),
+  faq: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+};
+
+const MENU_BTN =
+  "group flex aspect-square min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-[#D3DDF2] bg-white p-2 text-center text-[14px] leading-tight font-bold text-[#0D1B4A] transition-colors hover:border-w-primary hover:bg-w-primary hover:text-white disabled:cursor-default disabled:opacity-50";
+
+/** 첫 인사(와 '처음으로') 아래 큰 정사각형 버튼 3개 */
+function MenuGrid({ onPick, disabled }: { onPick: (id: MenuId) => void; disabled: boolean }) {
+  return (
+    <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+      {MENUS.map((m) => (
+        <button key={m.id} type="button" className={MENU_BTN} disabled={disabled} onClick={() => onPick(m.id)}>
+          <span className="text-w-primary group-hover:text-white group-disabled:text-w-primary">
+            <svg width={28} height={28} {...svg}>
+              {MENU_ICON[m.id]}
+            </svg>
+          </span>
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 선택지: 살짝 둥근 네모, 흰 배경·검은 글씨·테두리, 가져다 대면 파란 배경·흰 글씨(2026-10-31) */
+const CHOICE_BTN =
+  "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-[#D3DDF2] bg-white px-3 py-[7px] text-left text-[13px] text-[#0D1B4A] transition-colors hover:border-w-primary hover:bg-w-primary hover:text-white disabled:cursor-default disabled:opacity-50";
+
+/** 답 아래 질문형 선택지(세로로). '처음으로'는 같은 모양에 되돌아가기 화살표(↩)를 앞에 붙인다 */
+function ChoiceList({ items, onChoose, busy }: { items: ChatChoice[]; onChoose: (c: ChatChoice) => void; busy: boolean }) {
+  return (
+    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+      {items.map((c) => (
+        <button key={c.id} type="button" disabled={busy} onClick={() => onChoose(c)} className={CHOICE_BTN}>
+          {c.id === "home" && (
+            <svg width={15} height={15} {...svg}>
+              <path d="M9 14 4 9l5-5" />
+              <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+            </svg>
+          )}
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Block({ block, onAction, onChoose, onMenu, busy }: { block: ChatBlock; onAction: (a: ChatAction) => void; onChoose: (c: ChatChoice) => void; onMenu: (id: MenuId) => void; busy: boolean }) {
+  if (block.kind === "menu") return <MenuGrid onPick={onMenu} disabled={busy} />;
+  if (block.kind === "choices") return <ChoiceList items={block.items} onChoose={onChoose} busy={busy} />;
   if (block.kind === "benefits") {
     return (
       <div style={{ marginTop: 10, padding: "12px 14px", borderRadius: 14, background: "#F3F7FF" }}>
@@ -357,21 +574,29 @@ function Block({ block, onAction }: { block: ChatBlock; onAction: (a: ChatAction
       </ul>
     );
   }
+  // 화면을 옮기는 버튼(to, pin)은 ↗ 표시와 '누르면 ○○ 화면으로 이동해요' 안내를 붙여 대화 안에서 답하는 버튼과 구분한다(2026-11-01)
+  const target = (a: ChatAction) => ("to" in a ? a.to : a.id === "pin" ? paths.start("new") : null);
   return (
-    <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10 }}>
       {block.actions.map((a) =>
-        "to" in a ? (
-          <a
-            key={a.label}
-            href={`#${a.to}`}
-            onClick={(e) => {
-              e.preventDefault();
-              onAction(a);
-            }}
-            style={{ display: "inline-flex", alignItems: "center", height: 40, padding: "0 14px", boxSizing: "border-box", borderRadius: 20, border: a.primary ? "1px solid #2457F5" : "1px solid #D3DDF2", background: a.primary ? "#2457F5" : "#FFFFFF", fontSize: 13, fontWeight: 700, color: a.primary ? "#FFFFFF" : "#0D1B4A", textDecoration: "none" }}
-          >
-            {a.label}
-          </a>
+        target(a) ? (
+          <div key={a.label} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+            <a
+              href={`#${target(a)}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onAction(a);
+              }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 40, padding: "0 14px", boxSizing: "border-box", borderRadius: 20, border: a.primary ? "1px solid #2457F5" : "1px solid #D3DDF2", background: a.primary ? "#2457F5" : "#FFFFFF", fontSize: 13, fontWeight: 700, color: a.primary ? "#FFFFFF" : "#0D1B4A", textDecoration: "none" }}
+            >
+              {a.label}
+              <svg width={14} height={14} {...svg}>
+                <path d="M7 17 17 7" />
+                <path d="M7 7h10v10" />
+              </svg>
+            </a>
+            <span style={{ paddingLeft: 4, fontSize: 12, color: "#5E6D96" }}>누르면 &apos;{screenName(target(a)!)}&apos; 화면으로 이동해요</span>
+          </div>
         ) : (
           <button
             key={a.label}

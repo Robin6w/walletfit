@@ -66,7 +66,7 @@ function ChatToggle() {
       onClick={() => chatStore.toggle()}
       aria-expanded={open}
       aria-controls="w-chat-panel"
-      className={`flex h-11 shrink-0 items-center gap-[7px] rounded-[22px] border px-4 text-[14px] font-bold ${open ? "border-w-primary bg-w-primary text-white" : "border-[rgba(36,87,245,0.14)] bg-[rgba(36,87,245,0.10)] text-w-primary"}`}
+      className={`flex h-11 shrink-0 cursor-pointer items-center gap-[7px] rounded-[22px] border px-4 text-[14px] font-bold transition-colors ${open ? "border-w-primary bg-w-primary text-white" : "border-[rgba(36,87,245,0.14)] bg-[rgba(36,87,245,0.10)] text-w-primary hover:border-w-primary hover:bg-w-primary hover:text-white"}`}
     >
       <ChatBubbleIcon />
       카드 상담

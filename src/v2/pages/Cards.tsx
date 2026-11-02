@@ -27,7 +27,8 @@ import { MenuBar } from "@/v2/ui/TopBar";
 /* 디자인 원본 F-D-Gallery(전체 카드) 값을 그대로 옮김. 카드 그림은 실물 사진 */
 
 const SHADOW = "0 1px 2px rgba(13, 40, 120, 0.05), 0 10px 28px rgba(13, 40, 120, 0.08)";
-const BENEFITS = ["cafe", "convenience", "transport", "mobile", "onlineShopping", "dining", "delivery", "mart", "gas", "travel"];
+// 2026-10-31: OTT/구독·기차/고속버스를 영화/공연·여행에서 나누며 필터에도 넣었다(KTX 카드를 '여행'으로 찾을 수 없게 돼서)
+const BENEFITS = ["cafe", "convenience", "transport", "mobile", "onlineShopping", "dining", "delivery", "mart", "gas", "travel", "intercity", "subscription"];
 const SORTS = [
   { id: "fit", label: "내 지출에 유리한 순" },
   { id: "verified", label: "원문 확인 카드 먼저" },

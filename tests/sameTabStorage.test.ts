@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
 import { useBrandSpend, useMargin } from "@/v1/state";
+import { useStoredValue } from "@/v2/app/storage";
 import type { SpendCategory } from "@/domain/types/card";
 
 const cats = [
@@ -36,5 +37,30 @@ describe("같은 탭 안의 화면끼리 저장 값 공유", () => {
     act(() => app.result.current.addBrands([{ cat: "dining", brand: "배달의민족", amount: 20000 }]));
     expect(wizard.result.current.brandSpend).toEqual({ cafe: { 스타벅스: 30000 }, dining: { 배달의민족: 20000 } });
     expect(JSON.parse(localStorage.getItem("walletfit:v1:brand-spend") ?? "{}")).toEqual({ cafe: { 스타벅스: 30000 }, dining: { 배달의민족: 20000 } });
+  });
+});
+
+// 2026-10-31: 명세서로 지출을 채우고 같은 동작에서 결과 화면으로 옮기면(화면이 주소마다 새로 만들어짐) 저장 useEffect가 돌기 전에
+// 화면이 사라져 지출·명세서 정보가 저장되지 않았다. 바꾸는 순간 저장해야 한다
+describe("값을 바꾸고 바로 화면이 사라져도 저장된다", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("지출 통째로 바꾸기(명세서로 채우기)", () => {
+    const flow = renderHook(() => useMonthlySpend(cats));
+    act(() => {
+      flow.result.current.setSpending({ cafe: 15600, dining: 134100 });
+      flow.unmount();
+    });
+    expect(JSON.parse(localStorage.getItem("walletfit:monthly-spend") ?? "{}")).toEqual({ cafe: 15600, dining: 134100 });
+    expect(renderHook(() => useMonthlySpend(cats)).result.current.spending).toEqual({ cafe: 15600, dining: 134100 });
+  });
+
+  it("명세서 정보(useStoredValue)", () => {
+    const flow = renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null));
+    act(() => {
+      flow.result.current[1]({ fileName: "9월 카드.pdf" });
+      flow.unmount();
+    });
+    expect(renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null)).result.current[0]).toEqual({ fileName: "9월 카드.pdf" });
   });
 });

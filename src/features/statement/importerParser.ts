@@ -240,6 +240,15 @@ export const ALLOWED_STATEMENT_MIME_TYPES = [
 
 export const ALLOWED_STATEMENT_EXTENSIONS = [".pdf", ".txt", ".csv"] as const;
 
+/** 카드 앱 이용내역 캡처(2026-11-02, v2 명세서 화면만). 글자 인식(OCR)으로 읽는다 */
+export const ALLOWED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const ALLOWED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"] as const;
+
+export function isStatementImage(file: File): boolean {
+  const ext = "." + (file.name.split(".").pop() || "").toLowerCase();
+  return (ALLOWED_IMAGE_MIME_TYPES as readonly string[]).includes(file.type) || (ALLOWED_IMAGE_EXTENSIONS as readonly string[]).includes(ext);
+}
+
 export interface FileValidationResult {
   isValid: boolean;
   error?: string;
@@ -248,9 +257,9 @@ export interface FileValidationResult {
 /**
  * 카드 명세서 파일 크기 및 포맷 검증
  * - 최대 10MB 제한
- * - 지원 포맷 (PDF, TXT, CSV) 화이트리스트 검증
+ * - 지원 포맷 (PDF, TXT, CSV) 화이트리스트 검증. images를 켜면 캡처 이미지(PNG·JPG·WEBP)도 받는다(v2 명세서 화면)
  */
-export function validateStatementFile(file: File): FileValidationResult {
+export function validateStatementFile(file: File, opts: { images?: boolean } = {}): FileValidationResult {
   if (file.size > MAX_STATEMENT_FILE_SIZE) {
     return {
       isValid: false,
@@ -266,7 +275,7 @@ export function validateStatementFile(file: File): FileValidationResult {
     fileExt as (typeof ALLOWED_STATEMENT_EXTENSIONS)[number],
   );
 
-  if (!isMimeAllowed && !isExtAllowed) {
+  if (!isMimeAllowed && !isExtAllowed && !(opts.images && isStatementImage(file))) {
     return {
       isValid: false,
       error: "지원하지 않는 파일 형식입니다. PDF, TXT, CSV 파일만 지원합니다.",
@@ -286,16 +295,10 @@ export function validateStatementFile(file: File): FileValidationResult {
  *
  * pdfjs-dist는 번들 용량이 커서, 실제 PDF를 업로드했을 때만 동적으로 불러옵니다.
  *
- * 아래 두 모듈 경로를 문자열 리터럴이 아니라 변수(PDFJS_MODULE_SPECIFIER 등)에 담아서
- * import()에 넘기는 이유는, 아직 npm install로 pdfjs-dist를 설치하지 않은 상태에서도
- * Vite 개발 서버가 이 파일을 불러오는 시점(=PDF를 실제로 업로드하지 않아도)에 미리
- * 경로를 분석/검증하다가 "모듈을 찾을 수 없다"는 에러 화면을 띄우는 것을 막기 위함입니다.
- * 리터럴로 그대로 적으면 주석(@vite-ignore)을 붙여도 Vite가 여전히 미리 해석을 시도합니다.
- * 이 경로는 실제로 PDF 파일을 업로드해서 이 함수가 호출될 때만 동작하며, 그때 pdfjs-dist가
- * 설치돼 있지 않으면 아래 catch에서 안내 메시지를 담아 에러를 던집니다.
+ * 예전에는 설치 전에도 개발 서버가 뜨도록 경로를 변수에 담아 import()에 넘겼는데, 그러면 Vite가
+ * 'pdfjs-dist'를 실제 파일 경로로 바꾸지 않아 브라우저에서 항상 불러오기에 실패했다(2026-10-31).
+ * 지금은 package.json 의존성이라 경로를 그대로 적는다.
  */
-const PDFJS_MODULE_SPECIFIER = "pdfjs-dist";
-const PDFJS_WORKER_SPECIFIER = "pdfjs-dist/build/pdf.worker.mjs?url";
 
 /**
  * 비밀번호로 잠긴 PDF. need: 비밀번호가 필요함, wrong: 비밀번호가 맞지 않음(2026-10-28 v2 명세서 화면)
@@ -313,12 +316,10 @@ export async function extractTextFromPdf(file: File, password?: string): Promise
   let pdfjsLib;
   let workerSrc;
   try {
-    pdfjsLib = await import(/* @vite-ignore */ PDFJS_MODULE_SPECIFIER);
-    ({ default: workerSrc } = await import(/* @vite-ignore */ PDFJS_WORKER_SPECIFIER));
+    pdfjsLib = await import("pdfjs-dist");
+    ({ default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.mjs?url"));
   } catch {
-    throw new Error(
-      "PDF 명세서 처리에 필요한 라이브러리(pdfjs-dist)가 아직 설치되지 않았습니다. 터미널에서 npm install을 한 번 실행한 뒤 다시 시도해 주세요. (TXT/CSV 파일은 이 라이브러리 없이도 바로 사용할 수 있습니다.)",
-    );
+    throw new Error("PDF를 읽는 부품을 불러오지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요. (CSV·TXT 파일은 바로 읽을 수 있어요.)");
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
@@ -337,23 +338,162 @@ export async function extractTextFromPdf(file: File, password?: string): Promise
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    const lineText = content.items
-      .map((item: unknown) => (typeof item === "object" && item !== null && "str" in item ? (item as { str: string }).str : ""))
-      .join(" ");
-    pageTexts.push(lineText);
+    pageTexts.push(pdfItemsToLines(content.items as PdfTextItem[]));
   }
 
   return pageTexts.join("\n");
 }
 
+/** pdf.js getTextContent()의 텍스트 조각(필요한 필드만) */
+export interface PdfTextItem {
+  str?: string;
+  /** [a, b, c, d, x, y] */
+  transform?: number[];
+  width?: number;
+  height?: number;
+}
+
 /**
- * 업로드된 명세서 파일(PDF/TXT/CSV)에서 텍스트를 읽어 옵니다.
- * PDF는 extractTextFromPdf로, 그 외 텍스트 기반 파일은 File.text()로 직접 읽습니다.
+ * 텍스트 조각을 좌표로 줄을 다시 만든다(2026-10-31).
+ * 조각 순서대로 " "로 이으면 카카오뱅크 확인서처럼 글자를 한 자씩 넣은 PDF가 '카 드 이 용'으로 읽히고,
+ * 페이지 전체가 한 줄이 되어 결제 한 건도 못 찾는다. y가 같은 조각을 한 줄로 묶어 x 순서로 놓고,
+ * 앞 조각 끝과 다음 조각 사이가 글자 크기의 1/4보다 벌어진 곳이나, 공백 조각(' ')이 있던 곳에 공백을 넣는다.
  */
-export async function readStatementFileAsText(file: File, password?: string): Promise<string> {
+export function pdfItemsToLines(items: PdfTextItem[]): string {
+  const pieces = items
+    .filter((it) => it.str && it.transform)
+    .map((it) => {
+      const [a, b, , , x, y] = it.transform!;
+      const size = it.height || Math.hypot(a, b) || 10;
+      // 신한카드 PDF는 낱말 사이를 제어 문자(\u0001)로 띄운다(2026-11-02). 빈칸으로 본다
+      // eslint-disable-next-line no-control-regex
+      return { str: it.str!.replace(/[\u0000-\u001f\u007f]/g, " "), x, y, end: x + (it.width ?? 0), size };
+    });
+
+  const rows: Array<{ y: number; size: number; cells: typeof pieces }> = [];
+  for (const p of pieces) {
+    const row = rows.find((r) => Math.abs(r.y - p.y) <= Math.max(1, r.size * 0.3));
+    if (row) row.cells.push(p);
+    else rows.push({ y: p.y, size: p.size, cells: [p] });
+  }
+
+  // PDF 좌표는 아래에서 위로 커지므로 y가 큰 줄이 먼저
+  return rows
+    .sort((r1, r2) => r2.y - r1.y)
+    .map((row) => {
+      const cells = row.cells.sort((c1, c2) => c1.x - c2.x);
+      let line = "";
+      let prevEnd = -Infinity;
+      for (const c of cells) {
+        if (!c.str.trim()) {
+          line += " ";
+        } else {
+          if (line && !line.endsWith(" ") && c.x - prevEnd > c.size * 0.25) line += " ";
+          line += c.str;
+        }
+        prevEnd = c.end;
+      }
+      return line.replace(/\s+/g, " ").trim();
+    })
+    .join("\n");
+}
+
+/**
+ * OCR 글자에서 흔한 실수를 바로잡는다(2026-11-02, NH 앱 캡처로 확인).
+ * 금액 끝의 '원'을 숫자로 읽는 경우: '6,150원' → '6,1508'. 쉼표 뒤는 늘 세 자리라, 줄 끝 금액의 마지막 묶음이 네 자리면 끝 숫자를 '원'으로 본다
+ */
+export function fixOcrText(text: string): string {
+  return (
+    text
+      .split("\n")
+      .map((l) => l.replace(/(\d{1,3}(?:,\d{3})+)\d(?=\s*$)/, "$1원"))
+      // 쉼표를 점으로 읽는 경우: '6,700원' → '6.700원', 표의 금액 칸 '3,000' → '3.000'(작게 캡처한 사진).
+      // '원' 앞이거나 줄 끝이고 점 뒤가 세 자리일 때만(날짜 2026.09.20은 그대로)
+      .map((l) => l.replace(/(?<![\d.])(\d{1,3})\.(\d{3})(?=\s*원|\s*$)/g, "$1,$2"))
+      // 칸을 잘못 읽은 영어 소문자 1~2글자 조각('승인' → 'ae', 'un')은 뺀다
+      .map((l) => l.replace(/(^|\s)[a-z]{1,2}(?=\s|$)/g, "$1"))
+      .join("\n")
+  );
+}
+
+/**
+ * 글자가 작으면 인식이 틀리기 쉬워(작게 저장한 캡처에서 '6,700원'을 700원으로 읽음) 폭 1,200px까지(최대 3배) 키워서 읽는다.
+ * 2026-11-02 같은 캡처를 60·75%로 줄여 시험: 그대로는 합계가 각각 +44,858원·−6,000원 틀렸고, 2배로 키우면 +100원·일치
+ */
+async function upscaleForOcr(file: File): Promise<{ image: Blob | File; width: number }> {
+  let width = 0;
+  try {
+    const bmp = await createImageBitmap(file);
+    width = bmp.width;
+    const scale = Math.min(3, 1200 / bmp.width);
+    if (scale <= 1.05) return { image: file, width };
+    const w = Math.round(bmp.width * scale);
+    const h = Math.round(bmp.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { image: file, width };
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    return { image: blob ?? file, width };
+  } catch {
+    return { image: file, width };
+  }
+}
+
+/**
+ * 캡처 이미지에서 글자를 읽는다(tesseract.js, 한국어+영어). 이미지는 브라우저 밖으로 나가지 않는다.
+ * 글자 인식 프로그램과 언어 데이터(약 10MB)는 처음 한 번 내려받고 브라우저가 저장해 둔다. 라이브러리가 커서 이미지를 올릴 때만 불러온다
+ */
+/** 사진 글자 인식 품질: 인식 신뢰도(0~100)와 원본 가로 크기(px). 낮으면 화면이 다시 캡처를 권한다 */
+export interface ImageReadInfo {
+  confidence: number;
+  width: number;
+}
+
+export async function extractTextFromImage(file: File, onProgress?: (ratio: number) => void, onInfo?: (info: ImageReadInfo) => void): Promise<string> {
+  let createWorker: typeof import("tesseract.js").createWorker;
+  try {
+    ({ createWorker } = await import("tesseract.js"));
+  } catch {
+    throw new Error("사진에서 글자를 읽는 부품을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
+  }
+  const worker = await createWorker("kor+eng", 1, {
+    logger: (m: { status: string; progress: number }) => {
+      if (m.status === "recognizing text") onProgress?.(m.progress);
+    },
+  });
+  try {
+    // 표처럼 한 줄씩 읽는다(PSM 6, 2026-11-02 측정). 기본 방식(자동)은 표를 칸마다 세로로 떼어 읽어 금액과 가맹점이 엉켰고
+    // (카카오뱅크 확인서 캡처: 32건 8억원), NH 앱 캡처도 PSM 6에서 10건 173,500원 그대로 맞았다
+    await worker.setParameters({ tessedit_pageseg_mode: "6" as never, preserve_interword_spaces: "1" });
+    const { image, width } = await upscaleForOcr(file);
+    const { data } = await worker.recognize(image);
+    onInfo?.({ confidence: data.confidence, width });
+    return fixOcrText(data.text);
+  } finally {
+    await worker.terminate();
+  }
+}
+
+/**
+ * 업로드된 명세서 파일(PDF/TXT/CSV/캡처 이미지)에서 텍스트를 읽어 옵니다.
+ * PDF는 extractTextFromPdf로, 이미지는 extractTextFromImage(OCR)로, 그 외 텍스트 기반 파일은 File.text()로 직접 읽습니다.
+ */
+export async function readStatementFileAsText(
+  file: File,
+  password?: string,
+  onProgress?: (ratio: number) => void,
+  onImageInfo?: (info: ImageReadInfo) => void,
+): Promise<string> {
   const fileExt = "." + (file.name.split(".").pop() || "").toLowerCase();
   if (fileExt === ".pdf" || file.type === "application/pdf") {
     return extractTextFromPdf(file, password);
+  }
+  if (isStatementImage(file)) {
+    return extractTextFromImage(file, onProgress, onImageInfo);
   }
   return file.text();
 }

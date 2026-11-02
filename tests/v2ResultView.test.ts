@@ -194,6 +194,14 @@ describe("추천 결과(보유한 카드로, 여유 2만원)", () => {
     const onlyCafe = usedValuesVM(pack, { ...ctx, brandShare: { onlineShopping: { 쿠팡: 0.7 } }, picks: {} });
     expect(onlyCafe.assumed).toContain("카페는 자주 가는 곳을 고르지 않아");
   });
+  it("명세서 결제 금액이 있으면 결제 1회 금액은 가정이 아니라 내 값으로 적는다(2026-10-31)", () => {
+    const u = usedValuesVM(pack, { ...ctx, tickets: { cafe: [1800, 2400, 1800, 1800, 6400], dining: [55000] } });
+    expect(u.user).toContain("명세서 결제 금액으로 건당 조건 계산(카페 5건 평균 2,800원");
+    expect(u.user.endsWith("실적 여유 2만원.")).toBe(true);
+    // 카페는 내 값이라 가정에서 빠지고, 명세서에 없는 편의점·교통만 가정값으로 남는다
+    expect(u.assumed).toContain("결제 1회 평균 편의점 7천원, 교통 1,500원");
+    expect(u.assumed).not.toContain("카페·편의점 7천원");
+  });
 });
 
 describe("실적 여유 없이 다시 계산", () => {

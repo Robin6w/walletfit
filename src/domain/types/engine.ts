@@ -5,6 +5,13 @@ export type BenefitStatus = "reviewed" | "gold_ai" | "extracted" | "auto";
 /** 카테고리별 브랜드 금액 비중. 예: { cafe: { 스타벅스: 0.4 } } */
 export type BrandShare = Record<string, Record<string, number>>;
 
+/**
+ * 명세서에서 읽은 카테고리별 결제 금액(원, 한 건씩). 예: { cafe: [1800, 2400, 6400] }
+ * 엔진이 건당 최소 금액·횟수 조건을 계산할 때 가정값(avg_ticket_won) 대신 쓴다(2026-10-31)
+ * '_'로 시작하는 키는 부가 정보: '_wd:<카테고리>' = 요일별 결제 금액 [월, …, 일](2026-11-01, statementSignals)
+ */
+export type Tickets = Record<string, number[]>;
+
 export interface TraceCat {
   cat: string;
   spend: number;
@@ -132,6 +139,7 @@ export interface RecommendArgs {
   feeCap?: number;
   fixed?: number[];
   brandShare?: BrandShare;
+  tickets?: Tickets;
   withAlt?: boolean;
   /** 같은 조건으로 다시 계산할 때 바꾸는 값(엔진은 읽지 않음) */
   retry?: number;

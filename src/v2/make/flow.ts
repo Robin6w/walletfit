@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { CardKind } from "@/domain/types/card";
-import type { BrandShare } from "@/domain/types/engine";
+import type { BrandShare, Tickets } from "@/domain/types/engine";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
 import { catalogBySourceId, categories, issuableCards } from "@/v1/catalog";
 import { korWon } from "@/v1/format";
@@ -9,7 +9,7 @@ import { paths, type Flow, type MakeStep } from "@/v2/app/paths";
 import { readSession, writeSession } from "@/v2/app/storage";
 import { useAppData } from "@/v2/app/AppData";
 import { useBrandPicks, useNewCardTypes, useStatementState } from "@/v2/app/state";
-import { amountsToBrandShare, pickedCount, picksToBrandShare } from "@/v2/model/brands";
+import { pickedCount, picksToBrandShare, statementBrandShare } from "@/v2/model/brands";
 import type { StepPill } from "@/v2/ui/TopBar";
 
 /**
@@ -105,7 +105,9 @@ export function useFlowInputs() {
   const brandShareFor = (source: "manual" | "statement"): BrandShare => brandShareWith(spending, source);
   /** 다른 지출(예: 소득으로 채울 지출)에 같은 규칙으로 브랜드 비중을 만든다 */
   const brandShareWith = (spend: Record<string, number>, source: "manual" | "statement"): BrandShare =>
-    source === "statement" && statement ? amountsToBrandShare(spend, statement.brands) : picksToBrandShare(spend, picks);
+    source === "statement" && statement ? statementBrandShare(spend, statement.brands) : picksToBrandShare(spend, picks);
+  /** 명세서 경로면 실제 결제 금액(엔진의 건당 조건 계산용), 아니면 없음(가정값) */
+  const ticketsFor = (source: "manual" | "statement"): Tickets | undefined => (source === "statement" && statement?.tickets ? statement.tickets : undefined);
 
   return {
     spend,
@@ -127,6 +129,7 @@ export function useFlowInputs() {
     setConditions,
     brandShareFor,
     brandShareWith,
+    ticketsFor,
     pickCount: pickedCount(picks),
   };
 }

@@ -20,6 +20,7 @@ import { toWalletCard } from "../src/domain/engine/cardConverter";
 import type { CatalogListing } from "../src/domain/types/catalog";
 import { autoRecord } from "./autoRecord";
 import { buildCardView } from "./buildCardView";
+import { splitCategories } from "./splitCategories";
 import { summaryRecord, type SummaryLabel } from "./summaryRecord";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -113,6 +114,9 @@ function main() {
       counts.auto += 1;
     }
   }
+
+  // 성격이 다른 소비가 섞인 카테고리 나누기(OTT/구독·기차/고속버스·의류/패션, 2026-10-31 scripts/splitCategories.ts)
+  console.log("카테고리 나누기:", splitCategories(cards));
 
   const out = {
     version: 1,

@@ -1,4 +1,4 @@
-import type { BrandShare, EngineCard, EnginePack, RankRow, RecommendResponse } from "@/domain/types/engine";
+import type { BrandShare, EngineCard, EnginePack, RankRow, RecommendResponse, Tickets } from "@/domain/types/engine";
 import type { AzuLlmMessage } from "@/features/chatbot/azuLlmClient";
 import { catLabel, catalogBySourceId } from "@/v1/catalog";
 import { approxKor, korWon, num, won } from "@/v1/format";
@@ -43,6 +43,8 @@ export interface ChatContext {
   spending: Record<string, number>;
   margin: number;
   brandShare: BrandShare;
+  /** 명세서로 계산한 결과면 그 결제 금액(엔진 건당 조건 계산용) */
+  tickets?: Tickets;
   ownedIds: number[];
   page: ChatPage;
   /** 카드 비교·혜택별 추천 계산에 쓰는 지출(지출 입력 그대로) */
@@ -55,6 +57,8 @@ export interface ChatContext {
 export type EngineCall = (fn: "rank" | "explain" | "recommend" | "alt", args: unknown) => Promise<{ ok: boolean; error?: string } & Record<string, unknown>>;
 
 const sum = (r: Record<string, number>) => Object.values(r).reduce((s, v) => s + v, 0);
+/** 결과·지갑과 같은 숫자가 나오게 명세서 결제 금액도 넘긴다 */
+const ticketArg = (ctx: ChatContext) => (ctx.tickets ? { tickets: ctx.tickets } : {});
 const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
 
 function dateText(ms: number | null): string {
@@ -225,7 +229,7 @@ async function answerNoMargin(ctx: ChatContext, call: EngineCall): Promise<ChatM
   // 이미 여유 없이 계산한 결과면 기본 추천(여유 2만원)과, 아니면 여유 없이 계산한 조합과 비교한다
   if (ctx.margin === 0) {
     const ids = ctx.ownedIds.length ? ctx.ownedIds : pack.sids;
-    const base = (await call("recommend", { ids, spending: ctx.spending, margin: 20000, mode: "maxBenefit", maxCards: 3, brandShare: ctx.brandShare, withAlt: false })) as unknown as RecommendResponse;
+    const base = (await call("recommend", { ids, spending: ctx.spending, margin: 20000, mode: "maxBenefit", maxCards: 3, brandShare: ctx.brandShare, ...ticketArg(ctx), withAlt: false })) as unknown as RecommendResponse;
     if (!base.ok || !base.result?.cards?.length) return { role: "model", text: "기본 추천을 다시 계산하지 못했어요. 결과 화면에서 '여유 두고 계산하기'를 눌러 비교해 보세요." };
     const vm = noMarginVM(base.result, pack, 20000);
     return {
@@ -237,13 +241,13 @@ async function answerNoMargin(ctx: ChatContext, call: EngineCall): Promise<ChatM
   // 결과 화면은 대안 조합을 미리 계산하지 않는다(2026-10-29). 없으면 여기서 계산한다
   let alt = rec?.alt ?? null;
   if (!alt && rec && rec.margin > 0 && rec.pool?.length) {
-    const res = (await call("alt", { ids: rec.pool, k: rec.k, spending: ctx.spending, brandShare: ctx.brandShare })) as unknown as { ok: boolean; alt?: RecommendResponse["alt"] };
+    const res = (await call("alt", { ids: rec.pool, k: rec.k, spending: ctx.spending, brandShare: ctx.brandShare, ...ticketArg(ctx) })) as unknown as { ok: boolean; alt?: RecommendResponse["alt"] };
     alt = res.ok ? (res.alt ?? null) : null;
   }
   if (!alt || alt.net < pack.net + 100) {
     return { role: "model", text: `실적 여유를 없애도 순혜택이 거의 늘지 않아요. 지금 조합(월 ${approxKor(pack.net)})을 그대로 쓰는 게 나아요.`, blocks: [{ kind: "actions", actions: [{ id: "keep", label: "지금 조합 유지", primary: true }] }] };
   }
-  const ex = (await call("explain", { ids: alt.sids, spending: ctx.spending, margin: 0, brandShare: ctx.brandShare })) as { ok: boolean; result?: EnginePack };
+  const ex = (await call("explain", { ids: alt.sids, spending: ctx.spending, margin: 0, brandShare: ctx.brandShare, ...ticketArg(ctx) })) as { ok: boolean; result?: EnginePack };
   const altPack = ex.ok && ex.result ? ex.result : null;
   const diff = alt.net - pack.net;
   const names = alt.names.map((n) => nickOf({ sid: 0, name: n })).join(" + ");

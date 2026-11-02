@@ -1,4 +1,4 @@
-import type { BrandShare, EngineCard, EnginePack, TraceBenefit } from "@/domain/types/engine";
+import type { BrandShare, EngineCard, EnginePack, Tickets, TraceBenefit } from "@/domain/types/engine";
 import { catalogBySourceId, catalogCards, isUnread } from "@/v1/catalog";
 import { annualMan, approxKor, approxWon, korWon, num, won } from "@/v1/format";
 import { benefitByCategory, isExact, statusLine } from "@/v1/wallet/model";
@@ -27,6 +27,8 @@ export interface ViewCtx {
   picks?: BrandPicks;
   /** 명세서에서 읽은 브랜드 금액(명세서 경로) */
   statementBrands?: Record<string, Record<string, number>>;
+  /** 명세서에서 읽은 결제 금액(명세서 경로). 있으면 결제 1회 금액은 가정이 아니라 내 값 */
+  tickets?: Tickets;
 }
 
 const TIGHT_ROOM = 5000;
@@ -646,6 +648,8 @@ export function barVM(bar: BarItem[], pack: EnginePack): BarVM {
 
 const ASSUME = assumptions as { avg_ticket_won: Record<string, number | string>; eligible_share_by_specificity: Record<string, number | string> };
 const AVG = ASSUME.avg_ticket_won;
+/** 시간대 한정 혜택에서 그 시간대 결제 비중 가정값 */
+const ASSUME_TIME = (assumptions as { time_window_share?: { default?: number } }).time_window_share?.default ?? 0.25;
 
 /** 카드고릴라에서 혜택 정보를 모은 날(가장 많은 카드의 수집일): '9월 17일' */
 export const CATALOG_DATE_TEXT: string = (() => {
@@ -683,6 +687,8 @@ export function usedValuesVM(pack: EnginePack, ctx: ViewCtx): UsedVM {
       user.push(`${catShort(cat)} ${korWon(ctx.spending[cat])} 중 ${list.slice(0, 2).map(([b, v]) => `${b} ${korAmount(v)}`).join(" · ")}`);
     }
     if (count) user.push(`브랜드 ${count}곳`);
+    // 명세서에 없는 브랜드는 0%로 계산한다(statementBrandShare)
+    user.push("명세서에 나온 가게만 브랜드 혜택으로 계산");
   } else if (ctx.picks) {
     for (const [cat, p] of Object.entries(ctx.picks)) {
       if (!(ctx.spending[cat] > 0)) continue;
@@ -719,10 +725,25 @@ export function usedValuesVM(pack: EnginePack, ctx: ViewCtx): UsedVM {
     else if (estBrand.size) assumed.push(`${who} 자주 가는 곳을 고르지 않아 브랜드 혜택 대상 비중 ${b}로 추정`);
     else assumed.push(`${who} 자주 가는 곳을 고르지 않아 브랜드 묶음 혜택 대상 비중 ${g}로 추정`);
   }
+  // 명세서 경로: 결제가 있는 카테고리는 실제 결제 금액으로 계산했으니 가정이 아니라 내 값으로 적는다(2026-10-31)
+  const mine = Object.entries(ctx.tickets ?? {})
+    .filter(([cat, xs]) => !cat.startsWith("_") && xs.length > 0 && benefitCats.has(cat))
+    .sort((a, b) => b[1].length - a[1].length);
+  if (mine.length) {
+    const avg = (xs: number[]) => Math.round(xs.reduce((s, v) => s + v, 0) / xs.length / 100) * 100;
+    user.splice(
+      user.length - 1,
+      0,
+      `명세서 결제 금액으로 건당 조건 계산(${mine
+        .slice(0, 3)
+        .map(([cat, xs]) => `${catShort(cat)} ${xs.length}건 평균 ${ticketText(avg(xs))}`)
+        .join(" · ")})`,
+    );
+  }
   const tickets = new Map<number, string[]>();
   for (const cat of ["cafe", "convenience", "dining", "transport"]) {
     const v = AVG[cat];
-    if (typeof v !== "number" || !benefitCats.has(cat)) continue;
+    if (typeof v !== "number" || !benefitCats.has(cat) || ctx.tickets?.[cat]?.length) continue;
     tickets.set(v, [...(tickets.get(v) ?? []), cat === "transport" ? "교통" : catShort(cat)]);
   }
   if (tickets.size)
@@ -731,7 +752,14 @@ export function usedValuesVM(pack: EnginePack, ctx: ViewCtx): UsedVM {
         .map(([v, cats]) => `${joinDot(cats)} ${ticketText(v)}`)
         .join(", ")}`,
     );
-  if (payCond) assumed.push("후불교통·자동납부 같은 결제 조건은 지킨다고 봄");
+  // 명세서 경로(2026-11-01): 요일 한정은 명세서 요일로 계산했고, 간편결제 조건 혜택은 뺐다. 시간대는 명세서에 시간이 없어 가정으로 남는다
+  const flagged = (s: string) => pack.cards.some((c) => c.flags.some((f) => f.includes(s)));
+  if (ctx.tickets) {
+    if (flagged("명세서의 요일별 결제")) user.splice(user.length - 1, 0, "요일 한정 혜택은 명세서의 실제 요일별 결제로 계산");
+    if (flagged("명세서로 알 수 없어 계산에서 뺌")) user.splice(user.length - 1, 0, "간편결제로 결제해야 받는 혜택은 명세서로 확인할 수 없어 뺌");
+  }
+  if (flagged("시간대 한정")) assumed.push(`시간대 한정 혜택은 그 시간 결제를 ${pctText(Number(ASSUME_TIME))}로 봄(명세서에 결제 시각이 없어요)`);
+  if (payCond) assumed.push("후불교통·자동납부·공식 앱 결제 같은 결제 조건은 지킨다고 봄");
   if (usesPoint) assumed.push("포인트 1점 = 1원");
   assumed.push(CATALOG_DATE_TEXT ? `혜택 정보는 카드고릴라 원문(${CATALOG_DATE_TEXT} 수집) 기준` : "혜택 정보는 카드고릴라 원문 기준");
   return { user: `${user.join(" · ")}.`, assumed: `가정: ${assumed.join(" · ")}.` };

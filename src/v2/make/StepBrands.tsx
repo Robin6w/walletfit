@@ -142,7 +142,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, prev, next }: P
 
         {tabs.length === 0 || !tab ? (
           <section style={{ background: "#FFFFFF", borderRadius: 24, padding: 24, boxShadow: SHADOW, fontSize: 15, color: "#3A4A78" }}>
-            고를 브랜드가 있는 지출(카페·편의점·외식·온라인쇼핑·주유)이 없어요. 바로 추천 조합을 볼 수 있어요.
+            고를 브랜드가 있는 지출({BRAND_TABS.map((t) => t.label.split("·")[0]).join("·")})이 없어요. 바로 추천 조합을 볼 수 있어요.
           </section>
         ) : (
           <>

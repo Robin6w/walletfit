@@ -11,6 +11,7 @@ import { StepResult } from "@/v2/make/StepResult";
 import { StepSpend } from "@/v2/make/StepSpend";
 import { StepStatement } from "@/v2/make/StepStatement";
 import { StepType } from "@/v2/make/StepType";
+import { statementSignals } from "@/v2/model/statement";
 import { PageMain } from "@/v2/ui/Page";
 import { WizardBar } from "@/v2/ui/TopBar";
 
@@ -46,6 +47,11 @@ export default function MakeFlow({ flow, step }: { flow: Flow; step?: string }) 
     () => Object.values(engineBrands.data?.categories ?? engineBrands.lastGood?.categories ?? {}).flatMap((rows) => rows.map((r) => r.name)),
     [engineBrands.data, engineBrands.lastGood],
   );
+  // 명세서: 브랜드를 담은 카드 혜택의 카테고리로 넣는다(엔진이 그 카테고리 안에서만 브랜드 혜택을 계산)
+  const brandCats = useMemo(
+    () => Object.fromEntries(Object.entries(engineBrands.data?.categories ?? engineBrands.lastGood?.categories ?? {}).flatMap(([cat, rows]) => rows.map((r) => [r.name, cat]))),
+    [engineBrands.data, engineBrands.lastGood],
+  );
 
   const pills = stepPills(flow, cur, inp, source);
   const first = flow === "own" ? paths.make("own", "cards") : paths.make("new", "type");
@@ -68,6 +74,7 @@ export default function MakeFlow({ flow, step }: { flow: Flow; step?: string }) 
           flow={flow}
           spending={inp.spend.spending}
           onChange={inp.spend.updateCategory}
+          onClear={() => inp.spend.setSpending(Object.fromEntries(categories.map((c) => [c.id, 0])))}
           total={inp.total}
           prev={first}
           next={{ to: paths.make(flow, "brands"), label: "다음: 자주 가는 곳" }}
@@ -93,10 +100,11 @@ export default function MakeFlow({ flow, step }: { flow: Flow; step?: string }) 
         <StepStatement
           back={paths.make(flow, "spend")}
           extraBrands={extraBrands}
+          brandCats={brandCats}
           onApply={(s, fileName) => {
             // 명세서 금액으로 지출을 덮어쓴다(없는 카테고리는 0)
             inp.spend.setSpending(Object.fromEntries(categories.map((c) => [c.id, s.spending[c.id] ?? 0])));
-            inp.setStatement({ brands: s.brands, fileName, period: s.period, itemCount: s.itemCount, readAt: new Date().toISOString() });
+            inp.setStatement({ brands: s.brands, fileName, period: s.period, itemCount: s.itemCount, readAt: new Date().toISOString(), tickets: statementSignals(s.items) });
             navigate(paths.make(flow, "result", { from: "statement" }));
           }}
         />

@@ -75,6 +75,7 @@ function useChatContext(): ChatContext {
     spending: rec ? lastRun!.spending : useWallet ? wallet!.spending : pageSpending,
     margin: rec ? lastRun!.margin : useWallet ? wallet!.margin : 20000,
     brandShare: rec ? lastRun!.brandShare : useWallet ? (wallet!.brandShare ?? {}) : pageBrandShare,
+    tickets: rec ? lastRun!.tickets : useWallet ? wallet!.tickets : undefined,
     ownedIds: myCards.ids,
     page,
     pageSpending,

@@ -42,7 +42,7 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
   const brandShare = w.brandShare ?? toBrandShare(w.spending, w.brandSpend ?? {});
   const newSids = w.newSids ?? [];
   const bar: BarItem[] = w.bar ? monotoneBar(w.bar, pack) : w.singleNet !== null ? [{ k: 1, net: w.singleNet, cards: 1, same: false }] : [];
-  const ctx: ViewCtx = { spending: w.spending, brandShare, margin: w.margin, ownedIds: owned, newSids, source: w.source ?? "manual" };
+  const ctx: ViewCtx = { spending: w.spending, brandShare, margin: w.margin, ownedIds: owned, newSids, source: w.source ?? "manual", tickets: w.tickets };
   const hero = heroVM({ pack, bar, flow, ownedCount: owned.length, newSids, ownedOnly: null, place: "wallet" });
   const cards = pack.cards.map((c) => walletCard(c, pack, ctx));
   const rows = guideRows(pack, w.spending, brandShare);

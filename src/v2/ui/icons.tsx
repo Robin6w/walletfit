@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-import { Bike, BookOpen, Building2, Car, Dumbbell, Film, Flag, GraduationCap, Globe, Package, PawPrint, Plane, Receipt, Stethoscope, Store } from "lucide-react";
+import { Bike, BookOpen, Building2, Car, Dumbbell, Film, Flag, GraduationCap, Globe, Package, PawPrint, Plane, Receipt, Shirt, Stethoscope, Store, TrainFront, Tv } from "lucide-react";
 
 /**
  * 카테고리 아이콘. 디자인(양준서 페이지)에 그려진 8개는 원본 도형과 색을 그대로 쓰고,
@@ -101,6 +101,9 @@ const CAT_ICONS: Record<string, CatIcon> = {
     ),
   },
   culture: { bg: "#ECEBFB", fg: "#4338CA", lucide: Film },
+  subscription: { bg: "#E7EEFC", fg: "#3E6FD8", lucide: Tv },
+  intercity: { bg: "#E6EAF5", fg: "#0E1F5C", lucide: TrainFront },
+  fashion: { bg: "#ECEBFB", fg: "#4338CA", lucide: Shirt },
   car: { bg: "#EDF1F8", fg: "#4D5F88", lucide: Car },
   pet: { bg: "#E7EEFC", fg: "#3E6FD8", lucide: PawPrint },
   education: { bg: "#E5EBFA", fg: "#1C3FAA", lucide: GraduationCap },

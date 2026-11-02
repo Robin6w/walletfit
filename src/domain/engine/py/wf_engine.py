@@ -52,10 +52,33 @@ def init_json(catalog_text, assumptions_text):
 
 # ---------- 공통 ----------
 
-def _A(brand_share):
+# 실제 결제 금액 분포를 쓸 최소 건수. 이보다 적으면 그 평균만 avg_ticket_won 대신 쓴다(분포는 지수분포 그대로)
+MIN_TICKETS = 5
+
+
+def _A(brand_share, tickets=None):
+    """tickets: 명세서에서 읽은 카테고리별 결제 금액 {cat: [원, …]}(2026-10-31). 건당 최소 금액·횟수 조건 계산에 쓴다.
+    '_'로 시작하는 키는 부가 정보: '_wd:<cat>'은 그 카테고리의 요일별 결제 금액 [월, …, 일](요일 한정 혜택용, 2026-11-01).
+    tickets가 오면 명세서 경로다: 명세서로 알 수 없는 '간편결제로 결제하는 비중'은 가정(30%) 대신 0으로 둔다(추정으로 혜택을 부풀리지 않게)."""
     A = copy.deepcopy(STATE["A"])
     if brand_share:
         A["user_brand_share"] = brand_share
+    if tickets:
+        A["statement_mode"] = True
+        A["payment_method_share"]["default"] = 0.0
+        A["user_weekdays"] = {k[4:]: [float(x) for x in v] for k, v in tickets.items() if k.startswith("_wd:") and len(v) == 7}
+        user = {}
+        for cat, xs in tickets.items():
+            if cat.startswith("_"):
+                continue
+            xs = [float(x) for x in xs if x and x > 0]
+            if not xs or cat in A["single_txn_categories"]:
+                continue
+            if len(xs) >= MIN_TICKETS:
+                user[cat] = tuple(sorted(xs))
+            else:
+                A["avg_ticket_won"][cat] = sum(xs) / len(xs)
+        A["user_tickets"] = user
     return A
 
 
@@ -396,7 +419,7 @@ def recommend_json(payload_text):
     fee_cap = p.get("feeCap")
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in ids]
     time_limit = float(p.get("timeLimit") or 10)
-    A = _A(p.get("brandShare"))
+    A = _A(p.get("brandShare"), p.get("tickets"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
 
@@ -404,7 +427,7 @@ def recommend_json(payload_text):
     # 앞선 계산의 후보와 장수별 결과를 남겨 두고 다음 계산은 그다음 장수부터 이어서 한다(같은 계산을 두 번 하지 않게).
     # 장수 상한을 3 → 5로 올려 다시 부를 때도 4장부터 이어서 푼다
     k_limit = int(p["kLimit"]) if p.get("kLimit") else None
-    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), mode], sort_keys=True)
+    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), p.get("tickets"), mode], sort_keys=True)
     seed = _SEED.get(seed_key)
     if seed:
         rows, pool = seed["rows"], list(seed["pool"])
@@ -561,7 +584,7 @@ def alt_json(payload_text):
     spending = _clean_spend(p.get("spending"))
     if not pool or not spending:
         return json.dumps({"ok": True, "alt": None})
-    A = _A(p.get("brandShare"))
+    A = _A(p.get("brandShare"), p.get("tickets"))
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in pool]
     alt = _alt_of(pool, spending, A, int(p.get("k") or 1), fee_cap=p.get("feeCap"), fixed=fixed,
                   time_limit=float(p.get("timeLimit") or 10))
@@ -574,7 +597,7 @@ def explain_json(payload_text):
     ids = [int(x) for x in p["ids"] if int(x) in STATE["records"]]
     spending = _clean_spend(p.get("spending"))
     margin = int(p.get("margin") or 0)
-    A = _A(p.get("brandShare"))
+    A = _A(p.get("brandShare"), p.get("tickets"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
     recs_sel = {s: _raised(STATE["records"][s], margin) for s in ids}
@@ -593,7 +616,7 @@ def rank_json(payload_text):
     """카드마다 지출 전부를 그 카드로 냈을 때의 월 혜택(전체 카드 정렬, 혜택별 추천, 카드 목록)."""
     p = json.loads(payload_text)
     spending = _clean_spend(p.get("spending"))
-    A = _A(p.get("brandShare"))
+    A = _A(p.get("brandShare"), p.get("tickets"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     detail = bool(p.get("detail"))
     out = []
@@ -675,7 +698,7 @@ def category_rank_json(payload_text):
     base = _clean_spend(p.get("spending"))
     base[cat] = amount
     base = {c: v for c, v in base.items() if v > 0}
-    A = _A(p.get("brandShare"))
+    A = _A(p.get("brandShare"), p.get("tickets"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     rows = []
     for sid in ids:

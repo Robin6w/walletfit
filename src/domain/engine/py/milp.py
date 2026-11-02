@@ -383,9 +383,9 @@ def _build_card(M, B, cats, S, A, BIGQ):
         share = _elig_share(sc, A)
         if sc.get("payment_condition") and sc["specificity"] == "all_merchants":
             share *= A["payment_method_share"]["default"]
-        days = sc.get("days", "any")
-        dshare = {"any": 1.0, "weekend": 2 / 7, "weekday": 5 / 7}.get(days, len(sc.get("day_list", [])) / 7)
-        dshare *= _hour_share(sc, A)
+        # 요일 한정: 명세서가 있으면 그 카테고리의 실제 요일별 결제 비율(calc.day_share_of, 2026-11-01)
+        import calc
+        dshare = calc.day_share_of(sc, c, A) * _hour_share(sc, A)
         scale = 1.0
         share_scale, category_scale = scales_for(b)
         if sc["specificity"] in ("brand", "merchant_group"):

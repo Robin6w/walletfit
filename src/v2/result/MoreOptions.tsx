@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { CardKind, MonthlySpend } from "@/domain/types/card";
-import type { BrandShare, EnginePack } from "@/domain/types/engine";
+import type { BrandShare, EnginePack, Tickets } from "@/domain/types/engine";
 import { catalogBySourceId, isUnread } from "@/v1/catalog";
 import { approxWon, korWon } from "@/v1/format";
 import { useEngine } from "@/v2/app/engine";
@@ -126,6 +126,8 @@ export interface ConditionsBarProps {
   pack: EnginePack | null;
   spending: Record<string, number>;
   brandShare: BrandShare;
+  /** 명세서 결제 금액(명세서 경로만) */
+  tickets?: Tickets;
   efficientCeiling: number | null;
   onApplySpending: (s: MonthlySpend) => void;
   /** 소득으로 채운 지출로 카드 수를 계산할 때 쓰는 추천 인자(결과 화면과 같은 조건) */
@@ -473,7 +475,7 @@ export function ConditionsBar(p: ConditionsBarProps) {
             </div>
             {p.pack && p.pack.cards.length > 0 && (
               <div style={toolBox}>
-                <SwapCard pack={p.pack} candidates={p.candidateIds} spending={p.spending} brandShare={p.brandShare} margin={p.noMargin ? 0 : p.margin} />
+                <SwapCard pack={p.pack} candidates={p.candidateIds} spending={p.spending} brandShare={p.brandShare} tickets={p.tickets} margin={p.noMargin ? 0 : p.margin} />
               </div>
             )}
           </div>
@@ -484,14 +486,28 @@ export function ConditionsBar(p: ConditionsBarProps) {
 }
 
 /** 카드 바꿔보기: 조합의 카드 한 장을 다른 카드로 바꾸면 순혜택이 어떻게 되는지 */
-function SwapCard({ pack, candidates, spending, brandShare, margin }: { pack: EnginePack; candidates: number[]; spending: Record<string, number>; brandShare: BrandShare; margin: number }) {
+function SwapCard({
+  pack,
+  candidates,
+  spending,
+  brandShare,
+  tickets,
+  margin,
+}: {
+  pack: EnginePack;
+  candidates: number[];
+  spending: Record<string, number>;
+  brandShare: BrandShare;
+  tickets?: Tickets;
+  margin: number;
+}) {
   const [outPick, setOut] = useState<number>(pack.cards[0].sid);
   const [inPick, setIn] = useState<number | null>(null);
   const out = pack.sids.includes(outPick) ? outPick : pack.cards[0].sid;
   const inId = inPick !== null && !pack.sids.includes(inPick) ? inPick : null;
   const options = useMemo(() => candidates.filter((s) => !pack.sids.includes(s) && catalogBySourceId.has(s)).slice(0, 200), [candidates, pack.sids]);
   const ids = inId ? pack.sids.map((s) => (s === out ? inId : s)) : null;
-  const res = useEngine<{ ok: boolean; error?: string; result: EnginePack }>("explain", ids ? { ids, spending, margin, brandShare } : null);
+  const res = useEngine<{ ok: boolean; error?: string; result: EnginePack }>("explain", ids ? { ids, spending, margin, brandShare, ...(tickets ? { tickets } : {}) } : null);
   const after = res.data?.result;
   const idle = after?.cards.filter((c) => (c.pay ?? 0) <= 0 && !isUnread(c.sid)) ?? [];
   const unread = after?.cards.filter((c) => isUnread(c.sid)) ?? [];

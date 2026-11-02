@@ -1,5 +1,5 @@
 import type { CardKind } from "@/domain/types/card";
-import type { BrandShare, RecommendResponse } from "@/domain/types/engine";
+import type { BrandShare, RecommendResponse, Tickets } from "@/domain/types/engine";
 import type { SavedWallet } from "@/v1/state";
 import type { BrandPicks } from "@/v2/model/brands";
 import type { Flow } from "@/v2/app/paths";
@@ -18,6 +18,8 @@ export interface StatementState {
   period: string | null;
   itemCount: number;
   readAt: string;
+  /** 카테고리별 결제 금액 한 건씩(건당 조건 계산용, 2026-10-31). 이전에 저장한 명세서에는 없다 */
+  tickets?: Tickets;
 }
 
 /** 마지막으로 읽은 명세서 정보. 명세서 경로(A2′·B2′)의 결과 계산에 쓴다 */
@@ -39,6 +41,8 @@ export interface SavedWalletV2 extends SavedWallet {
   flow?: Flow;
   source?: "manual" | "statement";
   brandShare?: BrandShare;
+  /** 명세서 결제 금액(명세서로 계산한 지갑만) */
+  tickets?: Tickets;
   /** 카드 수별 순혜택(요약 문장용) */
   bar?: RecommendResponse["bar"];
   /** 여유 없는 조합을 저장했을 때 기본 추천(실적 여유 있는 조합) 요약 */
@@ -57,5 +61,6 @@ export interface LastRun {
   spending: Record<string, number>;
   margin: number;
   brandShare: BrandShare;
+  tickets?: Tickets;
   at: number;
 }

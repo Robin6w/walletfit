@@ -104,9 +104,11 @@ export function screenName(to: string): string {
   return pages[a] ?? "다음";
 }
 
-/** 말풍선 옆 시각: '오후 8:31' */
+/** 말풍선 옆 시각: '오후 8:31'. Intl 한국어 자료가 없는 환경(CI)에서도 같게 나오도록 직접 만든다 */
 export function clockText(at: number): string {
-  return new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit" }).format(at);
+  const d = new Date(at);
+  const h = d.getHours();
+  return `${h < 12 ? "오전" : "오후"} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 /**

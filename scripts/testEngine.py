@@ -133,18 +133,5 @@ rw0 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E
 rw1 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E._A(None, weekday_only))["total"]
 check(f"주말 외식 혜택 카드({E.STATE['records'][wk]['card']['name']}): 평일에만 먹으면 {rw0:,.0f} → {rw1:,.0f}원", rw1 < rw0)
 
-# 7. 2026-11-02 추천 최적성 검토: 보완형 카드를 놓치던 경우(직접 입력 월 100만원, 현행 카드 전체, 최대 3장, 여유 0).
-# 개선 전 월 84,229원(다둥이 행복 + MOVING PLAY + BC 바로 On&Off), 카드 한 장씩 바꿔 본 국소 최적 91,448원.
-# 고친 것: 고른 카드로 나눠 결제 배분 다시 풀기(_resplit), 마지막 교체 탐색(SWAP_FINAL), 정확히 넣기·바꾸기(ADD_EXACT)
-active = [s for s, r in E.STATE["records"].items() if not r["card"].get("discontinued")]
-SP100 = {"cafe": 80000, "convenience": 60000, "dining": 250000, "onlineShopping": 200000, "transport": 70000, "mobile": 70000,
-         "delivery": 120000, "mart": 150000}
-t0 = time.time()
-r100 = json.loads(E.recommend_json(json.dumps({"ids": active, "spending": SP100, "margin": 0, "mode": "maxBenefit", "maxCards": 3})))
-check(f"보완형 카드까지 찾기: 월 100만원 직접 입력 → 월 {r100['result']['net']:,.0f}원({time.time() - t0:.0f}초, 개선 전 84,229원)",
-      r100["ok"] and r100["result"]["net"] >= 90000, [c["name"] for c in r100["result"]["cards"]])
-bar100 = [b["net"] for b in r100["bar"]]
-check("카드 수 막대는 장수가 늘면 같거나 큼", all(b >= a - 1 for a, b in zip(bar100, bar100[1:])), bar100)
-
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

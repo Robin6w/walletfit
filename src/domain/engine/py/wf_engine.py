@@ -37,10 +37,6 @@ MILP_MAX_K = 3
 SWAP_ADD = 10
 SWAP_POOL = 6
 SWAP_ROUNDS = 2
-# 1~3장도 마지막에 교체 탐색을 한 번 더(2026-11-02 검토: 지출 6가지 중 3가지에서 보완형 카드를 놓쳐 월 7천~8천원 덜 추천)
-SWAP_FINAL = True
-# 최대 장수보다 적게 멈췄을 때 실제로 넣어 볼 카드 수(한 장 순혜택 순)
-ADD_EXACT = 15
 
 STATE = {"records": {}, "status": {}, "A": None}
 _SEED = {}  # 점진적 결과: 빠른 계산(kLimit)의 후보와 장수별 결과. 전체 계산이 이어받는다
@@ -220,22 +216,6 @@ def _solve_k(recs_sel, spending, A, K, fee_cap=None, fixed=(), lb=None, time_lim
         return None, res.get("objective")
     X = {c["sid"]: {k: float(v) for k, v in c["assign"].items() if v > 0.5} for c in res["cards"]}
     return X, res.get("objective")
-
-
-def _resplit(ev, recs_sel, X, spending, A, fee_cap=None, fixed=(), time_limit=10):
-    """고른 카드 그대로 '카테고리를 나눠 결제하는 모드'로 배분만 다시 풀어, 다듬은(_refine) 뒤 실제 계산으로 나을 때만 바꾼다.
-    후보가 많으면(SPLIT_MAX_POOL 초과) 카드를 고를 때 '한 카테고리는 카드 한 장에' 모드로 풀어서, 한 카테고리를 두 카드에 나눠
-    각 카드 할인 한도를 채우는 배분을 놓친다(2026-11-02 검토: 카카오뱅크 명세서, 같은 카드 3장인데 월 25,717원 → 28,094원).
-    X는 이미 다듬은 배분. 장수 사이 하한(lb)에는 쓰지 않는다(나눠 결제 모드의 모델 점수가 구조적으로 높아 다음 장수를 막았다)."""
-    sel = sorted({s for s in X if sum(X[s].values()) > 0.5} | set(fixed))
-    if not sel:
-        return X
-    res = milp.solve({s: recs_sel[s] for s in sel}, spending, A, K=len(sel), split=True, whole_cats=WHOLE_CATS,
-                     time_limit=time_limit, fee_cap=fee_cap, fixed=sel)
-    if not res.get("cards"):
-        return X
-    X2 = _refine(ev, {c["sid"]: {k: float(v) for k, v in c["assign"].items() if v > 0.5} for c in res["cards"]}, spending)
-    return X2 if _net_of(ev, X2) > _net_of(ev, X) + 1 else X
 
 
 def _score_rows(ids, spending, A, margin):
@@ -509,8 +489,6 @@ def recommend_json(payload_text):
                     continue
                 X, obj = copy.deepcopy(X_prev), obj_prev
             X = _refine(ev, X, spending)
-            if len(recs_sel) > SPLIT_MAX_POOL:
-                X = _resplit(ev, recs_sel, X, spending, A, fee_cap=fee_cap, fixed=fixed, time_limit=time_limit)
             net = _net_of(ev, X)
             if X_prev is not None and net < by_k[K - 1]["netSel"] + 1:
                 # 한 장 더 넣어도 늘지 않으면 이후 장수도 같은 조합
@@ -537,59 +515,6 @@ def recommend_json(payload_text):
             by_k2, recs2, ev2 = run(pool + extra, save=False)
             if by_k2 and max(v["netSel"] for v in by_k2.values()) > best["netSel"] + 1:
                 by_k, recs_sel, ev, pool = by_k2, recs2, ev2, pool + extra
-
-    if SWAP_FINAL and rows and by_k and not k_limit:
-        # 마지막 교체 탐색(2026-11-02 검토): 후보는 '혼자 쓸 때 잘하는 카드'로 추려서, 다른 카드의 빈자리를 채우는 보완형 카드
-        # (예: 배달 2위·대중교통 5위인데 한 장 순위 48위)를 놓친다. 1~3장 조합마다 넣기·바꾸기를 작은 MILP로 한 번 더 보고,
-        # 다듬은 뒤 실제 계산으로 나을 때만 바꾼다. 빠른 계산(kLimit)에서는 하지 않는다(첫 화면이 늦어지지 않게)
-        # 추천으로 보여 주는 최대 장수 조합에만 한다(1~2장은 카드 수 막대에만 쓰이고, 장수마다 하면 PC에서도 1분이 넘었다)
-        for K in [k for k in by_k if k == min(MILP_MAX_K, max_cards)]:
-            Xs, _ = _swap_k(rows, pool, by_k[K]["X"], K, spending, A, margin, fee_cap=fee_cap, fixed=fixed, lb=None,
-                            time_limit=time_limit)
-            if not Xs:
-                continue
-            for s in Xs:
-                if s not in recs_sel:
-                    recs_sel[s] = _raised(STATE["records"][s], margin)  # ev도 같은 dict를 본다
-            Xs = _resplit(ev, recs_sel, _refine(ev, Xs, spending), spending, A, fee_cap=fee_cap, fixed=fixed, time_limit=time_limit)
-            n = _net_of(ev, Xs)
-            if n > by_k[K]["netSel"] + 1:
-                by_k[K] = {"X": Xs, "netSel": n}
-        # 최대 장수보다 적게 멈췄으면 한 장 순혜택 상위 ADD_EXACT장을 하나씩 실제로 넣어 본다(카드 3장 이하라 나눠 결제 모드로 빨리 풀린다).
-        # 어림 이득은 카드끼리 실적 구간을 맞춰 주는 효과를 못 본다(2026-11-02 신한 명세서: KB Youth Club이 '그 외'를 맡자
-        # D4카드의정석Ⅱ가 백화점을 더 맡아 구간이 올라 월 +2,650원. 카테고리별 혜택은 어디서도 지금 조합보다 작았다)
-        # 최대 장수만큼 골랐으면 같은 방법으로 기여가 가장 작은 카드 한 장 바꾸기를 본다(직접 입력 월 100만원: BC 바로 On&Off 대신
-        # 하나 나라사랑 월 +6,716원). 모든 카드를 바꿔 보면 45번 풀어 PC에서도 65초가 걸려 한 장만 바꾼다.
-        # 다듬기는 느려서 다듬기 전 값으로 상위 3개만 골라 다듬는다
-        k_cap = min(MILP_MAX_K, max_cards)
-        if k_cap in by_k:
-            Xk = by_k[k_cap]["X"]
-            base = [s for s in Xk if sum(Xk[s].values()) > 0.5]
-            cand = [r[0] for r in sorted(rows, key=lambda r: (-r[1], r[0])) if r[0] not in base][:ADD_EXACT]
-            if len(base) < k_cap:
-                subs = [base + [s] for s in cand]
-            else:
-                movable = [s for s in base if s not in fixed]
-                weakest = min(movable, key=lambda s: (ev.total(s, Xk[s]) - _fee_m(recs_sel[s]), s)) if movable else None
-                subs = [[x for x in base if x != weakest] + [s] for s in cand] if weakest is not None else []
-            tried_x = []
-            for sub in subs:
-                for s in sub:
-                    if s not in recs_sel:
-                        recs_sel[s] = _raised(STATE["records"][s], margin)
-                Xa, _ = _solve_k({x: recs_sel[x] for x in sub}, spending, A, len(sub), fee_cap=fee_cap, fixed=sorted(set(sub) | set(fixed)),
-                                 time_limit=time_limit)
-                if Xa:
-                    tried_x.append((_net_of(ev, Xa), Xa))
-            for _, Xa in sorted(tried_x, key=lambda t: -t[0])[:3]:
-                Xa = _refine(ev, Xa, spending)
-                n, K = _net_of(ev, Xa), len([s for s in Xa if sum(Xa[s].values()) > 0.5])
-                if K in by_k and n > by_k[K]["netSel"] + 1:
-                    by_k[K] = {"X": Xa, "netSel": n}
-        # 장수가 늘면 순혜택도 같거나 크게(한 장 더 넣어 나빠지면 앞 장수 조합 그대로)
-        for K in sorted(by_k):
-            if K - 1 in by_k and by_k[K]["netSel"] < by_k[K - 1]["netSel"] + 1:
-                by_k[K] = dict(by_k[K - 1], same=True)
 
     if not by_k:
         return json.dumps({"ok": False, "error": "조건에 맞는 조합을 찾지 못했어요"})
@@ -647,8 +572,6 @@ def _alt_of(pool, spending, A, k, fee_cap=None, fixed=(), time_limit=10):
     if not X0:
         return None
     X0 = _refine(ev0, X0, spending)
-    if len(recs0) > SPLIT_MAX_POOL:
-        X0 = _resplit(ev0, recs0, X0, spending, A, fee_cap=fee_cap, fixed=fixed, time_limit=time_limit)
     used = [s for s in X0 if sum(X0[s].values()) > 0.5]
     return {"net": _net_of(ev0, X0), "sids": used, "names": [STATE["records"][s]["card"]["name"] for s in used]}
 

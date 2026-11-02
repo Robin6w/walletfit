@@ -114,8 +114,11 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(spending), JSON.stringify(inp.picks), JSON.stringify(inp.statement?.brands ?? null), effSource],
   );
+  // 명세서 경로: 실제 결제 금액으로 건당 최소 금액·횟수 조건을 계산한다(2026-10-31). 브랜드 비중과 같이 모든 계산에 넘긴다
+  const tickets = inp.ticketsFor(effSource);
   const extra = retry ? { retry } : {};
-  const common = { spending, mode: c.mode, maxCards: c.maxCards, ...(c.feeCap !== null ? { feeCap: c.feeCap } : {}), brandShare };
+  const personal = { brandShare, ...(tickets ? { tickets } : {}) };
+  const common = { spending, mode: c.mode, maxCards: c.maxCards, ...(c.feeCap !== null ? { feeCap: c.feeCap } : {}), ...personal };
   // 대안 조합(여유 없이)은 첫 결과를 늦추므로(약 4초) '여유 없이 다시 계산' 화면에서만 따로 계산한다(2026-10-29)
   const ownArgs = inp.ownIds.length && inp.total ? { ids: inp.ownIds, margin, withAlt: false, ...common, ...extra } : null;
   const newIds = useMemo(() => Array.from(new Set([...inp.ownIds, ...inp.newPool])), [inp.ownIds, inp.newPool]);
@@ -131,12 +134,12 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const base = recOwn.data && !recOwn.data.empty ? recOwn.data : null;
   const rec0Args = noMargin && ownArgs ? { ...ownArgs, margin: 0, withAlt: false } : null;
   const rec0 = useEngine<RecommendResponse>("recommend", rec0Args);
-  const altQArgs = noMargin && base && base.margin > 0 ? { ids: base.pool, k: base.k, spending, brandShare, ...(c.feeCap !== null ? { feeCap: c.feeCap } : {}), ...extra } : null;
+  const altQArgs = noMargin && base && base.margin > 0 ? { ids: base.pool, k: base.k, spending, ...personal, ...(c.feeCap !== null ? { feeCap: c.feeCap } : {}), ...extra } : null;
   const altQ = useEngine<{ ok: boolean; error?: string; alt: RecommendResponse["alt"] }>("alt", altQArgs);
   const alt = base?.alt ?? altQ.data?.alt ?? null;
-  const altArgs = noMargin && alt ? { ids: alt.sids, spending, margin: 0, brandShare, ...extra } : null;
+  const altArgs = noMargin && alt ? { ids: alt.sids, spending, margin: 0, ...personal, ...extra } : null;
   const altEx = useEngine<Explain>("explain", altArgs);
-  const baseExArgs = noMargin && base ? { ids: base.result.sids, spending, margin: 0, brandShare, ...extra } : null;
+  const baseExArgs = noMargin && base ? { ids: base.result.sids, spending, margin: 0, ...personal, ...extra } : null;
   const baseEx = useEngine<Explain>("explain", baseExArgs);
   const recNew = useEngineProgressive<RecommendResponse>("recommend", newArgs, quickOf(newArgs));
 
@@ -173,7 +176,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
 
   useEffect(() => {
     if (!view) return;
-    setLastRun({ flow, source: effSource, rec: view.rec, spending: view.rec.spending ?? spending, margin: effMargin, brandShare, at: Date.now() });
+    setLastRun({ flow, source: effSource, rec: view.rec, spending: view.rec.spending ?? spending, margin: effMargin, ...personal, at: Date.now() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
@@ -198,6 +201,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
     source: effSource,
     picks: inp.picks,
     statementBrands: inp.statement?.brands,
+    tickets,
   };
 
   const save = (stay: boolean) => {
@@ -216,7 +220,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
       v: 2,
       flow,
       source: effSource,
-      brandShare,
+      ...personal,
       bar: view.bar,
       baseline: view.base ? { names: view.base.cards.map((x) => shortOf(x)), net: view.base.net, margin } : null,
       newSids: view.newSids,
@@ -246,6 +250,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         margin: noMargin ? 0 : margin,
         withAlt: false,
         brandShare: inp.brandShareWith(s, effSource),
+        ...(tickets ? { tickets } : {}),
       })
     : null;
   // 여유 없이 계산 화면에서 여유(2만원·5만원)를 고르면 기본 결과로 돌아간다
@@ -281,6 +286,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             pack={null}
             spending={spending}
             brandShare={brandShare}
+            tickets={tickets}
             efficientCeiling={null}
             onApplySpending={(s) => inp.spend.setSpending(s)}
             countArgs={countArgs}
@@ -385,6 +391,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         pack={pack}
         spending={ctx.spending}
         brandShare={brandShare}
+        tickets={tickets}
         efficientCeiling={shown.rec.efficientCeiling ?? null}
         onApplySpending={(s) => inp.spend.setSpending(s)}
         countArgs={countArgs}

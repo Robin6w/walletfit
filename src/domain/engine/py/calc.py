@@ -91,6 +91,21 @@ def _amount_for_tier(by_tier, tier):
     return common[0] if common else None
 
 
+_WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
+
+
+def day_share_of(sc, cat, A):
+    """요일 한정 혜택의 대상 비중. 명세서의 요일별 결제 금액(user_weekdays, 월~일)이 있으면 그 비율, 없으면 요일 수 / 7(2026-11-01)."""
+    days = sc.get("days", "any")
+    if days == "any":
+        return 1.0
+    want = {"weekend": [5, 6], "weekday": [0, 1, 2, 3, 4]}.get(days) or [_WEEKDAYS.index(d) for d in sc.get("day_list", []) if d in _WEEKDAYS]
+    wd = (A.get("user_weekdays") or {}).get(cat)
+    if wd and sum(wd) > 0:
+        return sum(wd[i] for i in want) / sum(wd)
+    return {"weekend": 2 / 7, "weekday": 5 / 7}.get(days, len(sc.get("day_list", [])) / 7)
+
+
 def _txn_model(spend, cat, A, rate=None, min_txn=None, max_counted=None, max_b=None):
     """결제 건수와 '조건을 만족하는 결제 1건당' 기준 금액·혜택을 구한다.
     반환: (조건 만족 건수, 건당 기준금액 평균, 건당 혜택 평균(rate 있을 때))"""
@@ -103,12 +118,34 @@ def _txn_model(spend, cat, A, rate=None, min_txn=None, max_counted=None, max_b=N
         if max_b is not None:
             ben = min(ben, max_b)
         return (1.0 if ok else 0.0), base, ben
-    mu = A["avg_ticket_won"].get(cat, 25000)
+    # 명세서에서 읽은 실제 결제 금액(user_tickets)이 있으면 그 분포로, 없으면 평균 mu인 지수분포로 본다(2026-10-31)
+    tickets = (A.get("user_tickets") or {}).get(cat)
+    if tickets:
+        mu = sum(tickets) / len(tickets)
+        p, base_mean, ben_mean = _empirical_stats(tickets, min_txn or 0, max_counted, rate, max_b)
+    else:
+        mu = A["avg_ticket_won"].get(cat, 25000)
+        p, base_mean, ben_mean = _ticket_stats(mu, min_txn or 0, max_counted, rate, max_b)
     n = spend / mu
-    p, base_mean, ben_mean = _ticket_stats(mu, min_txn or 0, max_counted, rate, max_b)
     if p <= 0:
         return 0.0, 0.0, 0.0
     return n * p, base_mean, ben_mean
+
+
+@functools.lru_cache(maxsize=4096)
+def _empirical_stats(tickets, m, max_counted, rate, max_b):
+    """_ticket_stats와 같은 값을 실제 결제 금액 목록(tuple)으로 구한다: 건당 m 이상 결제의 비율 p, 그 결제들의 평균 기준금액·평균 혜택."""
+    sel = [x for x in tickets if x >= m]
+    if not sel:
+        return 0.0, 0.0, 0.0
+    base = [min(x, max_counted) if max_counted else x for x in sel]
+    ben_mean = 0.0
+    if rate is not None:
+        ben = [rate * b for b in base]
+        if max_b is not None:
+            ben = [min(b, max_b) for b in ben]
+        ben_mean = sum(ben) / len(ben)
+    return len(sel) / len(tickets), sum(base) / len(base), ben_mean
 
 
 @functools.lru_cache(maxsize=4096)
@@ -192,9 +229,12 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
 
     share, user_share = _elig_share(sc, A)
     days = sc.get("days", "any")
-    day_share = {"any": 1.0, "weekend": 2 / 7, "weekday": 5 / 7}.get(days, len(sc.get("day_list", [])) / 7)
+    day_share = day_share_of(sc, cats[0], A) if cats else 1.0
     if days != "any":
-        flags.add(f"{b['id']}: 요일 한정({days} {''.join(sc.get('day_list', []))}) → 지출의 {day_share:.0%}만 대상으로 가정")
+        if cats and (A.get("user_weekdays") or {}).get(cats[0]):
+            flags.add(f"{b['id']}: 요일 한정({days} {''.join(sc.get('day_list', []))}) → 명세서의 요일별 결제로 지출의 {day_share:.0%}가 대상")
+        else:
+            flags.add(f"{b['id']}: 요일 한정({days} {''.join(sc.get('day_list', []))}) → 지출의 {day_share:.0%}만 대상으로 가정")
     hours = sc.get("hours")
     hour_share = 1.0
     if hours:
@@ -211,7 +251,10 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         if sc["specificity"] == "all_merchants":
             # 모든 가맹점 대상인데 결제 수단 조건이 붙은 혜택(간편결제 2% 등): 전부를 그 수단으로 결제한다고 보면 과대평가
             share = share * A["payment_method_share"]["default"]
-            flags.add(f"{b['id']}: '{sc['payment_condition']}'로 결제하는 지출 비중 {A['payment_method_share']['default']:.0%} 가정")
+            if A.get("statement_mode"):
+                flags.add(f"{b['id']}: '{sc['payment_condition']}'로 결제했는지는 명세서로 알 수 없어 계산에서 뺌")
+            else:
+                flags.add(f"{b['id']}: '{sc['payment_condition']}'로 결제하는 지출 비중 {A['payment_method_share']['default']:.0%} 가정")
         else:
             flags.add(f"{b['id']}: 결제 조건 '{sc['payment_condition']}'을 지킨다고 가정")
 
@@ -226,7 +269,7 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
             scale = (share_scale or {}).get(cat, 1.0)
         elif splits_spend(b):
             scale = (category_scale or {}).get(b["id"], 1.0)
-        s = spending.get(cat, 0) * share * scale * day_share * channel_share(sc, cat, A)
+        s = spending.get(cat, 0) * share * scale * day_share_of(sc, cat, A) * hour_share * channel_share(sc, cat, A)
         if exclusive_base and covered:
             s = max(0.0, s - covered.get(cat, 0.0))
         return s, scale
@@ -255,6 +298,7 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
 
     for cat in cats:
         s, scale = _target(cat)
+        dsh = day_share_of(sc, cat, A) * hour_share
         if scale < 1.0 and splits_spend(b):
             flags.add(f"{b['id']}: 같은 카테고리 업종 혜택 {round(1 / scale)}개가 지출을 나눠 가짐")
         chs = channel_share(sc, cat, A)
@@ -267,7 +311,7 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
             if share < 1: parts.append(f"대상 비중 {share:.0%}")
             if chs < 1: parts.append(f"{sc.get('channel')} 비중 {chs:.0%}")
             if scale < 1: parts.append(f"나눠 가짐 {scale:.0%}")
-            if day_share < 1: parts.append(f"요일·시간대 {day_share:.0%}")
+            if dsh < 1: parts.append(f"요일·시간대 {dsh:.0%}")
             if exclusive_base and covered and covered.get(cat): parts.append(f"특정 혜택 받은 {covered[cat]:,.0f}원 제외")
             log.append(f"    대상 지출: {' x '.join(parts)} → {s:,.0f}원")
         typ = rw["type"]
@@ -294,7 +338,7 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         total += amt
         elig_total += elig
         elig_by_cat[cat] = elig_by_cat.get(cat, 0.0) + elig
-        b["_trace"]["cats"].append({"cat": cat, "spend": spending.get(cat, 0), "share": share, "scale": scale, "day_share": day_share,
+        b["_trace"]["cats"].append({"cat": cat, "spend": spending.get(cat, 0), "share": share, "scale": scale, "day_share": dsh,
                                     "covered": (covered or {}).get(cat, 0.0) if exclusive_base else 0.0, "target": s, "amount": amt, "eligible": elig})
         if log is not None and sc["specificity"] != "all_merchants" and typ != "won_per_period":
             extra = []

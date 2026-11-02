@@ -92,5 +92,59 @@ for _ in range(3000):
             bad += 1
 check("배분 반올림: 카테고리 합계 유지, 음수 없음(무작위 9,000번)", bad == 0, bad)
 
+# 5. 2026-10-31 명세서 결제 금액(tickets)으로 건당 조건 계산
+At = E._A(None, {"cafe": [1800, 2400, 1800, 1800, 6400, 1400], "dining": [55000, 20000], "mobile": [60000] * 6})
+n_real, _, _ = calc._txn_model(15600, "cafe", At, 0.5, 5000)
+n_assumed, _, _ = calc._txn_model(15600, "cafe", E._A(None), 0.5, 5000)
+check(f"건당 5천원 이상 카페 결제 수: 가정값 {n_assumed:.2f}건 → 명세서 {n_real:.2f}건(6건 중 6,400원 1건)",
+      abs(n_real - 15600 / (15600 / 6) * (1 / 6)) < 1e-9 and n_assumed > n_real)
+check("결제 5건 미만 카테고리는 평균만 바꾼다(외식 2건 평균 37,500원)",
+      At["avg_ticket_won"]["dining"] == 37500 and "dining" not in At["user_tickets"])
+check("한 달 한 번 결제 카테고리(통신비)는 명세서 금액을 쓰지 않는다", "mobile" not in At["user_tickets"])
+Ac = E._A(None, {"cafe": [10000] * 5})
+check("실제 금액 분포에도 건당 최대 혜택이 걸린다", calc._txn_model(50000, "cafe", Ac, 0.1, None, None, 500) == (5.0, 10000.0, 500.0))
+# 실제 카드: 카페 업종 혜택에 건당 5천원 이상 조건이 있는 카드는, 카페 결제가 모두 2,400원 이하인 사람에게 혜택이 늘면 안 되고
+# (월 한도에 걸리지 않은 카드는) 줄어야 한다. 다른 지출은 같고 카페 결제 금액만 다르다
+probes = [sid for sid, rec in E.STATE["records"].items()
+          if not rec["card"].get("discontinued") and any(
+              (b.get("scope") or {}).get("app_category") == "cafe" and (b.get("scope") or {}).get("specificity") == "category"
+              and ((b.get("conditions") or {}).get("min_txn_won") or 0) >= 5000 for b in rec["benefits"])]
+small = {"cafe": [1800, 2400, 1800, 1800, 1400, 2000]}
+sp = {"cafe": 60000, "etc": 400000}
+r0 = {r["sid"]: r["total"] for r in json.loads(E.rank_json(json.dumps({"ids": probes, "spending": sp})))["rows"]}
+r1 = {r["sid"]: r["total"] for r in json.loads(E.rank_json(json.dumps({"ids": probes, "spending": sp, "tickets": small})))["rows"]}
+up = [s for s in probes if r1[s] > r0[s] + 0.5]
+down = [s for s in probes if r1[s] < r0[s] - 0.5]
+check(f"건당 5천원 이상 카페 혜택 카드 {len(probes)}장: 소액 결제만 하면 {len(down)}장 혜택 줄고 늘어난 카드 없음",
+      probes and not up and down, [E.STATE["records"][s]["card"]["name"] for s in up])
+
+# 6. 2026-11-01 명세서 경로: 요일 한정 혜택은 실제 요일 비중, 간편결제 비중은 가정 대신 0
+Aw = E._A(None, {"cafe": [5000] * 5, "_wd:cafe": [10000, 0, 0, 0, 0, 0, 30000]})
+check("주말 한정 혜택: 카페 결제 4만원 중 일요일 3만원 → 75%(가정값이면 2/7)",
+      abs(calc.day_share_of({"days": "weekend"}, "cafe", Aw) - 0.75) < 1e-9 and abs(calc.day_share_of({"days": "weekend"}, "cafe", E._A(None)) - 2 / 7) < 1e-9)
+check("특정 요일(월) 혜택: 명세서 요일 비중 25%", abs(calc.day_share_of({"days": "specific", "day_list": ["월"]}, "cafe", Aw) - 0.25) < 1e-9)
+check("명세서에 없는 카테고리는 요일 가정값 그대로", abs(calc.day_share_of({"days": "weekday"}, "dining", Aw) - 5 / 7) < 1e-9)
+check("명세서 경로: 간편결제로 결제하는 비중은 가정(30%) 대신 0", Aw["payment_method_share"]["default"] == 0 and E._A(None)["payment_method_share"]["default"] == 0.3)
+wk = next((sid for sid, rec in E.STATE["records"].items() if not rec["card"].get("discontinued") and any(
+    (b.get("scope") or {}).get("days") == "weekend" and (b.get("scope") or {}).get("app_category") == "dining" and (b.get("scope") or {}).get("specificity") == "category"
+    for b in rec["benefits"])), None)
+weekday_only = {"dining": [20000] * 10, "_wd:dining": [40000, 40000, 40000, 40000, 40000, 0, 0]}
+rw0 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E._A(None, {"dining": [20000] * 10}))["total"]
+rw1 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E._A(None, weekday_only))["total"]
+check(f"주말 외식 혜택 카드({E.STATE['records'][wk]['card']['name']}): 평일에만 먹으면 {rw0:,.0f} → {rw1:,.0f}원", rw1 < rw0)
+
+# 7. 2026-11-02 추천 최적성 검토: 보완형 카드를 놓치던 경우(직접 입력 월 100만원, 현행 카드 전체, 최대 3장, 여유 0).
+# 개선 전 월 84,229원(다둥이 행복 + MOVING PLAY + BC 바로 On&Off), 카드 한 장씩 바꿔 본 국소 최적 91,448원.
+# 고친 것: 고른 카드로 나눠 결제 배분 다시 풀기(_resplit), 마지막 교체 탐색(SWAP_FINAL), 정확히 넣기·바꾸기(ADD_EXACT)
+active = [s for s, r in E.STATE["records"].items() if not r["card"].get("discontinued")]
+SP100 = {"cafe": 80000, "convenience": 60000, "dining": 250000, "onlineShopping": 200000, "transport": 70000, "mobile": 70000,
+         "delivery": 120000, "mart": 150000}
+t0 = time.time()
+r100 = json.loads(E.recommend_json(json.dumps({"ids": active, "spending": SP100, "margin": 0, "mode": "maxBenefit", "maxCards": 3})))
+check(f"보완형 카드까지 찾기: 월 100만원 직접 입력 → 월 {r100['result']['net']:,.0f}원({time.time() - t0:.0f}초, 개선 전 84,229원)",
+      r100["ok"] and r100["result"]["net"] >= 90000, [c["name"] for c in r100["result"]["cards"]])
+bar100 = [b["net"] for b in r100["bar"]]
+check("카드 수 막대는 장수가 늘면 같거나 큼", all(b >= a - 1 for a, b in zip(bar100, bar100[1:])), bar100)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

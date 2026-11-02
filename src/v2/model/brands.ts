@@ -24,6 +24,9 @@ export const BRAND_TABS: { cat: string; label: string; brands: string[] }[] = [
   { cat: "dining", label: "외식·배달", brands: ["배달의민족", "쿠팡이츠", "요기요"] },
   { cat: "onlineShopping", label: "온라인쇼핑", brands: ["쿠팡", "네이버쇼핑", "G마켓", "11번가", "SSG.COM"] },
   { cat: "gas", label: "주유", brands: ["SK에너지", "GS칼텍스", "S-OIL", "HD현대오일뱅크"] },
+  // 2026-11-01: OTT/구독은 넷플릭스·멜론 등 브랜드 한정 혜택이 대부분이라, 고르지 않으면 'ChatGPT만 쓰는 사람'에게도
+  // 넷플릭스 할인을 35%로 가정한다. 카드 혜택 데이터의 표기 그대로(엔진의 혜택 가맹점과 이어지게), 혜택 카드 수 순서
+  { cat: "subscription", label: "OTT·구독", brands: ["넷플릭스", "유튜브 프리미엄", "티빙", "디즈니+", "웨이브", "쿠팡플레이", "왓챠", "멜론", "지니", "스포티파이", "ChatGPT", "Claude"] },
 ];
 
 /**
@@ -122,6 +125,18 @@ export function amountsToBrandShare(spending: Record<string, number>, amounts: R
     for (const [brand, v] of byBrand) for (const a of aliasesOf(brand)) m[a] = Math.min(1, v / total);
     out[cat] = m;
   }
+  return out;
+}
+
+/**
+ * 명세서 경로의 브랜드 비중(2026-11-01). 명세서는 어디서 썼는지 다 보여 주므로, 지출이 있는 카테고리 중
+ * 혜택 브랜드가 하나도 없는 곳은 빈 비중({})으로 넘겨 브랜드 혜택을 0원으로 계산한다('이 중엔 없어요'와 같다).
+ * 넘기지 않으면 엔진이 '카테고리 지출의 35%(묶음 70%)는 혜택 브랜드에서 썼다'고 가정해, ChatGPT만 쓰는 사람에게
+ * 넷플릭스 할인 카드를 추천할 수 있었다
+ */
+export function statementBrandShare(spending: Record<string, number>, amounts: Record<string, Record<string, number>>): BrandShare {
+  const out = amountsToBrandShare(spending, amounts);
+  for (const [cat, v] of Object.entries(spending)) if (v > 0 && !out[cat]) out[cat] = {};
   return out;
 }
 

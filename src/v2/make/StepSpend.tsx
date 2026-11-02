@@ -41,6 +41,7 @@ export function StepSpend({
   flow,
   spending,
   onChange,
+  onClear,
   total,
   prev,
   next,
@@ -48,12 +49,16 @@ export function StepSpend({
   flow: Flow;
   spending: Record<string, number>;
   onChange: (cat: string, value: number) => void;
+  /** 모든 칸을 0원으로(2026-10-31). 넣어 둔 값은 브라우저에 남아 다음에 다시 들어와도 보이므로 */
+  onClear: () => void;
   total: number;
   prev: string;
   /** 다음 단계 주소와 이름(자주 가는 곳 또는 추천 결과) */
   next: { to: string; label: string };
 }) {
   const [added, setAdded] = useState<string[]>([]);
+  // '모두 지우기'는 한 번 더 확인한다(실수로 누르면 넣은 금액이 모두 사라진다)
+  const [confirmClear, setConfirmClear] = useState(false);
   const shown = [...MAIN_CATEGORIES, ...EXTRA.filter((c) => (spending[c] ?? 0) > 0 || added.includes(c))];
   const rest = EXTRA.filter((c) => !shown.includes(c));
   const count = Object.values(spending).filter((v) => v > 0).length;
@@ -65,7 +70,39 @@ export function StepSpend({
           <h1 style={{ margin: 0, fontSize: 28, lineHeight: 1.35, fontWeight: 700, letterSpacing: "-0.02em" }}>한 달에 어디에 얼마를 쓰나요?</h1>
           <p style={{ margin: 0, fontSize: 16, color: "#3A4A78" }}>대략적인 금액이면 충분해요. 안 쓰는 항목은 비워 두세요.</p>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          {total > 0 &&
+            (confirmClear ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#3A4A78" }}>
+                넣은 금액을 모두 지울까요?
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClear();
+                    setAdded([]);
+                    setConfirmClear(false);
+                  }}
+                  style={{ padding: "10px 14px", borderRadius: 10, border: "none", background: "#C62828", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#FFFFFF", cursor: "pointer" }}
+                >
+                  지우기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                  style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#3A4A78", cursor: "pointer" }}
+                >
+                  취소
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmClear(true)}
+                style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#3A4A78", cursor: "pointer" }}
+              >
+                모두 지우기
+              </button>
+            ))}
           <Link
             to={paths.make(flow, "statement")}
             style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #D3DDF2", background: "#FFFFFF", fontSize: 14, fontWeight: 700, color: "#2457F5", textDecoration: "none" }}

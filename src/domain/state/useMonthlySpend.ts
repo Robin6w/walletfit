@@ -130,13 +130,18 @@ export function useMonthlySpend(categories: SpendCategory[]) {
     dispatch({ kind: "setCategory", categoryId, value });
   }, []);
 
+  // 통째로 바꿀 때는 바로 저장한다(2026-10-31). 명세서로 지출을 채우고 같은 동작에서 결과 화면으로 옮기면, 화면이 새로 만들어지며
+  // 위 저장 useEffect가 돌기 전에 사라져 지출이 저장되지 않았다(결과 화면에 '넣은 지출이 없어요')
   const setSpending = useCallback((updater: SpendingUpdater) => {
-    dispatch({ kind: "replace", updater });
+    const next = typeof updater === "function" ? updater(current.current) : updater;
+    current.current = next;
+    saveMonthlySpend(next);
+    dispatch({ kind: "replace", updater: next });
   }, []);
 
   const resetSpending = useCallback(() => {
-    dispatch({ kind: "reset", categories });
-  }, [categories]);
+    setSpending(createEmptyMonthlySpend(categories));
+  }, [categories, setSpending]);
 
   const applyImportedItems = useCallback(
     (items: ParsedSpendingItem[], mode: "merge" | "overwrite") => {

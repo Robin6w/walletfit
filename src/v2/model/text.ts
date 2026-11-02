@@ -157,7 +157,10 @@ export function countWord(k: number): string {
 const CAT_SHORT: Record<string, string> = {
   cafe: "카페",
   mart: "마트",
-  culture: "문화·OTT",
+  culture: "영화·공연",
+  subscription: "OTT·구독",
+  intercity: "기차·고속버스",
+  fashion: "의류",
   car: "자동차",
   education: "교육",
   beautyFitness: "뷰티",

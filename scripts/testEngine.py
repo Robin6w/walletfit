@@ -180,5 +180,30 @@ r8 = json.loads(E.recommend_json(json.dumps({"ids": [2998, 2616, 2686, 51], "spe
 d8 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in r8["result"]["cards"])
 check(f"C1 켠 추천: 조합 순혜택 = calc 직접 계산 ({r8['result']['net']:,.0f}원)", abs(d8 - r8["result"]["net"]) < 1)
 
+# 9. 2026-11-03 마지막 국소 탐색(1장 바꾸기·더하기, 평가 횟수 상한)
+sp9 = {"mart": 200000, "education": 150000, "dining": 100000, "onlineShopping": 120000, "gas": 80000, "mobile": 70000,
+       "bills": 80000, "medical": 50000, "household": 50000, "department": 40000, "etc": 60000}
+pool9 = [s for s, st in E.STATE["status"].items() if st == "extracted"]
+
+
+def rec9(**kw):
+    E._SEED.clear()
+    return json.loads(E.recommend_json(json.dumps({"ids": pool9, "spending": sp9, "margin": 20000, "maxCards": 3, "withAlt": False, **kw})))
+
+
+off, on, on2 = rec9(localSearch=False), rec9(), rec9()
+check(f"국소 탐색: 순혜택이 줄지 않음 {off['result']['net']:,.0f} → {on['result']['net']:,.0f}원(평가 {on['lsEvals']}번 ≤ {E.LS_EVALS})",
+      on["result"]["net"] >= off["result"]["net"] - 1 and on["lsEvals"] <= E.LS_EVALS)
+check("국소 탐색: 같은 입력이면 같은 조합·금액(평가 횟수로 끊음)", on["result"]["sids"] == on2["result"]["sids"] and abs(on["result"]["net"] - on2["result"]["net"]) < 1)
+d9 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in on["result"]["cards"])
+check("국소 탐색: 화면 순혜택 = calc 직접 계산", abs(d9 - on["result"]["net"]) < 1)
+nets9 = [b["net"] for b in on["bar"]]
+check(f"국소 탐색: 카드 수 막대가 줄지 않음 {[round(n) for n in nets9]}", all(nets9[i] <= nets9[i + 1] + 1 for i in range(len(nets9) - 1)))
+quick = rec9(kLimit=2)
+check("국소 탐색: 빠른 첫 결과(kLimit)에는 돌지 않음", quick.get("lsEvals") is None)
+cap = rec9(feeCap=20000)
+check(f"국소 탐색: 연회비 상한(연 2만원)을 지킴({sum(c['feeMonthly'] for c in cap['result']['cards']) * 12:,.0f}원)",
+      sum(c["feeMonthly"] for c in cap["result"]["cards"]) * 12 <= 20000 + 1)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

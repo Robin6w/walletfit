@@ -37,6 +37,12 @@ MILP_MAX_K = 3
 SWAP_ADD = 10
 SWAP_POOL = 6
 SWAP_ROUNDS = 2
+# 마지막 국소 탐색(2026-11-03): MILP가 고른 조합에서 카드 1장을 바꾸거나 더해 보며 계산기(calc) 값이 늘면 옮겨 간다.
+# 2026-11-03 측정(지출 18가지): 후보 추리기 누락·통째 배정 근사 때문에 엔진이 알려진 최선보다 평균 13.7% 낮았고,
+# 이 탐색으로 2~4%까지 줄었다(덧붙는 시간 CPython 7~12초). 시간 대신 평가 횟수로 끊어 기기와 관계없이 같은 결과가 나온다
+LS_EVALS = 100      # 새 조합 평가 횟수 상한(조합 하나 = 카드 고정 작은 MILP + _refine, 약 0.1초)
+LS_CAND = 10        # 후보: 지출 전체·절반·3분의1 시나리오의 한 장 순혜택 상위 LS_CAND/2장씩 + 카테고리별 1위
+LS_FIXED_TIME = 10  # 카드 고정 MILP 시간 제한(작은 문제라 보통 1초 안에 끝남. 마지막 안전장치)
 
 STATE = {"records": {}, "status": {}, "A": None}
 _SEED = {}  # 점진적 결과: 빠른 계산(kLimit)의 후보와 장수별 결과. 전체 계산이 이어받는다
@@ -288,6 +294,92 @@ def _undominated(rows, keep=()):
         if not dom:
             front.append(r)
     return front
+
+
+def _ls_candidates(ids, rows, spending, A, margin):
+    """국소 탐색 후보. 2~3장 조합에서 카드 한 장은 지출 일부만 맡으므로 '지출 전부를 한 장에' 순위만으로는
+    부분을 맡을 때 강한 카드(전월실적 0원 구간이 있는 카드 등)를 놓친다 → 지출 전체·절반·3분의1 세 시나리오의 상위를 섞는다"""
+    if not rows:
+        return list(ids)
+    rows_u = _undominated(rows)
+    lists = [sorted(rows_u, key=lambda r: -r[1])]
+    for f in (0.5, 1 / 3):
+        sp2 = {c: v * f for c, v in spending.items()}
+        lists.append(sorted(_score_rows([r[0] for r in rows_u], sp2, A, margin), key=lambda r: -r[1]))
+    cand = []
+    for lst in lists:
+        for r in lst[:LS_CAND // 2]:
+            if r[0] not in cand:
+                cand.append(r[0])
+    for c in sorted(spending, key=lambda c: -spending[c]):
+        top = max(rows_u, key=lambda r: r[2].get(c, 0), default=None)
+        if top and top[2].get(c, 0) > 0 and top[0] not in cand:
+            cand.append(top[0])
+    return cand
+
+
+def _fixed_alloc(recs_sel, ev, sids, spending, A, margin, cache, fee_cap=None):
+    """카드 집합을 고정하고 지출 배분만 다시 고른다(카드 고정 작은 MILP + _refine). 반환: (calc 순혜택, 배분) — 못 풀면 (None, None)"""
+    key = tuple(sorted(sids))
+    if key in cache:
+        return cache[key]
+    for s in key:
+        if s not in recs_sel:
+            recs_sel[s] = _raised(STATE["records"][s], margin)  # ev는 같은 dict를 본다
+    X, _ = _solve_k({s: recs_sel[s] for s in key}, spending, A, len(key), fee_cap=fee_cap, fixed=list(key), time_limit=LS_FIXED_TIME)
+    if X is None:
+        cache[key] = (None, None)
+    else:
+        X = _refine(ev, X, spending)
+        cache[key] = (_net_of(ev, X), X)
+    return cache[key]
+
+
+def _local_search(recs_sel, ev, by_k, cand, spending, A, margin, max_cards, fixed=(), fee_cap=None):
+    """by_k의 조합마다 배분을 다시 고르고, 가장 좋은 조합에서 1장 바꾸기·더하기 국소 탐색(평가 LS_EVALS번까지).
+    나아진 조합은 그 장수의 by_k를 바꾼다. 꼭 넣을 카드(fixed)는 빼지 않는다. 반환: 평가 횟수"""
+    cache = {}
+    for k, v in list(by_k.items()):
+        if v.get("same"):
+            continue
+        net, X = _fixed_alloc(recs_sel, ev, [s for s in v["X"] if sum(v["X"][s].values()) > 0.5] or list(v["X"]),
+                              spending, A, margin, cache, fee_cap)
+        if net is not None and net > v["netSel"] + 1:
+            by_k[k] = {"X": X, "netSel": net}
+    best_k = max(by_k, key=lambda k: by_k[k]["netSel"])
+    cur = tuple(sorted(by_k[best_k]["X"]))
+    best = by_k[best_k]["netSel"]
+    evals = 0
+    while evals < LS_EVALS:
+        nbrs = []
+        for j in cur:
+            if j in fixed:
+                continue
+            rest = [s for s in cur if s != j]
+            nbrs += [tuple(sorted(rest + [c])) for c in cand if c not in cur]
+        if len(cur) < max_cards:
+            nbrs += [tuple(sorted(list(cur) + [c])) for c in cand if c not in cur]
+        imp = None
+        for nb in nbrs:
+            if nb in cache:
+                continue
+            if evals >= LS_EVALS:
+                break
+            evals += 1
+            net, _ = _fixed_alloc(recs_sel, ev, nb, spending, A, margin, cache, fee_cap)
+            if net is not None and net > best + 1:
+                best, imp = net, nb
+        if not imp:
+            break
+        cur = imp
+    k = len(cur)
+    if best > by_k.get(k, {"netSel": -1e18})["netSel"] + 1:
+        by_k[k] = {"X": cache[cur][1], "netSel": best}
+        # 더 많은 장수가 이보다 못하면 '한 장 더 넣어도 늘지 않음'으로 맞춘다(카드 수 막대가 줄지 않게)
+        for k2 in sorted(by_k):
+            if k2 > k and by_k[k2]["netSel"] < best:
+                by_k[k2] = dict(by_k[k], same=True)
+    return evals
 
 
 def _shortlist(ids, spending, A, margin, fixed=(), rows=None):
@@ -555,6 +647,12 @@ def recommend_json(payload_text):
     if not by_k:
         return json.dumps({"ok": False, "error": "조건에 맞는 조합을 찾지 못했어요"})
 
+    # 마지막 국소 탐색(2026-11-03): 빠른 첫 결과(kLimit)에는 넣지 않고, 이어서 도는 전체 계산에만 넣는다
+    ls_evals = None
+    if not k_limit and p.get("localSearch", True):
+        cand = _ls_candidates(ids, rows, spending, A, margin)
+        ls_evals = _local_search(recs_sel, ev, by_k, cand, spending, A, margin, min(max_cards, MILP_MAX_K), fixed=fixed, fee_cap=fee_cap)
+
     # 장수 고르기: 혜택 최대화 = 상한 안에서 순혜택이 가장 큰 장수 / 효율적 = 기여가 작은 카드를 빼는 기존 규칙
     ks = sorted(k for k in by_k if k <= max_cards)
     if not ks:
@@ -594,7 +692,7 @@ def recommend_json(payload_text):
     return json.dumps({
         "ok": True, "k": k_rec, "mode": mode, "margin": margin, "efficientCeiling": efficient_ceiling,
         "result": rec_pack, "bar": bar, "alt": alt, "pool": pool, "spending": spending,
-        "elapsed": round(time.time() - t0, 2), "partial": bool(k_limit), "moreCards": more_cards,
+        "elapsed": round(time.time() - t0, 2), "partial": bool(k_limit), "moreCards": more_cards, "lsEvals": ls_evals,
     })
 
 

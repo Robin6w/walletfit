@@ -63,7 +63,8 @@ describe("대상 한정 카드 제외", () => {
 
 describe("혜택 정보 없음 표시", () => {
   it("자동 변환에서 혜택을 못 읽은 카드만 '정보 없음'으로 본다", () => {
-    expect(isUnread(37)).toBe(true); // 신한카드 The BEST-F: 자동 변환, 혜택 0개
+    // 신한카드 The BEST-F: 자동 변환 때는 혜택 0개('정보 없음')였는데, 11-03 단종 카드 원문 정제로 혜택 21개. 이제 '정보 없음' 카드는 없다
+    expect(isUnread(37)).toBe(false);
     expect(isUnread(14)).toBe(false); // 신한카드 YOLO ⓘ: 10-30 원문 정제로 혜택 6개(예전엔 '정보 없음')
     expect(isUnread(2312)).toBe(false); // 럭키 유카드: 정답표
   });

@@ -12,6 +12,18 @@
   "telecom_skt": "SKT 휴대폰을 쓰나요(T멤버십 바코드 결제)?"
  },
  "benefits": {
+  "1": {
+   "s4b1": "bank_account"
+  },
+  "2": {
+   "s5b1": "bank_account"
+  },
+  "58": {
+   "s2b1": "insurance"
+  },
+  "134": {
+   "s2b1": "insurance"
+  },
   "146": {
    "s3b7_2": "apt_fee"
   },
@@ -30,6 +42,33 @@
    "s5b1_2": "bank_account",
    "s5b1_3": "bank_account"
   },
+  "231": {
+   "s2b1": "bank_account",
+   "s3b1": "apt_fee"
+  },
+  "232": {
+   "s2b1": "bank_account",
+   "s3b1": "apt_fee"
+  },
+  "234": {
+   "s2b1": "bank_account",
+   "s3b1": "apt_fee"
+  },
+  "238": {
+   "s4b1": "bank_account",
+   "s5b1_1": "insurance",
+   "s5b1_2": "insurance"
+  },
+  "239": {
+   "s4b1": "bank_account",
+   "s5b1_1": "insurance",
+   "s5b1_2": "insurance"
+  },
+  "240": {
+   "s4b1": "bank_account",
+   "s5b1_1": "insurance",
+   "s5b1_2": "insurance"
+  },
   "241": {
    "s4b1": "bank_account"
   },
@@ -42,11 +81,27 @@
   "360": {
    "s1b2": "bank_account"
   },
+  "410": {
+   "s2b1_1": "insurance",
+   "s2b1_2": "insurance",
+   "s2b1_3": "insurance",
+   "s2b1_4": "insurance",
+   "s2b3": "insurance"
+  },
+  "420": {
+   "s2b1_7": "insurance"
+  },
+  "421": {
+   "s4b1": "insurance"
+  },
   "488": {
    "s3b1": "insurance"
   },
   "537": {
    "s1b1": "rental"
+  },
+  "583": {
+   "s2b4": "insurance"
   },
   "594": {
    "s1b1": "installment"
@@ -54,8 +109,14 @@
   "596": {
    "s1b1": "rental"
   },
+  "606": {
+   "s2b1": "paid_membership"
+  },
   "607": {
    "s2b1": "paid_membership"
+  },
+  "661": {
+   "s2b4": "paid_membership"
   },
   "681": {
    "s6b1": "paid_membership"
@@ -73,6 +134,9 @@
    "s3b1_3": "installment",
    "s4b1": "rental",
    "s5b1": "installment"
+  },
+  "762": {
+   "s5b2": "paid_membership"
   },
   "770": {
    "s3b1": "insurance"
@@ -94,9 +158,19 @@
   "951": {
    "s1b1": "rental"
   },
+  "953": {
+   "s1b1": "installment",
+   "s3b1": "insurance"
+  },
+  "1003": {
+   "s5b3": "paid_membership"
+  },
   "1013": {
    "s1b2": "insurance",
    "s1b8": "rental"
+  },
+  "1035": {
+   "s1b1": "insurance"
   },
   "1180": {
    "s2b2": "apt_fee"
@@ -118,10 +192,19 @@
   "1380": {
    "s1b1": "rental"
   },
+  "1519": {
+   "s1b1": "rental"
+  },
+  "1532": {
+   "s1b1": "installment"
+  },
   "1584": {
    "s4b1": "bank_account"
   },
   "1648": {
+   "s1b1": "insurance"
+  },
+  "1818": {
    "s1b1": "insurance"
   },
   "1868": {
@@ -131,6 +214,12 @@
    "s2b1": "installment"
   },
   "1884": {
+   "s1b1": "insurance"
+  },
+  "1980": {
+   "s1b1": "rental"
+  },
+  "1984": {
    "s1b1": "insurance"
   },
   "1996": {
@@ -156,6 +245,10 @@
    "s1b2": "insurance",
    "s2b1": "insurance"
   },
+  "2232": {
+   "s5b1_1": "insurance",
+   "s5b1_2": "insurance"
+  },
   "2234": {
    "s2b3": "apt_fee"
   },
@@ -168,6 +261,24 @@
   "2283": {
    "s1b1": "rental",
    "s2b2": "paid_membership"
+  },
+  "2286": {
+   "s2b9": "paid_membership"
+  },
+  "2289": {
+   "s1b1": "paid_membership",
+   "s3b1": "insurance"
+  },
+  "2292": {
+   "s2b2_4": "insurance"
+  },
+  "2293": {
+   "s2b2_1": "insurance",
+   "s2b2_2": "insurance",
+   "s2b3": "insurance"
+  },
+  "2294": {
+   "s2b4": "insurance"
   },
   "2302": {
    "s1b1": "paid_membership",
@@ -183,12 +294,18 @@
   "2349": {
    "s3b1_2": "apt_fee"
   },
+  "2358": {
+   "s3b1": "paid_membership"
+  },
   "2366": {
    "s2b1": "insurance",
    "s2b2": "insurance"
   },
   "2376": {
    "s3b1": "paid_membership"
+  },
+  "2378": {
+   "s1b3_2": "rental"
   },
   "2393": {
    "s3b1": "paid_membership"
@@ -210,6 +327,9 @@
   },
   "2487": {
    "s2b4": "paid_membership"
+  },
+  "2522": {
+   "s1b1": "installment"
   },
   "2534": {
    "s2b1": "insurance"

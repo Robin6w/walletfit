@@ -1,0 +1,319 @@
+{
+ "version": "v1",
+ "generatedAt": "2026-11-03",
+ "source": "KOSIS 가계동향조사 소득5분위별 가구당 가계수지(전국, 1인이상, 명목) DT_1L9U103, 2019~2025 연간(소득은 분기 평균)",
+ "definition": "카드 지출 = 소비지출 중 카드로 내기 어려운 항목(월세·보험·자동차 구입·등록금·복권 등)을 뺀 것. 2_지출추정/build_model.py",
+ "engel": {
+  "convenience": {
+   "a": 0.259074,
+   "b": -0.015626
+  },
+  "cafe": {
+   "a": -0.02727,
+   "b": 0.00354
+  },
+  "transport": {
+   "a": 0.06733,
+   "b": -0.004115
+  },
+  "mobile": {
+   "a": 0.107695,
+   "b": -0.004394
+  },
+  "onlineShopping": {
+   "a": 0.220821,
+   "b": -0.006419
+  },
+  "mart": {
+   "a": 0.556388,
+   "b": -0.031784
+  },
+  "dining": {
+   "a": -0.113628,
+   "b": 0.014749
+  },
+  "culture": {
+   "a": -0.020137,
+   "b": 0.00181
+  },
+  "subscription": {
+   "a": 0.079433,
+   "b": -0.004763
+  },
+  "gas": {
+   "a": -0.159314,
+   "b": 0.013901
+  },
+  "car": {
+   "a": -0.046531,
+   "b": 0.004959
+  },
+  "pet": {
+   "a": 0.012193,
+   "b": -0.000416
+  },
+  "education": {
+   "a": -0.892302,
+   "b": 0.065024
+  },
+  "beautyFitness": {
+   "a": 0.042532,
+   "b": -0.001359
+  },
+  "golf": {
+   "a": -0.04179,
+   "b": 0.003161
+  },
+  "department": {
+   "a": -0.046076,
+   "b": 0.004119
+  },
+  "fashion": {
+   "a": -0.098912,
+   "b": 0.008655
+  },
+  "delivery": {
+   "a": -0.039033,
+   "b": 0.005066
+  },
+  "travel": {
+   "a": -0.205777,
+   "b": 0.016329
+  },
+  "intercity": {
+   "a": 0.013138,
+   "b": -0.000747
+  },
+  "medical": {
+   "a": 0.718206,
+   "b": -0.042651
+  },
+  "bills": {
+   "a": 0.520915,
+   "b": -0.030084
+  },
+  "books": {
+   "a": -0.018023,
+   "b": 0.001453
+  },
+  "household": {
+   "a": 0.000275,
+   "b": 0.000457
+  },
+  "etc": {
+   "a": 0.110795,
+   "b": -0.000863
+  }
+ },
+ "ratio": {
+  "a": 4.344104,
+  "b": -0.248245,
+  "note": "카드 지출 ÷ 월 소득 = a + b·ln(월 소득). 가구 소득 기준"
+ },
+ "profiles2025": {
+  "1분위": {
+   "income": 1229004,
+   "consumption": 1361265,
+   "cardable": 1178302,
+   "ratio": 0.959,
+   "spending": {
+    "convenience": 47401,
+    "cafe": 26245,
+    "transport": 13423,
+    "mobile": 46202,
+    "onlineShopping": 148833,
+    "mart": 138526,
+    "dining": 109359,
+    "culture": 7487,
+    "subscription": 14833,
+    "gas": 28667,
+    "car": 24335,
+    "pet": 8848,
+    "education": 16817,
+    "beautyFitness": 29426,
+    "golf": 3402,
+    "department": 11464,
+    "fashion": 22819,
+    "delivery": 37567,
+    "travel": 32978,
+    "intercity": 3679,
+    "medical": 150546,
+    "bills": 134626,
+    "books": 1945,
+    "household": 6841,
+    "etc": 112033
+   }
+  },
+  "2분위": {
+   "income": 2884753,
+   "consumption": 1979446,
+   "cardable": 1692675,
+   "ratio": 0.587,
+   "spending": {
+    "convenience": 59167,
+    "cafe": 43818,
+    "transport": 16327,
+    "mobile": 73200,
+    "onlineShopping": 208794,
+    "mart": 167516,
+    "dining": 182582,
+    "culture": 9725,
+    "subscription": 18990,
+    "gas": 67103,
+    "car": 43820,
+    "pet": 12708,
+    "education": 44927,
+    "beautyFitness": 41743,
+    "golf": 5614,
+    "department": 20731,
+    "fashion": 42328,
+    "delivery": 62720,
+    "travel": 54595,
+    "intercity": 5028,
+    "medical": 179360,
+    "bills": 163860,
+    "books": 3596,
+    "household": 10566,
+    "etc": 153858
+   }
+  },
+  "3분위": {
+   "income": 4450882,
+   "consumption": 2670797,
+   "cardable": 2333433,
+   "ratio": 0.524,
+   "spending": {
+    "convenience": 69683,
+    "cafe": 66564,
+    "transport": 16236,
+    "mobile": 101040,
+    "onlineShopping": 278652,
+    "mart": 205622,
+    "dining": 277364,
+    "culture": 15452,
+    "subscription": 21856,
+    "gas": 107708,
+    "car": 68449,
+    "pet": 18547,
+    "education": 116182,
+    "beautyFitness": 53852,
+    "golf": 11024,
+    "department": 29898,
+    "fashion": 61421,
+    "delivery": 95279,
+    "travel": 88681,
+    "intercity": 5552,
+    "medical": 198578,
+    "bills": 199667,
+    "books": 6083,
+    "household": 14549,
+    "etc": 205496
+   }
+  },
+  "4분위": {
+   "income": 6502858,
+   "consumption": 3644258,
+   "cardable": 3200221,
+   "ratio": 0.492,
+   "spending": {
+    "convenience": 78765,
+    "cafe": 87974,
+    "transport": 19292,
+    "mobile": 126834,
+    "onlineShopping": 371293,
+    "mart": 255992,
+    "dining": 366575,
+    "culture": 23229,
+    "subscription": 26320,
+    "gas": 147855,
+    "car": 94269,
+    "pet": 21247,
+    "education": 254352,
+    "beautyFitness": 73471,
+    "golf": 16006,
+    "department": 44709,
+    "fashion": 87285,
+    "delivery": 125924,
+    "travel": 131023,
+    "intercity": 6422,
+    "medical": 268854,
+    "bills": 242778,
+    "books": 9678,
+    "household": 21477,
+    "etc": 298596
+   }
+  },
+  "5분위": {
+   "income": 11521962,
+   "consumption": 5037696,
+   "cardable": 4376090,
+   "ratio": 0.38,
+   "spending": {
+    "convenience": 87422,
+    "cafe": 113074,
+    "transport": 26448,
+    "mobile": 150984,
+    "onlineShopping": 501092,
+    "mart": 318642,
+    "dining": 471164,
+    "culture": 34327,
+    "subscription": 29622,
+    "gas": 184872,
+    "car": 131790,
+    "pet": 26837,
+    "education": 415655,
+    "beautyFitness": 99842,
+    "golf": 30751,
+    "department": 66336,
+    "fashion": 133139,
+    "delivery": 161852,
+    "travel": 265174,
+    "intercity": 9608,
+    "medical": 340423,
+    "bills": 297589,
+    "books": 15002,
+    "household": 29384,
+    "etc": 435063
+   }
+  }
+ },
+ "channels": {
+  "online": {
+   "food": 0.2854,
+   "fashion": 0.3872,
+   "electronics": 0.5459,
+   "furniture": 0.5198,
+   "books": 0.511,
+   "cosmetics": 0.4154,
+   "leisure_goods": 0.3607,
+   "household": 0.4408
+  },
+  "dineSplit": {
+   "cafe": 0.1516,
+   "delivery": 0.2169,
+   "dining": 0.6315
+  },
+  "offlineFood": {
+   "mart": 0.5852,
+   "convenience": 0.1439,
+   "etc": 0.2709
+  }
+ },
+ "assumptions": [
+  "오프라인 식료품의 업태별 식료품 비중",
+  "배달 비중의 2025년 환산(음식점 매출 3% 증가)",
+  "오프라인 의류: 의류매장 70%·백화점 30%",
+  "철도운송(지하철 포함): 대중교통 60%·기차 40%",
+  "육상운송(버스·택시): 대중교통 55%·택시 35%·고속버스 10%",
+  "운동및오락서비스: 골프 40%·체력단련 15%·그 외 45%",
+  "오프라인 가전: 백화점 20%·그 외 80%",
+  "오프라인 생활용품: 생활용품점 50%·마트 50%"
+ ],
+ "validation": {
+  "jsdLeaveOneYearOut": {
+   "engel": 0.0028,
+   "flat": 0.0107,
+   "old": 0.299
+  }
+ }
+}

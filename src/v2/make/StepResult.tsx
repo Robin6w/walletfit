@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { EnginePack, RecommendResponse } from "@/domain/types/engine";
-import { CardDetailModal } from "@/features/catalog/CardDetailModal";
-import { catalogBySourceId } from "@/v1/catalog";
+import { catalogBySourceId, isDiscontinued } from "@/v1/catalog";
 import { useToast } from "@/shared/hooks/useToast";
 import { useEngine, useEngineProgressive } from "@/v2/app/engine";
 import { useEngineState } from "@/domain/engine/walletEngine";
 import { useAppData } from "@/v2/app/AppData";
+import { useCardView } from "@/v2/app/cardView";
+import { compareStore, COMPARE_MAX, useCompare } from "@/v2/app/compareStore";
 import { paths, type Flow } from "@/v2/app/paths";
 import { Link, navigate } from "@/v2/app/router";
 import type { SavedWalletV2 } from "@/v2/app/state";
@@ -27,6 +28,8 @@ import {
 import { DetailsItem, GuideRows, HeroAmount, HeroCardStack, HeroTiles, RoleCardArticle, SHADOW, NUM } from "@/v2/result/parts";
 import { ConditionsBar } from "@/v2/result/MoreOptions";
 import { ProofPanel, reportNumbers } from "@/v2/result/ProofPanel";
+import { CardDetailSheet } from "@/v2/ui/CardDetailSheet";
+import { IssuePlan } from "@/v2/result/IssuePlan";
 import { CardImage } from "@/v2/ui/CardImage";
 
 /* 디자인 원본 F-D-Result(A4), F-D-Result-NoMargin, F-D-Result-B(B4), 명세서 경로 결과 값을 그대로 옮김 */
@@ -94,7 +97,10 @@ function LoadingStatus({ task }: { task: string }) {
 }
 
 export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; inp: FlowInputs; source: "manual" | "statement"; noMarginParam: boolean }) {
-  const { setWallet, wallet, setLastRun } = useAppData();
+  const { setWallet, wallet, setLastRun, myCards } = useAppData();
+  // '발급 정보 보기'는 전체 카드 화면과 같은 상세 창(정제 혜택표로 혜택·실적·한도를 보여 줌, 2026-11-03. 예전 v1 창은 요약 한 줄뿐)
+  const cardViews = useCardView();
+  const compare = useCompare();
   const { showToast } = useToast();
   const [proof, setProof] = useState<number | null>(null);
   const [issueSid, setIssueSid] = useState<number | null>(null);
@@ -590,7 +596,25 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
       </div>
 
       {proofCard && <ProofPanel card={proofCard} onClose={() => setProof(null)} />}
-      {issueSid !== null && <CardDetailModal entry={catalogBySourceId.get(issueSid) ?? null} onClose={() => setIssueSid(null)} />}
+      {issueSid !== null && catalogBySourceId.get(issueSid) && (
+        <CardDetailSheet
+          entry={catalogBySourceId.get(issueSid)!}
+          view={cardViews?.cards[String(issueSid)]}
+          loading={!cardViews}
+          mine={myCards.ids.includes(issueSid)}
+          discontinued={isDiscontinued(catalogBySourceId.get(issueSid)!)}
+          inCompare={compare.includes(issueSid)}
+          onToggleMine={() => myCards.toggle(issueSid)}
+          onToggleCompare={() => {
+            if (!compareStore.toggle(issueSid)) showToast(`비교함에는 ${COMPARE_MAX}장까지 담을 수 있어요`, "info");
+          }}
+          onClose={() => setIssueSid(null)}
+          plan={(() => {
+            const card = pack.cards.find((c) => c.sid === issueSid);
+            return card ? <IssuePlan card={card} todos={todos.filter((t) => t.id.endsWith(`-${issueSid}`))} /> : undefined;
+          })()}
+        />
+      )}
     </>
   );
 }

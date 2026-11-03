@@ -3,10 +3,10 @@ import type { MonthlySpend } from "@/domain/types/card";
 import type { RecommendResponse } from "@/domain/types/engine";
 import {
   ASSUMED_CARD_SPEND_RATIO,
-  CARD_SPEND_RATIO_BASIS,
   DISCOVERY_MAX_CARDS_CEILING,
   MAX_CARD_SPEND_RATIO,
   MIN_CARD_SPEND_RATIO,
+  defaultCardSpendRatio,
   estimateSpendingFromIncome,
 } from "@/domain/engine/incomeEstimate";
 import { categories, catLabel } from "@/v1/catalog";
@@ -15,7 +15,7 @@ import { cachedEngineCall } from "@/v2/app/engine";
 
 /**
  * 월 소득으로 지출 채우기(2026-10-29, v1 IncomeCardCountEstimator를 v2 결과 화면 모양으로 다시 그림).
- * 소득 × 카드 지출 비율(기본 40%)을 카테고리 비중으로 나눠 지출 입력에 채우고, 같은 지출로 몇 장이 맞는지 따로 계산한다.
+ * 소득 × 카드 지출 비율(소득에 따라 다름, 2026-11-03 통계청 가계동향조사 모델)을 카테고리 비중으로 나눠 지출 입력에 채우고, 같은 지출로 몇 장이 맞는지 따로 계산한다.
  */
 const hint: CSSProperties = { margin: 0, fontSize: 13, lineHeight: 1.6, color: "#5E6D96" };
 const textBtn: CSSProperties = { padding: 0, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#2457F5", cursor: "pointer" };
@@ -38,7 +38,9 @@ export function IncomeFill({
   onApplyMaxCards: (n: number) => void;
 }) {
   const [income, setIncome] = useState(0);
-  const [ratio, setRatio] = useState(ASSUMED_CARD_SPEND_RATIO);
+  // 비율은 사용자가 슬라이더를 움직이기 전까지 소득에 따라 정해진다(통계청 가계동향조사 모델, 2026-11-03)
+  const [ratioOverride, setRatio] = useState<number | null>(null);
+  const ratio = ratioOverride ?? (income ? defaultCardSpendRatio(income) : ASSUMED_CARD_SPEND_RATIO);
   const [basis, setBasis] = useState(false);
   const [state, setState] = useState<{ status: "idle" | "loading" | "done" | "error"; count?: number; net?: number }>({ status: "idle" });
   const pct = Math.round(ratio * 100);
@@ -77,8 +79,9 @@ export function IncomeFill({
       {basis && (
         <div style={{ padding: "12px 14px", borderRadius: 12, background: "#FFFFFF", border: "1px solid #E3EAF8", display: "flex", flexDirection: "column", gap: 10 }}>
           <p style={hint}>
-            소득 중 소비에 쓰는 비중 약 {Math.round(CARD_SPEND_RATIO_BASIS.consumptionPropensity * 100)}% × 소비 중 카드로 내는 비중 약{" "}
-            {Math.round(CARD_SPEND_RATIO_BASIS.cardPaymentShare * 100)}%(통계청 가계동향조사 등에서 흔히 보이는 수준)를 곱한 출발값이에요. 저축률과 현금 사용이 사람마다 달라서 직접 바꿀 수 있어요.
+            통계청 가계동향조사(2019~2025년, 소득 5분위)에서 소득이 비슷한 가구가 카드로 낼 만한 지출(월세·보험·자동차 구입·등록금 등은 뺌)이
+            소득의 몇 %인지로 정한 출발값이에요. 소득이 낮을수록 높아요(1분위 약 96%, 5분위 약 38%). 카테고리 비중도 지출 규모에 따라 달라져요.
+            가구 단위 통계라 사람마다 다르니 직접 바꿀 수 있어요.
           </p>
           <label style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "#3A4A78" }}>
             카드로 쓰는 비중

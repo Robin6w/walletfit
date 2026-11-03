@@ -8,5 +8,9 @@ import milpUrl from "./py/milp.py?url";
 import engineUrl from "./py/wf_engine.py?url";
 import benefitCatalogUrl from "@data/catalog/cards-benefit.json?url";
 import assumptionsUrl from "@data/catalog/assumptions.json?url";
+import merchantShareUrl from "@data/catalog/merchant-share.json?url";
+import benefitConditionsUrl from "@data/catalog/benefit-conditions.json?url";
 
-export const ENGINE_VERSION: string | null = import.meta.env.DEV ? null : [calcUrl, milpUrl, engineUrl, benefitCatalogUrl, assumptionsUrl].map((u) => u.slice(-40)).join("|");
+export const ENGINE_VERSION: string | null = import.meta.env.DEV
+  ? null
+  : [calcUrl, milpUrl, engineUrl, benefitCatalogUrl, assumptionsUrl, merchantShareUrl, benefitConditionsUrl].map((u) => u.slice(-40)).join("|");

@@ -1,0 +1,863 @@
+{
+ "version": "v0",
+ "generatedAt": "2026-11-03",
+ "definition": "비중 = 가맹점 국내 소비자 지출 ÷ 카테고리 국내 소비자 지출 전체(업종 전체 분모). 1_혜택정보구조화/비중표/설계.md",
+ "categories": {
+  "beautyFitness": {
+   "type": "concentrated",
+   "merchants": {
+    "올리브영": {
+     "share": 0.1158,
+     "low": 0.0579,
+     "high": 0.1737,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    }
+   },
+   "tableSum": 0.1158,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.03,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 362600,
+    "year": "2024~2025",
+    "metric": "official_total",
+    "source": "",
+    "note": "분모 대략값(계산값)"
+   }
+  },
+  "cafe": {
+   "type": "dispersed",
+   "merchants": {
+    "메가MGC커피": {
+     "share": 0.0229,
+     "low": 0.0115,
+     "high": 0.0344,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "블루보틀": {
+     "share": 0.0011,
+     "low": 0.0007,
+     "high": 0.0015,
+     "basis": "gross_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    },
+    "스타벅스": {
+     "share": 0.1148,
+     "low": 0.0918,
+     "high": 0.1715,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "상",
+     "sources": [
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf",
+      "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_3KB9001"
+     ]
+    },
+    "이디야커피": {
+     "share": 0.0085,
+     "low": 0.0042,
+     "high": 0.0127,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "커피빈": {
+     "share": 0.0051,
+     "low": 0.0033,
+     "high": 0.0069,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "컴포즈커피": {
+     "share": 0.0106,
+     "low": 0.0053,
+     "high": 0.016,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "투썸플레이스": {
+     "share": 0.0385,
+     "low": 0.0251,
+     "high": 0.052,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://www.inews24.com/view/1991778"
+     ]
+    },
+    "폴바셋": {
+     "share": 0.0076,
+     "low": 0.0049,
+     "high": 0.0102,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "할리스": {
+     "share": 0.0121,
+     "low": 0.006,
+     "high": 0.0181,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    }
+   },
+   "tableSum": 0.2212,
+   "tail": {
+    "low": 0.001,
+    "mid": 0.0011,
+    "high": 0.0011,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 282089,
+    "year": "2024",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_3KB9001",
+    "note": "앱 카테고리가 '카페/디저트'라 제과점(파리바게뜨·뚜레쥬르)을 포함. 커피전문점만 18,878,375"
+   }
+  },
+  "convenience": {
+   "type": "concentrated",
+   "merchants": {
+    "CU": {
+     "share": 0.2809,
+     "low": 0.1826,
+     "high": 0.3792,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://m.ceoscoredaily.com/page/view/2026021115265521903"
+     ]
+    },
+    "GS25": {
+     "share": 0.2828,
+     "low": 0.1838,
+     "high": 0.3817,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://m.ceoscoredaily.com/page/view/2026021115265521903"
+     ]
+    },
+    "세븐일레븐": {
+     "share": 0.1525,
+     "low": 0.0991,
+     "high": 0.2059,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://www.heraldk.com/article/2026041215000047519"
+     ]
+    },
+    "이마트24": {
+     "share": 0.0649,
+     "low": 0.0422,
+     "high": 0.0877,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+     ]
+    }
+   },
+   "tableSum": 0.7811,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.03,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 316163,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1K41003",
+    "note": ""
+   }
+  },
+  "culture": {
+   "type": "concentrated",
+   "merchants": {
+    "CGV": {
+     "share": 0.1082,
+     "low": 0.0703,
+     "high": 0.1461,
+     "basis": "admission_share",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://www.kobis.or.kr/kobis/business/stat/them/findYearlyTotalList.do"
+     ]
+    },
+    "롯데시네마": {
+     "share": 0.0734,
+     "low": 0.0367,
+     "high": 0.1101,
+     "basis": "screen_ratio",
+     "year": "2024",
+     "confidence": "하",
+     "sources": [
+      "https://v.daum.net/v/20250518173401128"
+     ]
+    },
+    "메가박스": {
+     "share": 0.0482,
+     "low": 0.0241,
+     "high": 0.0723,
+     "basis": "admission_share",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    }
+   },
+   "tableSum": 0.2298,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.03,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 45835,
+    "year": "2024~2025",
+    "metric": "official_total",
+    "source": "https://www.kobis.or.kr/kobis/business/stat/them/findYearlyTotalList.do",
+    "note": "연도 섞임(계산값). 테마파크 혜택은 카테고리 없음(none)이 많음"
+   }
+  },
+  "delivery": {
+   "type": "concentrated",
+   "merchants": {
+    "땡겨요": {
+     "share": 0.052,
+     "low": 0.026,
+     "high": 0.078,
+     "basis": "mau_split",
+     "year": "2026-07",
+     "confidence": "하",
+     "sources": [
+      "https://www.wikitree.co.kr/articles/1154764"
+     ]
+    },
+    "배달의민족": {
+     "share": 0.48,
+     "low": 0.24,
+     "high": 0.72,
+     "basis": "mau_split",
+     "year": "2026-07",
+     "confidence": "하",
+     "sources": [
+      "https://www.wikitree.co.kr/articles/1154764"
+     ]
+    },
+    "요기요": {
+     "share": 0.074,
+     "low": 0.037,
+     "high": 0.111,
+     "basis": "mau_split",
+     "year": "2026-07",
+     "confidence": "하",
+     "sources": [
+      "https://www.ceoscoredaily.com/page/view/2025111216060679809",
+      "https://www.wikitree.co.kr/articles/1154764"
+     ]
+    },
+    "쿠팡이츠": {
+     "share": 0.2739,
+     "low": 0.178,
+     "high": 0.3697,
+     "basis": "card_payment",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=17331"
+     ]
+    }
+   },
+   "tableSum": 0.8799,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.03,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 414882,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://mods.go.kr/boardDownload.es?bid=241&list_no=443337&seq=1",
+    "note": "2025 잠정"
+   }
+  },
+  "department": {
+   "type": "concentrated",
+   "merchants": {
+    "AK플라자": {
+     "share": 0.0264,
+     "low": 0.0172,
+     "high": 0.0357,
+     "basis": "gmv",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    },
+    "갤러리아": {
+     "share": 0.0676,
+     "low": 0.0439,
+     "high": 0.0912,
+     "basis": "gmv",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    },
+    "롯데백화점": {
+     "share": 0.3339,
+     "low": 0.2171,
+     "high": 0.4508,
+     "basis": "gmv",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    },
+    "신세계백화점": {
+     "share": 0.3048,
+     "low": 0.1981,
+     "high": 0.4115,
+     "basis": "gmv",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    },
+    "현대백화점": {
+     "share": 0.2281,
+     "low": 0.1483,
+     "high": 0.308,
+     "basis": "gmv",
+     "year": "2024",
+     "confidence": "중",
+     "sources": []
+    }
+   },
+   "tableSum": 0.9608,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.0264,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 414229,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1K41003",
+    "note": "판매액(총매출) 기준. 서비스업조사 백화점 매출 12,037,353은 수수료 순매출이라 안 씀. 아울렛 포함 여부 미확인"
+   }
+  },
+  "dining": {
+   "type": "dispersed",
+   "merchants": {
+    "TGIF": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0,
+     "basis": "status",
+     "year": "2025-03",
+     "confidence": "상",
+     "sources": [],
+     "status": "closed"
+    },
+    "VIPS": {
+     "share": 0.0066,
+     "low": 0.0033,
+     "high": 0.0099,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "도미노피자": {
+     "share": 0.0017,
+     "low": 0.0009,
+     "high": 0.0026,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "롯데리아": {
+     "share": 0.0065,
+     "low": 0.0032,
+     "high": 0.0097,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "맥도날드": {
+     "share": 0.0119,
+     "low": 0.0077,
+     "high": 0.016,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "버거킹": {
+     "share": 0.0074,
+     "low": 0.0048,
+     "high": 0.01,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "아웃백": {
+     "share": 0.0037,
+     "low": 0.0024,
+     "high": 0.005,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "애슐리": {
+     "share": 0.0033,
+     "low": 0.0017,
+     "high": 0.005,
+     "basis": "gross_sales",
+     "year": "2024",
+     "confidence": "하",
+     "sources": []
+    },
+    "피자헛": {
+     "share": 0.0006,
+     "low": 0.0003,
+     "high": 0.0009,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    }
+   },
+   "tableSum": 0.0417,
+   "tail": {
+    "low": 0.0006,
+    "mid": 0.0006,
+    "high": 0.0006,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 1206319,
+    "year": "2024",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_3KB9001",
+    "note": "배달앱 지출은 delivery로 따로 받으므로 뺀 값. 배달 포함 157.6조. 서비스업조사(2024)와 온라인쇼핑동향(2024) 정의 차이로 근사"
+   }
+  },
+  "gas": {
+   "type": "concentrated",
+   "merchants": {
+    "GS칼텍스": {
+     "share": 0.1876,
+     "low": 0.1219,
+     "high": 0.2533,
+     "basis": "store_count",
+     "year": "2026-02",
+     "confidence": "중",
+     "sources": [
+      "https://www.hankyung.com/article/2026031521361"
+     ]
+    },
+    "HD현대오일뱅크": {
+     "share": 0.2132,
+     "low": 0.1386,
+     "high": 0.2878,
+     "basis": "store_count",
+     "year": "2026-02",
+     "confidence": "중",
+     "sources": [
+      "https://www.hankyung.com/article/2026031521361"
+     ]
+    },
+    "S-OIL": {
+     "share": 0.213,
+     "low": 0.1384,
+     "high": 0.2876,
+     "basis": "store_count",
+     "year": "2026-02",
+     "confidence": "중",
+     "sources": [
+      "https://www.hankyung.com/article/2026031521361"
+     ]
+    },
+    "SK에너지": {
+     "share": 0.248,
+     "low": 0.1612,
+     "high": 0.3348,
+     "basis": "store_count",
+     "year": "2026-02",
+     "confidence": "중",
+     "sources": [
+      "https://www.hankyung.com/article/2026031521361"
+     ]
+    }
+   },
+   "tableSum": 0.8618,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.03,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 592330,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1K41002",
+    "note": "주유소 운영업만 2024 51,032,202. 전기차 충전 포함 여부 미확인"
+   }
+  },
+  "mart": {
+   "type": "concentrated",
+   "merchants": {
+    "GS더프레시": {
+     "share": 0.0169,
+     "low": 0.0084,
+     "high": 0.0253,
+     "basis": "franchise_hq_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "농협하나로마트": {
+     "share": 0.0114,
+     "low": 0.0057,
+     "high": 0.0171,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "롯데마트": {
+     "share": 0.0435,
+     "low": 0.0282,
+     "high": 0.0587,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "롯데슈퍼": {
+     "share": 0.0119,
+     "low": 0.0077,
+     "high": 0.016,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "이마트": {
+     "share": 0.1128,
+     "low": 0.0903,
+     "high": 0.1354,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "상",
+     "sources": [
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+     ]
+    },
+    "이마트 에브리데이": {
+     "share": 0.014,
+     "low": 0.0112,
+     "high": 0.0168,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "상",
+     "sources": [
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+     ]
+    },
+    "트레이더스": {
+     "share": 0.0373,
+     "low": 0.0298,
+     "high": 0.0448,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "상",
+     "sources": [
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+     ]
+    },
+    "홈플러스": {
+     "share": 0.0561,
+     "low": 0.0281,
+     "high": 0.0842,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": [
+      "https://www.heraldk.com/article/2026060815292372440"
+     ]
+    }
+   },
+   "tableSum": 0.3039,
+   "tail": {
+    "low": 0.0,
+    "mid": 0.01,
+    "high": 0.0114,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 1032603,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_1K41003",
+    "note": "하나로마트·식자재마트는 대부분 슈퍼마켓 및 잡화점에 들어간다고 추정(KSIC 47121 165~3,000㎡)"
+   }
+  },
+  "onlineShopping": {
+   "type": "dispersed",
+   "merchants": {
+    "11번가": {
+     "share": 0.0418,
+     "low": 0.0209,
+     "high": 0.0627,
+     "basis": "card_payment_ratio",
+     "year": "2025-03",
+     "confidence": "하",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=15919"
+     ]
+    },
+    "29CM": {
+     "share": 0.007,
+     "low": 0.0035,
+     "high": 0.0106,
+     "basis": "gmv",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "G마켓": {
+     "share": 0.0584,
+     "low": 0.0292,
+     "high": 0.0876,
+     "basis": "card_payment_ratio",
+     "year": "2025-03",
+     "confidence": "하",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=15919"
+     ]
+    },
+    "SSG.COM": {
+     "share": 0.0303,
+     "low": 0.0152,
+     "high": 0.0455,
+     "basis": "gmv",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "W컨셉": {
+     "share": 0.0043,
+     "low": 0.0022,
+     "high": 0.0065,
+     "basis": "gmv",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "네이버쇼핑": {
+     "share": 0.268,
+     "low": 0.134,
+     "high": 0.402,
+     "basis": "card_payment_ratio",
+     "year": "2025-03",
+     "confidence": "하",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=15919"
+     ]
+    },
+    "오아시스마켓": {
+     "share": 0.0031,
+     "low": 0.0015,
+     "high": 0.0046,
+     "basis": "gross_sales",
+     "year": "2025",
+     "confidence": "하",
+     "sources": []
+    },
+    "옥션": {
+     "share": 0.0152,
+     "low": 0.0076,
+     "high": 0.0228,
+     "basis": "card_payment_ratio",
+     "year": "2025-03",
+     "confidence": "하",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=15919"
+     ]
+    },
+    "위메프": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0,
+     "basis": "status",
+     "year": "2025-11",
+     "confidence": "상",
+     "sources": [
+      "https://www.heraldk.com/article/2025111017135839792"
+     ],
+     "status": "closed"
+    },
+    "컬리": {
+     "share": 0.0191,
+     "low": 0.0124,
+     "high": 0.0259,
+     "basis": "gmv",
+     "year": "2025",
+     "confidence": "중",
+     "sources": []
+    },
+    "쿠팡": {
+     "share": 0.2972,
+     "low": 0.1932,
+     "high": 0.4012,
+     "basis": "card_payment",
+     "year": "2025",
+     "confidence": "중",
+     "sources": [
+      "https://www.openads.co.kr/content/contentDetail?contsId=17331"
+     ]
+    },
+    "티몬": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0,
+     "basis": "status",
+     "year": "2026-07",
+     "confidence": "상",
+     "sources": [
+      "https://view.asiae.co.kr/article/2026012215420390791"
+     ],
+     "status": "closed"
+    }
+   },
+   "tableSum": 0.7444,
+   "tail": {
+    "low": 0.001,
+    "mid": 0.0031,
+    "high": 0.0031,
+    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+   },
+   "denominator": {
+    "value_eok": 1845570,
+    "year": "2025",
+    "metric": "official_total",
+    "source": "https://mods.go.kr/boardDownload.es?bid=241&list_no=443337&seq=1",
+    "note": "2025 잠정. 서적·화장품·생활용품 온라인 거래액이 들어 있어 books·beautyFitness·household와 겹침"
+   }
+  }
+ },
+ "aliases": {
+  "투썸플레이스": [
+   "투썸"
+  ],
+  "메가MGC커피": [
+   "메가엠지씨커피",
+   "메가커피"
+  ],
+  "이디야커피": [
+   "이디야"
+  ],
+  "컴포즈커피": [
+   "컴포즈"
+  ],
+  "네이버쇼핑": [
+   "네이버스마트스토어",
+   "네이버플러스스토어"
+  ],
+  "G마켓": [
+   "지마켓"
+  ],
+  "SSG.COM": [
+   "SSG닷컴",
+   "쓱닷컴"
+  ],
+  "SK에너지": [
+   "SK주유소"
+  ],
+  "GS칼텍스": [
+   "GS주유소"
+  ],
+  "S-OIL": [
+   "에쓰오일"
+  ],
+  "HD현대오일뱅크": [
+   "에이치디현대오일뱅크",
+   "현대오일뱅크"
+  ],
+  "커피빈": [
+   "커피빈앤티리프"
+  ],
+  "세븐일레븐": [
+   "7-ELEVEN",
+   "7ELEVEN",
+   "미니스톱",
+   "바이더웨이"
+  ],
+  "이마트24": [
+   "emart24",
+   "위드미"
+  ],
+  "이마트 에브리데이": [
+   "이마트에브리데이"
+  ],
+  "농협하나로마트": [
+   "농협하나로클럽",
+   "하나로마트",
+   "하나로클럽"
+  ],
+  "GS더프레시": [
+   "GS THE FRESH"
+  ],
+  "컬리": [
+   "마켓컬리"
+  ],
+  "VIPS": [
+   "빕스"
+  ],
+  "아웃백": [
+   "아웃백스테이크하우스"
+  ],
+  "TGIF": [
+   "TGI FRIDAYS",
+   "TGI프라이데이스"
+  ]
+ }
+}

@@ -326,7 +326,8 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 multi_opt_of[x] = ov
         M.con({**{v: 1 for v in ovars}, B.y: -g.get("choose", 1)}, lo=0, hi=0)
     active = [b for b in rec["benefits"] if (b["id"] not in in_opt or b["id"] in chosen1 or b["id"] in multi_opt_of)
-              and b.get("status", "auto") == "auto"]  # calc.usable과 같음: 사람 확인·계산 제외 혜택은 빼고
+              and b.get("status", "auto") == "auto"   # calc.usable과 같음: 사람 확인·계산 제외 혜택은 빼고
+              and not __import__("calc").contract_off(b, A)]  # 계약이 있어야 받는 혜택(사용자가 있다고 안 했으면)
     for b in active:
         if b.get("counts_toward_performance") is False or (perf.get("excludes_discounted_spend") and b["reward"]["kind"] in ("discount", "cashback")):
             disc_benefits.append(b["id"])
@@ -351,16 +352,16 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 opt_members[x_] = set(o["benefit_ids"])
     base_active = [b for b in active if b["id"] not in multi_opt_of]
 
+    _sc_memo = {}
+
     def scales_for(b):
-        pool = base_active + [bb for bb in active if bb["id"] in opt_members.get(b["id"], set())]
-        import calc
-        share_sum = defaultdict(float)
-        for bb in pool:
-            sc = bb["scope"]
-            if sc["region"] != "overseas" and sc["specificity"] in ("brand", "merchant_group") and sc["app_category"]:
-                share_sum[sc["app_category"]] += _elig_share(sc, A)
-        return ({c: (1.0 / v if v > 1 else 1.0) for c, v in share_sum.items()},
-                calc.category_scales(pool))  # 혜택 id별(채널별로 센 나눠 가짐 비율, calc와 같음)
+        """(브랜드·묶음 혜택 실효 비중 {혜택 id: 비중}, 업종 혜택 나눠 가짐 비율 {혜택 id: 비율}) — 둘 다 calc와 같은 함수"""
+        key = tuple(sorted(opt_members.get(b["id"], set())))
+        if key not in _sc_memo:
+            pool = base_active + [bb for bb in active if bb["id"] in opt_members.get(b["id"], set())]
+            import calc
+            _sc_memo[key] = (calc.brand_shares(pool, A), calc.category_scales(pool))
+        return _sc_memo[key]
     is_general = lambda b: b["scope"]["specificity"] == "all_merchants" and b["scope"].get("days", "any") == "any"
 
     def conv(b):
@@ -389,7 +390,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         scale = 1.0
         share_scale, category_scale = scales_for(b)
         if sc["specificity"] in ("brand", "merchant_group"):
-            scale = share_scale.get(c, 1.0)
+            share = share_scale.get(b["id"], share)  # 실효 비중(나눠 가짐·합 상한은 이 안에 있음)
         elif _splits_spend(b):
             scale = category_scale.get(b["id"], 1.0)
         return share * scale * dshare * _channel_share(sc, c, A)
@@ -562,19 +563,23 @@ def _build_card(M, B, cats, S, A, BIGQ):
             M.con({u: 1, B.y: -1}, hi=0)
             M.con({u: 1, **{B.x[c]: -1.0 / S[c] for c in bcats(b)}}, hi=0)
             av = M.var(f"ap[{B.sid}|{b['id']}]", 0, np.inf, False, 1.0)
+            # 받을 확률(가맹점 비중·건당 최소 금액, calc.period_prob와 같음). 카테고리 전액을 이 카드로 낼 때로 본다
+            import calc
+            pp = calc.period_prob(b, bcats(b), S, A, scales_for(b)[0].get(b["id"], _elig_share(b["scope"], A)),
+                                  calc._elig_share(b["scope"], A)[1])
             vmax = 0.0
             Mbig = 1.0
             for (tier, wt, lo, hi) in sts:
                 ok = tset == "none" or (tier is not None and (allowed_t is None or tier in allowed_t))
                 v = _value(b, tier, A) if ok else None
-                vm = (v or 0) / MONTHS[per] * conv(b)
+                vm = (v or 0) / MONTHS[per] * conv(b) * pp
                 vmax = max(vmax, vm)
             Mbig = vmax + 1
             M.con({av: 1, u: -vmax}, hi=0)
             for (tier, wt, lo, hi) in sts:
                 ok = tset == "none" or (tier is not None and (allowed_t is None or tier in allowed_t))
                 v = _value(b, tier, A) if ok else None
-                vm = (v or 0) / MONTHS[per] * conv(b)
+                vm = (v or 0) / MONTHS[per] * conv(b) * pp
                 gle({av: 1.0}, [wt], vm, Mbig)
             B.aper[b["id"]] = av
             terms_total[av] = 1.0
@@ -641,7 +646,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
                     if is_cat:
                         unscaled, share_b = cs[0] / cc1.get(b["id"], 1.0), 1.0
                     else:
-                        unscaled, share_b = cs[0] / sc1.get(c, 1.0), _elig_share(b["scope"], A)
+                        unscaled, share_b = cs[0], sc1.get(b["id"], _elig_share(b["scope"], A))
                     terms[var] = terms.get(var, 0) + share_b / unscaled
                 Mb = 2 * S[c] + 1
                 gle(terms, [cwt], 0.0, Mb)

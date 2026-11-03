@@ -42,12 +42,38 @@ STATE = {"records": {}, "status": {}, "A": None}
 _SEED = {}  # 점진적 결과: 빠른 계산(kLimit)의 후보와 장수별 결과. 전체 계산이 이어받는다
 
 
-def init_json(catalog_text, assumptions_text):
+def _norm(s):
+    return "".join((s or "").split()).lower()
+
+
+def _share_lookup(ms):
+    """merchant-share.json → 계산기가 쓰는 모양 {categories: {cat: {shares: {이름: 비중}, tail}}, alias: {별칭: 이름}}(이름은 정규화)"""
+    alias = {_norm(a): _norm(k) for k, al in ms.get("aliases", {}).items() for a in al}
+    cats = {cat: {"shares": {_norm(m): e["share"] for m, e in c["merchants"].items()}, "tail": c["tail"]["mid"]}
+            for cat, c in ms["categories"].items()}
+    return {"categories": cats, "alias": alias, "version": ms.get("version")}
+
+
+def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=None):
+    """share_text: 가맹점 비중표(data/catalog/merchant-share.json). 없으면 브랜드·묶음 혜택은 기본 가정값(35%·70%)
+    conditions_text: 계약이 있어야 받는 혜택 목록(data/catalog/benefit-conditions.json). 혜택에 contract 키를 붙인다(2026-11-03)"""
     data = json.loads(catalog_text)
     STATE["records"] = {int(c["sid"]): c["record"] for c in data["cards"]}
     STATE["status"] = {int(c["sid"]): c["status"] for c in data["cards"]}
     STATE["A"] = json.loads(assumptions_text)
-    return json.dumps({"cards": len(STATE["records"]), "counts": data.get("counts", {})})
+    if share_text:
+        STATE["A"]["merchant_share"] = _share_lookup(json.loads(share_text))
+    STATE["asks"] = {}
+    if conditions_text:
+        cd = json.loads(conditions_text)
+        STATE["asks"] = cd.get("asks", {})
+        for sid, m in cd.get("benefits", {}).items():
+            for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
+                if b["id"] in m:
+                    b["contract"] = m[b["id"]]
+    _SEED.clear()  # 앞선 계산 결과는 다른 데이터·가정값으로 낸 것이라 버린다
+    return json.dumps({"cards": len(STATE["records"]), "counts": data.get("counts", {}),
+                       "merchantShare": bool(share_text), "contracts": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b.get("contract"))})
 
 
 # ---------- 공통 ----------
@@ -56,13 +82,16 @@ def init_json(catalog_text, assumptions_text):
 MIN_TICKETS = 5
 
 
-def _A(brand_share, tickets=None):
+def _A(brand_share, tickets=None, contracts=None):
     """tickets: 명세서에서 읽은 카테고리별 결제 금액 {cat: [원, …]}(2026-10-31). 건당 최소 금액·횟수 조건 계산에 쓴다.
     '_'로 시작하는 키는 부가 정보: '_wd:<cat>'은 그 카테고리의 요일별 결제 금액 [월, …, 일](요일 한정 혜택용, 2026-11-01).
-    tickets가 오면 명세서 경로다: 명세서로 알 수 없는 '간편결제로 결제하는 비중'은 가정(30%) 대신 0으로 둔다(추정으로 혜택을 부풀리지 않게)."""
+    tickets가 오면 명세서 경로다: 명세서로 알 수 없는 '간편결제로 결제하는 비중'은 가정(30%) 대신 0으로 둔다(추정으로 혜택을 부풀리지 않게).
+    contracts: 사용자가 있다고 답한 계약 키(insurance, rental 등, benefit-conditions.json asks). 없으면 계약형 혜택은 뺀다"""
     A = copy.deepcopy(STATE["A"])
     if brand_share:
         A["user_brand_share"] = brand_share
+    if contracts:
+        A["user_contracts"] = list(contracts)
     if tickets:
         A["statement_mode"] = True
         A["payment_method_share"]["default"] = 0.0
@@ -419,7 +448,7 @@ def recommend_json(payload_text):
     fee_cap = p.get("feeCap")
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in ids]
     time_limit = float(p.get("timeLimit") or 10)
-    A = _A(p.get("brandShare"), p.get("tickets"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
 
@@ -427,7 +456,7 @@ def recommend_json(payload_text):
     # 앞선 계산의 후보와 장수별 결과를 남겨 두고 다음 계산은 그다음 장수부터 이어서 한다(같은 계산을 두 번 하지 않게).
     # 장수 상한을 3 → 5로 올려 다시 부를 때도 4장부터 이어서 푼다
     k_limit = int(p["kLimit"]) if p.get("kLimit") else None
-    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), p.get("tickets"), mode], sort_keys=True)
+    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), p.get("tickets"), mode, p.get("contracts")], sort_keys=True)
     seed = _SEED.get(seed_key)
     if seed:
         rows, pool = seed["rows"], list(seed["pool"])
@@ -584,7 +613,7 @@ def alt_json(payload_text):
     spending = _clean_spend(p.get("spending"))
     if not pool or not spending:
         return json.dumps({"ok": True, "alt": None})
-    A = _A(p.get("brandShare"), p.get("tickets"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in pool]
     alt = _alt_of(pool, spending, A, int(p.get("k") or 1), fee_cap=p.get("feeCap"), fixed=fixed,
                   time_limit=float(p.get("timeLimit") or 10))
@@ -597,7 +626,7 @@ def explain_json(payload_text):
     ids = [int(x) for x in p["ids"] if int(x) in STATE["records"]]
     spending = _clean_spend(p.get("spending"))
     margin = int(p.get("margin") or 0)
-    A = _A(p.get("brandShare"), p.get("tickets"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
     recs_sel = {s: _raised(STATE["records"][s], margin) for s in ids}
@@ -616,7 +645,7 @@ def rank_json(payload_text):
     """카드마다 지출 전부를 그 카드로 냈을 때의 월 혜택(전체 카드 정렬, 혜택별 추천, 카드 목록)."""
     p = json.loads(payload_text)
     spending = _clean_spend(p.get("spending"))
-    A = _A(p.get("brandShare"), p.get("tickets"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     detail = bool(p.get("detail"))
     out = []
@@ -698,7 +727,7 @@ def category_rank_json(payload_text):
     base = _clean_spend(p.get("spending"))
     base[cat] = amount
     base = {c: v for c, v in base.items() if v > 0}
-    A = _A(p.get("brandShare"), p.get("tickets"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     rows = []
     for sid in ids:

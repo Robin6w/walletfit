@@ -6,22 +6,101 @@
   "beautyFitness": {
    "type": "concentrated",
    "merchants": {
+    "박승철헤어스투디오": {
+     "share": 0.0026,
+     "low": 0.0017,
+     "high": 0.0035,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "아리따움": {
+     "share": 0.0024,
+     "low": 0.0016,
+     "high": 0.0033,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "에뛰드": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "올리브영": {
      "share": 0.1158,
-     "low": 0.0579,
+     "low": 0.0131,
      "high": 0.1737,
      "basis": "gross_sales",
      "year": "2025",
      "confidence": "하",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "이가자헤어비스": {
+     "share": 0.0015,
+     "low": 0.001,
+     "high": 0.0021,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "이니스프리": {
+     "share": 0.0016,
+     "low": 0.0011,
+     "high": 0.0022,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "이철헤어커커": {
+     "share": 0.003,
+     "low": 0.0019,
+     "high": 0.004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "준오헤어": {
+     "share": 0.0071,
+     "low": 0.0046,
+     "high": 0.0097,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     }
    },
-   "tableSum": 0.1158,
+   "tableSum": 0.1343,
    "tail": {
     "low": 0.0,
-    "mid": 0.01,
-    "high": 0.03,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "mid": 0.0026,
+    "high": 0.0026,
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 362600,
@@ -34,14 +113,126 @@
   "cafe": {
    "type": "dispersed",
    "merchants": {
+    "공차": {
+     "share": 0.0081,
+     "low": 0.0053,
+     "high": 0.011,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "나뚜루": {
+     "share": 0.0001,
+     "low": 0.0001,
+     "high": 0.0002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "더벤티": {
+     "share": 0.0092,
+     "low": 0.006,
+     "high": 0.0124,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "던킨": {
+     "share": 0.0082,
+     "low": 0.0053,
+     "high": 0.0111,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "드롭탑": {
+     "share": 0.0016,
+     "low": 0.0011,
+     "high": 0.0022,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "디저트39": {
+     "share": 0.0061,
+     "low": 0.004,
+     "high": 0.0082,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "뚜레쥬르": {
+     "share": 0.0261,
+     "low": 0.017,
+     "high": 0.0352,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "매머드커피": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "메가MGC커피": {
-     "share": 0.0229,
-     "low": 0.0115,
-     "high": 0.0344,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "share": 0.0345,
+     "low": 0.0224,
+     "high": 0.0465,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "배스킨라빈스": {
+     "share": 0.0303,
+     "low": 0.0197,
+     "high": 0.0409,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "벌크커피": {
+     "share": 0.0015,
+     "low": 0.001,
+     "high": 0.002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "블루보틀": {
      "share": 0.0011,
@@ -51,6 +242,39 @@
      "year": "2024",
      "confidence": "중",
      "sources": []
+    },
+    "빚은": {
+     "share": 0.0002,
+     "low": 0.0001,
+     "high": 0.0002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "빽다방": {
+     "share": 0.0164,
+     "low": 0.0107,
+     "high": 0.0221,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "설빙": {
+     "share": 0.009,
+     "low": 0.0058,
+     "high": 0.0121,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "스타벅스": {
      "share": 0.1148,
@@ -64,14 +288,104 @@
       "https://kosis.kr/statHtml/statHtml.do?orgId=101&tblId=DT_3KB9001"
      ]
     },
+    "에이바우트커피": {
+     "share": 0.0007,
+     "low": 0.0004,
+     "high": 0.0009,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "엔제리너스": {
+     "share": 0.003,
+     "low": 0.0019,
+     "high": 0.004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "이디야커피": {
-     "share": 0.0085,
-     "low": 0.0042,
-     "high": 0.0127,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "share": 0.0194,
+     "low": 0.0085,
+     "high": 0.0262,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "쥬씨": {
+     "share": 0.0007,
+     "low": 0.0005,
+     "high": 0.001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "카페베네": {
+     "share": 0.0008,
+     "low": 0.0005,
+     "high": 0.0011,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "커스텀커피": {
+     "share": 0.0007,
+     "low": 0.0005,
+     "high": 0.001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "커피마마": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "커피마마퀸": {
+     "share": 0.0002,
+     "low": 0.0001,
+     "high": 0.0003,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "커피베이": {
+     "share": 0.0011,
+     "low": 0.0007,
+     "high": 0.0014,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "커피빈": {
      "share": 0.0051,
@@ -82,14 +396,38 @@
      "confidence": "중",
      "sources": []
     },
+    "커핀그루나루": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "컴포즈커피": {
-     "share": 0.0106,
-     "low": 0.0053,
-     "high": 0.016,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "share": 0.0222,
+     "low": 0.0106,
+     "high": 0.0299,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "토프레소": {
+     "share": 0.0004,
+     "low": 0.0002,
+     "high": 0.0005,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "투썸플레이스": {
      "share": 0.0385,
@@ -99,7 +437,19 @@
      "year": "2025",
      "confidence": "중",
      "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do",
       "https://www.inews24.com/view/1991778"
+     ]
+    },
+    "팔공티": {
+     "share": 0.0005,
+     "low": 0.0003,
+     "high": 0.0007,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
      ]
     },
     "폴바셋": {
@@ -111,22 +461,46 @@
      "confidence": "중",
      "sources": []
     },
+    "하삼동커피": {
+     "share": 0.0045,
+     "low": 0.0029,
+     "high": 0.0061,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "할리스": {
      "share": 0.0121,
-     "low": 0.006,
+     "low": 0.0052,
      "high": 0.0181,
      "basis": "franchise_hq_sales",
      "year": "2025",
      "confidence": "하",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "홍루이젠": {
+     "share": 0.0005,
+     "low": 0.0003,
+     "high": 0.0006,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     }
    },
-   "tableSum": 0.2212,
+   "tableSum": 0.3858,
    "tail": {
-    "low": 0.001,
-    "mid": 0.0011,
-    "high": 0.0011,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "low": 7.6e-05,
+    "mid": 0.000192,
+    "high": 0.000707,
+    "note": "공정위 2024 아이스크림/빙수, 음료 (커피 외), 제과제빵, 커피 가맹 브랜드 비중의 중앙값·상위 25%·상위 10%"
    },
    "denominator": {
     "value_eok": 282089,
@@ -140,56 +514,60 @@
    "type": "concentrated",
    "merchants": {
     "CU": {
-     "share": 0.2809,
-     "low": 0.1826,
-     "high": 0.3792,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
+     "share": 0.3491,
+     "low": 0.2269,
+     "high": 0.4713,
+     "basis": "franchise_sales",
+     "year": "2024",
      "confidence": "중",
      "sources": [
-      "https://m.ceoscoredaily.com/page/view/2026021115265521903"
+      "https://m.ceoscoredaily.com/page/view/2026021115265521903",
+      "https://www.data.go.kr/data/15110241/openapi.do"
      ]
     },
     "GS25": {
-     "share": 0.2828,
-     "low": 0.1838,
-     "high": 0.3817,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
+     "share": 0.3504,
+     "low": 0.2278,
+     "high": 0.4731,
+     "basis": "franchise_sales",
+     "year": "2024",
      "confidence": "중",
      "sources": [
-      "https://m.ceoscoredaily.com/page/view/2026021115265521903"
+      "https://m.ceoscoredaily.com/page/view/2026021115265521903",
+      "https://www.data.go.kr/data/15110241/openapi.do"
      ]
     },
     "세븐일레븐": {
-     "share": 0.1525,
-     "low": 0.0991,
-     "high": 0.2059,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
+     "share": 0.2036,
+     "low": 0.1323,
+     "high": 0.2748,
+     "basis": "franchise_sales",
+     "year": "2024",
      "confidence": "중",
      "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do",
       "https://www.heraldk.com/article/2026041215000047519"
      ]
     },
     "이마트24": {
-     "share": 0.0649,
-     "low": 0.0422,
-     "high": 0.0877,
-     "basis": "gross_sales",
-     "year": "2025",
+     "share": 0.0883,
+     "low": 0.0574,
+     "high": 0.1192,
+     "basis": "franchise_sales",
+     "year": "2024",
      "confidence": "중",
      "sources": [
-      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf",
+      "https://www.data.go.kr/data/15110241/openapi.do"
      ]
     }
    },
-   "tableSum": 0.7811,
+   "tableSum": 0.9914,
    "tail": {
     "low": 0.0,
     "mid": 0.01,
     "high": 0.03,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 316163,
@@ -239,7 +617,7 @@
     "low": 0.0,
     "mid": 0.01,
     "high": 0.03,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 45835,
@@ -303,7 +681,7 @@
     "low": 0.0,
     "mid": 0.01,
     "high": 0.03,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 414882,
@@ -366,8 +744,8 @@
    "tail": {
     "low": 0.0,
     "mid": 0.01,
-    "high": 0.0264,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "high": 0.03,
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 414229,
@@ -399,41 +777,346 @@
      "confidence": "하",
      "sources": []
     },
+    "고피자": {
+     "share": 0.0002,
+     "low": 0.0002,
+     "high": 0.0003,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "교촌치킨": {
+     "share": 0.0079,
+     "low": 0.0052,
+     "high": 0.0107,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "굽네치킨": {
+     "share": 0.0046,
+     "low": 0.003,
+     "high": 0.0062,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "깐부치킨": {
+     "share": 0.0006,
+     "low": 0.0004,
+     "high": 0.0008,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "네네치킨": {
+     "share": 0.0016,
+     "low": 0.001,
+     "high": 0.0021,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "노모어피자": {
+     "share": 0.0007,
+     "low": 0.0004,
+     "high": 0.0009,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "달콤왕가탕후루": {
+     "share": 0.0027,
+     "low": 0.0018,
+     "high": 0.0037,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "도미노피자": {
-     "share": 0.0017,
-     "low": 0.0009,
-     "high": 0.0026,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "share": 0.0023,
+     "low": 0.0015,
+     "high": 0.0031,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "두찜": {
+     "share": 0.0019,
+     "low": 0.0012,
+     "high": 0.0025,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "땅땅치킨": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "또래오래": {
+     "share": 0.0006,
+     "low": 0.0004,
+     "high": 0.0008,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "또봉이통닭": {
+     "share": 0.0006,
+     "low": 0.0004,
+     "high": 0.0008,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "롤링파스타": {
+     "share": 0.0006,
+     "low": 0.0004,
+     "high": 0.0008,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "롯데리아": {
-     "share": 0.0065,
-     "low": 0.0032,
-     "high": 0.0097,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "share": 0.0086,
+     "low": 0.0056,
+     "high": 0.0116,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "리춘시장": {
+     "share": 0.0001,
+     "low": 0.0,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "맘스터치": {
+     "share": 0.0058,
+     "low": 0.0038,
+     "high": 0.0079,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "맥도날드": {
      "share": 0.0119,
-     "low": 0.0077,
+     "low": 0.0017,
      "high": 0.016,
      "basis": "franchise_hq_sales",
      "year": "2025",
      "confidence": "중",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "바르다김선생": {
+     "share": 0.0004,
+     "low": 0.0002,
+     "high": 0.0005,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "반올림피자": {
+     "share": 0.0013,
+     "low": 0.0008,
+     "high": 0.0018,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "발재반점": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "버거킹": {
      "share": 0.0074,
-     "low": 0.0048,
+     "low": 0.0012,
      "high": 0.01,
      "basis": "gross_sales",
      "year": "2025",
      "confidence": "중",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "브런치빈": {
+     "share": 0.0004,
+     "low": 0.0003,
+     "high": 0.0006,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "빚은": {
+     "share": 0.0,
+     "low": 0.0,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "빽보이피자": {
+     "share": 0.0006,
+     "low": 0.0004,
+     "high": 0.0008,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "새마을식당": {
+     "share": 0.0004,
+     "low": 0.0003,
+     "high": 0.0006,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "샐러디": {
+     "share": 0.0008,
+     "low": 0.0005,
+     "high": 0.0011,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "생어거스틴": {
+     "share": 0.0001,
+     "low": 0.0001,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "생활맥주": {
+     "share": 0.0005,
+     "low": 0.0003,
+     "high": 0.0007,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "서가앤쿡": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0003,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "신전떡볶이": {
+     "share": 0.0016,
+     "low": 0.001,
+     "high": 0.0022,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "아비꼬": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "아웃백": {
      "share": 0.0037,
@@ -453,22 +1136,167 @@
      "confidence": "하",
      "sources": []
     },
-    "피자헛": {
-     "share": 0.0006,
+    "오븐에빠진닭": {
+     "share": 0.0001,
+     "low": 0.0001,
+     "high": 0.0002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "이화수전통육개장": {
+     "share": 0.0005,
+     "low": 0.0004,
+     "high": 0.0007,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "인기명": {
+     "share": 0.0001,
+     "low": 0.0,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "죠스떡볶이": {
+     "share": 0.0003,
+     "low": 0.0002,
+     "high": 0.0004,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "처갓집양념치킨": {
+     "share": 0.0031,
+     "low": 0.002,
+     "high": 0.0042,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "청년다방": {
+     "share": 0.0015,
+     "low": 0.001,
+     "high": 0.0021,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "탄탄면공방": {
+     "share": 0.0001,
+     "low": 0.0001,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "토끼정": {
+     "share": 0.0001,
+     "low": 0.0001,
+     "high": 0.0002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "페리카나": {
+     "share": 0.0011,
+     "low": 0.0007,
+     "high": 0.0015,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "포케올데이": {
+     "share": 0.0004,
      "low": 0.0003,
-     "high": 0.0009,
-     "basis": "franchise_hq_sales",
-     "year": "2025",
-     "confidence": "하",
-     "sources": []
+     "high": 0.0005,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "피자에땅": {
+     "share": 0.0002,
+     "low": 0.0001,
+     "high": 0.0002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "피자헛": {
+     "share": 0.0011,
+     "low": 0.0006,
+     "high": 0.0015,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "한신포차": {
+     "share": 0.0005,
+     "low": 0.0003,
+     "high": 0.0007,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "호식이두마리치킨": {
+     "share": 0.0015,
+     "low": 0.001,
+     "high": 0.002,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     }
    },
-   "tableSum": 0.0417,
+   "tableSum": 0.0893,
    "tail": {
-    "low": 0.0006,
-    "mid": 0.0006,
-    "high": 0.0006,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "low": 2.7e-05,
+    "mid": 7.4e-05,
+    "high": 0.000191,
+    "note": "공정위 2024 기타 외국식, 기타 외식, 분식, 서양식, 일식, 주점, 중식, 치킨, 패스트푸드, 피자, 한식 가맹 브랜드 비중의 중앙값·상위 25%·상위 10%"
    },
    "denominator": {
     "value_eok": 1206319,
@@ -531,7 +1359,7 @@
     "low": 0.0,
     "mid": 0.01,
     "high": 0.03,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 592330,
@@ -546,12 +1374,25 @@
    "merchants": {
     "GS더프레시": {
      "share": 0.0169,
-     "low": 0.0084,
+     "low": 0.0075,
      "high": 0.0253,
      "basis": "franchise_hq_sales",
      "year": "2025",
      "confidence": "하",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
+    "노브랜드": {
+     "share": 0.0015,
+     "low": 0.001,
+     "high": 0.0021,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "농협하나로마트": {
      "share": 0.0114,
@@ -573,12 +1414,14 @@
     },
     "롯데슈퍼": {
      "share": 0.0119,
-     "low": 0.0077,
+     "low": 0.0001,
      "high": 0.016,
      "basis": "gross_sales",
      "year": "2025",
      "confidence": "중",
-     "sources": []
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     },
     "이마트": {
      "share": 0.1128,
@@ -593,13 +1436,14 @@
     },
     "이마트 에브리데이": {
      "share": 0.014,
-     "low": 0.0112,
+     "low": 0.0004,
      "high": 0.0168,
      "basis": "gross_sales",
      "year": "2025",
      "confidence": "상",
      "sources": [
-      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
+      "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf",
+      "https://www.data.go.kr/data/15110241/openapi.do"
      ]
     },
     "트레이더스": {
@@ -613,6 +1457,17 @@
       "https://file.alphasquare.co.kr/media/pdfs/company-ir/20260212%EC%9D%B4%EB%A7%88%ED%8A%B8_%EA%B2%BD%EC%98%81%EC%8B%A4%EC%A0%81_%EB%B0%8F_%EC%A3%BC%EC%9A%94%EC%82%AC%EC%97%85_%EC%84%A4%EB%AA%85.pdf"
      ]
     },
+    "한삼인": {
+     "share": 0.0001,
+     "low": 0.0,
+     "high": 0.0001,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
+    },
     "홈플러스": {
      "share": 0.0561,
      "low": 0.0281,
@@ -623,14 +1478,25 @@
      "sources": [
       "https://www.heraldk.com/article/2026060815292372440"
      ]
+    },
+    "홈플러스 익스프레스": {
+     "share": 0.0017,
+     "low": 0.0011,
+     "high": 0.0023,
+     "basis": "franchise_sales",
+     "year": "2024",
+     "confidence": "중",
+     "sources": [
+      "https://www.data.go.kr/data/15110241/openapi.do"
+     ]
     }
    },
-   "tableSum": 0.3039,
+   "tableSum": 0.3072,
    "tail": {
     "low": 0.0,
     "mid": 0.01,
-    "high": 0.0114,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "high": 0.014,
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 1032603,
@@ -771,9 +1637,9 @@
    "tableSum": 0.7444,
    "tail": {
     "low": 0.001,
-    "mid": 0.0031,
-    "high": 0.0031,
-    "note": "임시 기본값(설계.md). 공정위 정보공개서 값이 들어오면 바꾼다"
+    "mid": 0.005,
+    "high": 0.02,
+    "note": "임시 기본값(설계.md): 과점형 0.01·분산형 0.005, 표 안 비중 중앙값 이하"
    },
    "denominator": {
     "value_eok": 1845570,
@@ -822,6 +1688,9 @@
    "에이치디현대오일뱅크",
    "현대오일뱅크"
   ],
+  "던킨": [
+   "던킨도너츠"
+  ],
   "커피빈": [
    "커피빈앤티리프"
   ],
@@ -837,6 +1706,9 @@
   ],
   "이마트 에브리데이": [
    "이마트에브리데이"
+  ],
+  "홈플러스 익스프레스": [
+   "홈플러스익스프레스"
   ],
   "농협하나로마트": [
    "농협하나로클럽",

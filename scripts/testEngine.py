@@ -133,5 +133,77 @@ rw0 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E
 rw1 = calc.evaluate(E.STATE["records"][wk], {"dining": 200000, "etc": 600000}, E._A(None, weekday_only))["total"]
 check(f"주말 외식 혜택 카드({E.STATE['records'][wk]['card']['name']}): 평일에만 먹으면 {rw0:,.0f} → {rw1:,.0f}원", rw1 < rw0)
 
+# 7. 2026-11-03 가맹점 비중표·계약이 필요한 혜택·정액 혜택 받을 확률
+read = lambda p: open(os.path.join(ROOT, p), encoding="utf-8").read()  # noqa: E731
+E.init_json(read("data/catalog/cards-benefit.json"), read("data/catalog/assumptions.json"),
+            read("data/catalog/merchant-share.json"), read("data/catalog/benefit-conditions.json"))
+R, A7 = E.STATE["records"], E._A(None)
+ms = json.loads(read("data/catalog/merchant-share.json"))["categories"]
+sh = calc.brand_shares([b for b in R[2997]["benefits"] if b["id"] == "s1b1"], A7)["s1b1"]
+want = sum(ms["cafe"]["merchants"][m]["share"] for m in ("스타벅스", "커피빈", "이디야커피", "투썸플레이스", "메가MGC커피", "컴포즈커피"))
+check(f"비중표: MOVING PLAY 커피 6사 혜택 비중 {sh:.3f} = 표 합 {want:.3f}(별칭 '이디야'·'메가커피' 포함, 예전 묶음 가정 70%)", abs(sh - want) < 1e-9)
+check("비중표: 표에 없는 가맹점·이름 빈칸 혜택은 꼬리 값(CJ 외식 할인 1%도 안 됨)",
+      calc.brand_shares([b for b in R[1286]["benefits"] if b["id"] == "s2b1_1"], A7)["s2b1_1"] == ms["dining"]["tail"]["mid"])
+two = [{"id": i, "scope": {"region": "domestic", "specificity": "brand", "app_category": "convenience", "merchants": ["GS25"], "channel": "any"}}
+       for i in ("a", "b")]
+s2 = calc.brand_shares(two, A7)
+check("비중표: 같은 가맹점을 노리는 독점 혜택 둘은 그 가맹점 몫을 나눠 가짐", abs(s2["a"] + s2["b"] - ms["convenience"]["merchants"]["GS25"]["share"]) < 1e-9)
+ub = calc.brand_shares(two, E._A({"convenience": {"GS25": 0.7}}))
+check("비중표: 사용자가 브랜드를 고른 카테고리는 입력값(합 1 넘으면 1로)", abs(ub["a"] + ub["b"] - 1.0) < 1e-9)
+sp7 = {"bills": 1000, "etc": 400000}
+check("계약 혜택: 보험엔로카 보험 혜택은 계약이 있다고 안 하면 0원(예전: 생활요금 1,000원에도 월 26,000원)",
+      calc.evaluate(R[2659], sp7, A7)["total"] == 0)
+check("계약 혜택: 보험이 있다고 하면 다시 계산", calc.evaluate(R[2659], sp7, E._A(None, None, ["insurance"]))["by_benefit"].get("s3b1") == 13000)
+mob = next(b for b in R[343]["benefits"] if b["id"] == "s5b1")
+check("정액 혜택: 통신요금 5만원 이상 조건은 통신비 3만원이면 0, 6만원이면 1",
+      calc.period_prob(mob, ["mobile"], {"mobile": 30000}, A7, 1.0, False) == 0 and calc.period_prob(mob, ["mobile"], {"mobile": 60000}, A7, 1.0, False) == 1)
+kk = next(b for b in R[2822]["benefits"] if b["id"] == "s1b1")
+A7r = E._A({"bills": {}}, None, ["rental"])
+check("정액 혜택: 브랜드 '없음'을 고르면 렌탈 계약이 있어도 0(calc)", calc.evaluate(R[2822], {"bills": 100000, "etc": 400000}, A7r)["total"] == 0)
+r7 = json.loads(E.recommend_json(json.dumps({"ids": [2822], "spending": {"bills": 100000, "etc": 400000}, "margin": 0, "maxCards": 1,
+                                             "brandShare": {"bills": {}}, "contracts": ["rental"], "withAlt": False})))
+check("정액 혜택: 브랜드 '없음'이면 MILP도 0(예전: MILP만 26,000원)", all(c["total"] == 0 for c in r7["result"]["cards"]))
+r7 = json.loads(E.recommend_json(json.dumps({"ids": OWNED, "spending": SPEND, "margin": 20000, "maxCards": 3, "withAlt": False})))
+d7 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A7)["total"] - c["feeMonthly"] for c in r7["result"]["cards"])
+check(f"비중표 켠 추천: 조합 순혜택 = calc 직접 계산 ({r7['result']['net']:,.0f}원)", abs(d7 - r7["result"]["net"]) < 1)
+
+# 8. 2026-11-03 C1: 좁은 업종 혜택은 카테고리 지출 중 덮는 비중만(benefit-coverage.json)
+E.init_json(read("data/catalog/cards-benefit.json"), read("data/catalog/assumptions.json"), read("data/catalog/merchant-share.json"),
+            read("data/catalog/benefit-conditions.json"), read("data/catalog/benefit-coverage.json"))
+R, A8 = E.STATE["records"], E._A(None)
+cov = json.loads(read("data/catalog/benefit-coverage.json"))["benefits"]
+ev = next(b for b in R[2998]["benefits"] if b["id"] == "s2b6")
+check(f"C1: MOVING LIFE 'EV충전'은 주유 지출의 {cov['2998']['s2b6']['coverage']:.0%}만 대상(예전 100%)",
+      calc._elig_share(ev["scope"], A8)[0] == cov["2998"]["s2b6"]["coverage"] and not calc.splits_spend(ev))
+r8 = json.loads(E.recommend_json(json.dumps({"ids": [2998, 2616, 2686, 51], "spending": {"gas": 150000, "dining": 200000, "etc": 300000},
+                                             "margin": 20000, "maxCards": 3, "withAlt": False})))
+d8 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in r8["result"]["cards"])
+check(f"C1 켠 추천: 조합 순혜택 = calc 직접 계산 ({r8['result']['net']:,.0f}원)", abs(d8 - r8["result"]["net"]) < 1)
+
+# 9. 2026-11-03 마지막 국소 탐색(1장 바꾸기·더하기, 평가 횟수 상한)
+sp9 = {"mart": 200000, "education": 150000, "dining": 100000, "onlineShopping": 120000, "gas": 80000, "mobile": 70000,
+       "bills": 80000, "medical": 50000, "household": 50000, "department": 40000, "etc": 60000}
+pool9 = [s for s, st in E.STATE["status"].items() if st == "extracted"]
+
+
+def rec9(**kw):
+    E._SEED.clear()
+    return json.loads(E.recommend_json(json.dumps({"ids": pool9, "spending": sp9, "margin": 20000, "maxCards": 3, "withAlt": False, **kw})))
+
+
+off, on, on2 = rec9(localSearch=False), rec9(), rec9()
+check(f"국소 탐색: 순혜택이 줄지 않음 {off['result']['net']:,.0f} → {on['result']['net']:,.0f}원(평가 {on['lsEvals']}번 ≤ {E.LS_EVALS})",
+      on["result"]["net"] >= off["result"]["net"] - 1 and on["lsEvals"] <= E.LS_EVALS)
+check("국소 탐색: 같은 입력이면 같은 조합·금액(평가 횟수로 끊음)", on["result"]["sids"] == on2["result"]["sids"] and abs(on["result"]["net"] - on2["result"]["net"]) < 1)
+d9 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in on["result"]["cards"])
+check("국소 탐색: 화면 순혜택 = calc 직접 계산", abs(d9 - on["result"]["net"]) < 1)
+nets9 = [b["net"] for b in on["bar"]]
+check(f"국소 탐색: 카드 수 막대가 줄지 않음 {[round(n) for n in nets9]}", all(nets9[i] <= nets9[i + 1] + 1 for i in range(len(nets9) - 1)))
+quick = rec9(kLimit=2)
+check("국소 탐색: 빠른 첫 결과(kLimit)에는 돌지 않음", quick.get("lsEvals") is None)
+cap = rec9(feeCap=20000)
+check(f"국소 탐색: 연회비 상한(연 2만원)을 지킴({sum(c['feeMonthly'] for c in cap['result']['cards']) * 12:,.0f}원)",
+      sum(c["feeMonthly"] for c in cap["result"]["cards"]) * 12 <= 20000 + 1)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

@@ -30,6 +30,13 @@ def usable(b):
     return b.get("status", "auto") == "auto"
 
 
+def contract_off(b, A):
+    """보험·렌탈·장기 할부처럼 카드와 따로 계약이 있어야 받는 혜택인데, 사용자가 그 계약이 있다고 답하지 않았으면 True.
+    혜택의 contract 키는 wf_engine.init_json이 benefit-conditions.json으로 붙인다(2026-11-03)"""
+    k = b.get("contract")
+    return bool(k) and k not in (A.get("user_contracts") or ())
+
+
 def channel_share(sc, cat, A):
     """온라인·오프라인 한정 혜택의 대상 비중(카테고리 지출 중 그 채널 결제 비중). 가정값이 없으면 1(예전 동작)"""
     ch = sc.get("channel") or "any"
@@ -43,7 +50,8 @@ def splits_spend(b):
     """같은 카테고리 '업종 전체' 혜택끼리 지출을 나눠 가지는지. 겹쳐 받는(stacks) 혜택은 같은 지출에 더해 주므로 나누지 않는다"""
     sc = b["scope"]
     return (sc["region"] != "overseas" and sc["specificity"] == "category" and bool(sc["app_category"])
-            and b.get("stacking", "exclusive") == "exclusive")
+            and b.get("stacking", "exclusive") == "exclusive"
+            and sc.get("coverage", 1.0) >= 1.0)  # 좁은 업종 혜택(치과·약국 등)끼리는 지출이 달라 나누지 않는다
 
 
 def _chans(b):
@@ -72,7 +80,81 @@ def _elig_share(sc, A):
     if spec in ("brand", "merchant_group") and ub and sc.get("app_category") in ub:
         m = {_norm_m(k): v for k, v in ub[sc["app_category"]].items() if not k.startswith("_")}
         return min(1.0, sum(m.get(_norm_m(x), 0.0) for x in sc.get("merchants", []))), True
+    if spec == "category" and sc.get("coverage") is not None:
+        # 좁은 업종 혜택이 카테고리 지출 중 덮는 비중(benefit-coverage.json, init_json이 붙임. 2026-11-03 C1)
+        return sc["coverage"], False
     return A["eligible_share_by_specificity"][spec], False
+
+
+def _is_brand(b):
+    sc = b["scope"]
+    return sc["region"] != "overseas" and sc["specificity"] in ("brand", "merchant_group") and bool(sc["app_category"])
+
+
+def brand_shares(benefits, A):
+    """브랜드·묶음 혜택의 실효 대상 비중 {혜택 id: 비중}(2026-11-03). calc와 milp가 같이 쓴다.
+    - 사용자가 그 카테고리 브랜드를 입력했거나 비중표에 없는 카테고리: 입력값 또는 기본 가정값(_elig_share).
+      카드-카테고리 안 합이 1을 넘으면 1로 맞춘다(예전 동작)
+    - 비중표(A['merchant_share'], init_json이 넣음)에 있는 카테고리: 그 혜택 가맹점 비중의 합(1 이하).
+      표에 없는 가맹점과 이름이 빈 혜택은 꼬리 값. 같은 가맹점을 노리는 독점 혜택끼리는 그 가맹점 몫을 나눠 가진다"""
+    ms = A.get("merchant_share")
+    ub = A.get("user_brand_share") or {}
+    tg = [b for b in benefits if _is_brand(b)]
+    table = lambda cat: None if cat in ub or not ms else ms["categories"].get(cat)  # noqa: E731
+    out, legacy_sum = {}, {}
+    legacy = [b for b in tg if table(b["scope"]["app_category"]) is None]
+    for b in legacy:
+        cat = b["scope"]["app_category"]
+        legacy_sum[cat] = legacy_sum.get(cat, 0.0) + _elig_share(b["scope"], A)[0]
+    for b in legacy:
+        t = legacy_sum[b["scope"]["app_category"]]
+        out[b["id"]] = _elig_share(b["scope"], A)[0] * (1.0 / t if t > 1 else 1.0)
+    rest = [b for b in tg if b["id"] not in out]
+    names, cnt = {}, {}
+    for b in rest:
+        sc = b["scope"]
+        ns = sorted({ms["alias"].get(_norm_m(m), _norm_m(m)) for m in sc.get("merchants") or []}) or [f"?{b['id']}"]
+        names[b["id"]] = ns
+        if b.get("stacking", "exclusive") == "exclusive":
+            for m in ns:
+                for ch in _chans(b):
+                    cnt[(sc["app_category"], m, ch)] = cnt.get((sc["app_category"], m, ch), 0) + 1
+    for b in rest:
+        cat = b["scope"]["app_category"]
+        t = table(cat)
+        excl = b.get("stacking", "exclusive") == "exclusive"
+        tot = 0.0
+        for m in names[b["id"]]:
+            w = t["tail"] if m.startswith("?") else t["shares"].get(m, t["tail"])
+            tot += w / (max(cnt[(cat, m, ch)] for ch in _chans(b)) if excl else 1)
+        out[b["id"]] = min(1.0, tot)
+    return out
+
+
+def period_prob(b, cats, spending, A, share, user_share):
+    """기간 정액 혜택(월 N원 등)을 실제로 받을 확률(2026-11-03). 예전에는 대상 지출이 1원만 있어도 전액을 줬다.
+    - 브랜드·묶음 혜택: 사용자가 그 카테고리 브랜드를 입력했으면 그 가맹점을 고른 경우 1, 아니면 0.
+      입력이 없으면 실효 비중을 '그 가맹점을 쓸 확률'로 본다(렌탈료·멤버십처럼 쓰거나 안 쓰거나인 혜택)
+    - 건당 최소 금액이 있으면 그 금액 이상 결제가 한 달에 한 번이라도 있을 확률(결제 건수 ~ 포아송: 1 − e^(−n))"""
+    sc, cond = b["scope"], b.get("conditions") or {}
+    p = 1.0
+    if sc["specificity"] in ("brand", "merchant_group"):
+        p = (1.0 if share > 0 else 0.0) if user_share else min(1.0, share)
+    elif sc.get("coverage") is not None:
+        p = sc["coverage"]  # 좁은 업종(자동차보험 등)을 쓸 확률로 본다
+    m = cond.get("min_txn_won")
+    if m:
+        none = 1.0
+        for cat in cats:
+            s = spending.get(cat, 0) * day_share_of(sc, cat, A) * channel_share(sc, cat, A)
+            if s <= 0:
+                continue
+            if A["single_txn_categories"].get(cat):
+                none *= 0.0 if s >= m else 1.0
+            else:
+                none *= math.exp(-_txn_model(s, cat, A, None, m)[0])
+        p *= 1.0 - none
+    return p
 
 
 def _tier_of(tiers, amount):
@@ -193,7 +275,7 @@ def _value(benefit, tier, A, flags):
 
 def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, covered=None, category_scale=None, log=None):
     """혜택 하나의 월 금액(자체 한도까지 적용). 공유 한도는 바깥에서 적용.
-    share_scale: 카테고리별 비중 보정(같은 카테고리 브랜드 혜택들의 비중 합이 100%를 넘을 때)
+    share_scale: 브랜드·묶음 혜택의 실효 비중 {혜택 id: 비중}(brand_shares, 2026-11-03)
     covered: 카테고리별로 다른(특정) 혜택이 이미 받은 지출. '모든 가맹점' 기본 적립은 이 지출을 빼고 계산"""
     sc, rw, cond = b["scope"], b["reward"], b.get("conditions") or {}
     b["_elig_by_cat"] = {}
@@ -228,6 +310,8 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         cats = [sc["app_category"]]
 
     share, user_share = _elig_share(sc, A)
+    if sc["specificity"] in ("brand", "merchant_group") and share_scale is not None and b["id"] in share_scale:
+        share = share_scale[b["id"]]
     days = sc.get("days", "any")
     day_share = day_share_of(sc, cats[0], A) if cats else 1.0
     if days != "any":
@@ -264,10 +348,8 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
     exclusive_base = sc["specificity"] == "all_merchants" and rw["type"] in ("percent", "per_unit_spend", "won_per_liter") \
         and b.get("stacking", "exclusive") == "exclusive"
     def _target(cat):
-        scale = 1.0
-        if sc["specificity"] in ("brand", "merchant_group"):
-            scale = (share_scale or {}).get(cat, 1.0)
-        elif splits_spend(b):
+        scale = 1.0  # 브랜드·묶음 혜택의 나눠 가짐·합 상한은 share(실효 비중)에 이미 들어 있다
+        if splits_spend(b):
             scale = (category_scale or {}).get(b["id"], 1.0)
         s = spending.get(cat, 0) * share * scale * day_share_of(sc, cat, A) * hour_share * channel_share(sc, cat, A)
         if exclusive_base and covered:
@@ -353,9 +435,12 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         if rw["type"] != "won_per_period":
             log.append(f"    계산: {rw['type']} {v:g} → {total:,.0f}원")
     if rw["type"] == "won_per_period":
-        total = v / MONTHS[rw.get("period_of_reward") or "month"] if elig_total > 0 else 0.0
+        prob = period_prob(b, cats, spending, A, share, user_share) if elig_total > 0 else 0.0
+        total = v / MONTHS[rw.get("period_of_reward") or "month"] * prob
+        if 0 < prob < 1:
+            flags.add(f"{b['id']}: 정액 혜택을 받을 확률 {prob:.0%}로 계산(가맹점 비중·건당 최소 금액)")
         if log is not None:
-            log.append(f"    계산: {rw.get('period_of_reward')}마다 {v:,.0f}원 → 월 환산 {total:,.0f}원")
+            log.append(f"    계산: {rw.get('period_of_reward')}마다 {v:,.0f}원 × 받을 확률 {prob:.0%} → 월 환산 {total:,.0f}원")
 
     if rw["kind"] == "point":
         total *= A["point_value_won"]
@@ -436,6 +521,8 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
     in_options = {x for g in groups for o in g["options"] for x in o["benefit_ids"]}
     chosen = {x for g in groups for o in g["options"] if o["id"] in (option_ids or []) for x in o["benefit_ids"]}
     active = [b for b in rec["benefits"] if (b["id"] not in in_options or b["id"] in chosen) and usable(b)]
+    off = [b for b in active if contract_off(b, A)]
+    active = [b for b in active if not contract_off(b, A)]
 
     perf = rec["performance"]
     excl = set(perf.get("excluded_app_categories", []))
@@ -446,13 +533,8 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
         q = sum(v for c, v in spending.items() if c not in e)
         local_q[ts["id"]] = q * 12 if ts["basis"] in ("card_year", "calendar_year", "prev_year") else q * 3 if ts["basis"] == "quarter" else q
 
-    # 같은 카테고리에 브랜드·묶음 혜택이 여러 개면 비중 합이 100%를 넘지 않게 보정
-    share_sum = {}
-    for b in active:
-        sc = b["scope"]
-        if sc["region"] != "overseas" and sc["specificity"] in ("brand", "merchant_group") and sc["app_category"]:
-            share_sum[sc["app_category"]] = share_sum.get(sc["app_category"], 0) + _elig_share(sc, A)[0]
-    share_scale = {c: (1.0 / v if v > 1 else 1.0) for c, v in share_sum.items()}
+    # 브랜드·묶음 혜택의 실효 비중(비중표, 같은 가맹점 나눠 가짐, 카드-카테고리 합 상한)
+    share_scale = brand_shares(active, A)
     # 같은 카테고리에 '업종 전체' 혜택이 여러 개면(예: 버스·지하철 10% / 택시 10%를 따로 적은 경우)
     # 같은 지출을 두 번 세지 않도록 나눠 가진다(겹쳐 받는 혜택은 빼고, 채널별로 센다)
     category_scale = category_scales(active)
@@ -463,7 +545,7 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
     q = q_raw
     seen = {}
     for _ in range(8):  # 할인받은 결제가 실적에서 빠지는 카드는 고정점까지 반복
-        flags = set()
+        flags = {f"{b['id']}: 계약이 있어야 받는 혜택이라 뺌({b['contract']})" for b in off}
         tiers_now = {"card": _tier_of(perf["tiers"], q) if perf["basis"] != "none" else None}
         for ts in rec.get("local_tier_sets", []):
             tiers_now[ts["id"]] = _tier_of(ts["tiers"], local_q[ts["id"]])

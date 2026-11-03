@@ -1,0 +1,321 @@
+{
+ "version": "v1",
+ "generatedAt": "2026-11-03",
+ "note": "계약이 있어야 받는 혜택. 엔진은 기본으로 빼고 요청의 contracts에 키가 있으면 켠다. 1_혜택정보구조화/조건분류",
+ "asks": {
+  "insurance": "보험료를 이 카드로 내고 있나요(자동차보험 포함)?",
+  "rental": "정수기·가전 렌탈료를 카드로 내고 있나요?",
+  "installment": "장기 할부로 큰 물건을 살 계획이 있나요?",
+  "apt_fee": "아파트 관리비를 카드로 자동이체하나요?",
+  "bank_account": "카드사 은행 계좌·금융상품을 쓰고 있나요?",
+  "paid_membership": "혜택에 필요한 유료 멤버십에 가입했나요?",
+  "telecom_skt": "SKT 휴대폰을 쓰나요(T멤버십 바코드 결제)?"
+ },
+ "benefits": {
+  "146": {
+   "s3b7_2": "apt_fee"
+  },
+  "185": {
+   "s1b1": "apt_fee"
+  },
+  "191": {
+   "s1b1": "installment"
+  },
+  "193": {
+   "s1b1": "installment"
+  },
+  "227": {
+   "s4b1": "bank_account",
+   "s5b1_1": "bank_account",
+   "s5b1_2": "bank_account",
+   "s5b1_3": "bank_account"
+  },
+  "241": {
+   "s4b1": "bank_account"
+  },
+  "248": {
+   "s1b2": "apt_fee"
+  },
+  "303": {
+   "s3b1": "insurance"
+  },
+  "360": {
+   "s1b2": "bank_account"
+  },
+  "488": {
+   "s3b1": "insurance"
+  },
+  "537": {
+   "s1b1": "rental"
+  },
+  "594": {
+   "s1b1": "installment"
+  },
+  "596": {
+   "s1b1": "rental"
+  },
+  "607": {
+   "s2b1": "paid_membership"
+  },
+  "681": {
+   "s6b1": "paid_membership"
+  },
+  "696": {
+   "s1b1": "paid_membership"
+  },
+  "697": {
+   "s5b1": "rental",
+   "s5b4": "insurance"
+  },
+  "729": {
+   "s3b1_1": "installment",
+   "s3b1_2": "installment",
+   "s3b1_3": "installment",
+   "s4b1": "rental",
+   "s5b1": "installment"
+  },
+  "770": {
+   "s3b1": "insurance"
+  },
+  "780": {
+   "s3b1": "insurance",
+   "s3b2": "insurance",
+   "s4b1": "insurance"
+  },
+  "854": {
+   "s3b1": "insurance"
+  },
+  "859": {
+   "s3b1": "insurance"
+  },
+  "889": {
+   "s3b1": "apt_fee"
+  },
+  "951": {
+   "s1b1": "rental"
+  },
+  "1013": {
+   "s1b2": "insurance",
+   "s1b8": "rental"
+  },
+  "1180": {
+   "s2b2": "apt_fee"
+  },
+  "1184": {
+   "s2b1": "installment"
+  },
+  "1198": {
+   "s2b2": "insurance",
+   "s2b6": "rental"
+  },
+  "1233": {
+   "s1b1": "installment",
+   "s2b1": "rental"
+  },
+  "1248": {
+   "s1b1": "rental"
+  },
+  "1380": {
+   "s1b1": "rental"
+  },
+  "1584": {
+   "s4b1": "bank_account"
+  },
+  "1648": {
+   "s1b1": "insurance"
+  },
+  "1868": {
+   "s1b1": "insurance"
+  },
+  "1882": {
+   "s2b1": "installment"
+  },
+  "1884": {
+   "s1b1": "insurance"
+  },
+  "1996": {
+   "s1b1": "installment",
+   "s1b2": "rental"
+  },
+  "2019": {
+   "s1b1": "rental"
+  },
+  "2021": {
+   "s1b1": "rental"
+  },
+  "2023": {
+   "s1b1": "rental"
+  },
+  "2132": {
+   "s2b1": "insurance"
+  },
+  "2198": {
+   "s1b1": "insurance"
+  },
+  "2230": {
+   "s1b2": "insurance",
+   "s2b1": "insurance"
+  },
+  "2234": {
+   "s2b3": "apt_fee"
+  },
+  "2251": {
+   "s1b1": "installment"
+  },
+  "2277": {
+   "s1b1": "paid_membership"
+  },
+  "2283": {
+   "s1b1": "rental",
+   "s2b2": "paid_membership"
+  },
+  "2302": {
+   "s1b1": "paid_membership",
+   "s1b2": "paid_membership"
+  },
+  "2324": {
+   "s1b1": "insurance"
+  },
+  "2330": {
+   "s1b1": "apt_fee",
+   "s6b1": "insurance"
+  },
+  "2349": {
+   "s3b1_2": "apt_fee"
+  },
+  "2366": {
+   "s2b1": "insurance",
+   "s2b2": "insurance"
+  },
+  "2376": {
+   "s3b1": "paid_membership"
+  },
+  "2393": {
+   "s3b1": "paid_membership"
+  },
+  "2407": {
+   "s3b1": "insurance"
+  },
+  "2421": {
+   "s2b4": "rental"
+  },
+  "2433": {
+   "s1b1": "installment"
+  },
+  "2449": {
+   "s2b1": "telecom_skt"
+  },
+  "2476": {
+   "s2b2": "paid_membership"
+  },
+  "2487": {
+   "s2b4": "paid_membership"
+  },
+  "2534": {
+   "s2b1": "insurance"
+  },
+  "2570": {
+   "s5b2": "paid_membership"
+  },
+  "2626": {
+   "s4b1": "paid_membership"
+  },
+  "2631": {
+   "s2b1": "insurance"
+  },
+  "2635": {
+   "s1b2": "rental",
+   "s1b3": "insurance"
+  },
+  "2649": {
+   "s1b5": "insurance"
+  },
+  "2659": {
+   "s1b1": "insurance",
+   "s3b1": "insurance"
+  },
+  "2661": {
+   "s3b1": "insurance"
+  },
+  "2701": {
+   "s2b1": "installment",
+   "s3b3": "rental",
+   "s3b4": "apt_fee"
+  },
+  "2706": {
+   "s2b5": "insurance"
+  },
+  "2789": {
+   "s5b1": "insurance"
+  },
+  "2822": {
+   "s1b1": "rental",
+   "s2b1": "installment"
+  },
+  "2870": {
+   "s1b1": "rental"
+  },
+  "2875": {
+   "s2b1": "insurance",
+   "s3b1_1": "insurance",
+   "s3b1_2": "insurance"
+  },
+  "2896": {
+   "s1b1": "insurance"
+  },
+  "2904": {
+   "s1b8": "insurance"
+  },
+  "2927": {
+   "s3b1": "apt_fee"
+  },
+  "2964": {
+   "s3b2": "paid_membership"
+  },
+  "2965": {
+   "s2b1": "insurance"
+  },
+  "2966": {
+   "s2b1": "insurance"
+  },
+  "2976": {
+   "s2b3": "insurance"
+  },
+  "2986": {
+   "s8b1": "insurance",
+   "s8b2": "insurance"
+  },
+  "2988": {
+   "s2b1": "paid_membership"
+  },
+  "2993": {
+   "s1b6": "rental",
+   "s1b9": "paid_membership"
+  },
+  "3018": {
+   "s1b6": "apt_fee"
+  },
+  "3033": {
+   "s1b1": "rental"
+  },
+  "3041": {
+   "s9b1": "apt_fee"
+  },
+  "3051": {
+   "s5b2": "paid_membership"
+  },
+  "3085": {
+   "s1b2": "installment"
+  },
+  "3089": {
+   "s1b1": "installment"
+  },
+  "3093": {
+   "s1b1": "rental"
+  },
+  "3097": {
+   "s3b1": "paid_membership",
+   "s3b2": "paid_membership"
+  }
+ }
+}

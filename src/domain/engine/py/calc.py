@@ -157,6 +157,24 @@ def period_prob(b, cats, spending, A, share, user_share):
     return p
 
 
+def period_factor(b, cats, spending, A):
+    """기간 정액 1회분을 월 금액으로 바꾸는 배수(2026-11-04). 예전에는 '일 N원'을 매일(30일) 받는다고 봤다
+    (신한 B.Big 교통 일 600원 → 교통비 3만원인 사람도 월 18,000원).
+    - '일 N원': 그 카테고리를 쓰는 날수만큼. 이용 일수 = 결제 건수 ÷ 하루 결제 건수(txns_per_day, 대중교통은 출퇴근 2번), 30일 이하
+    - 그 밖의 기간: 1 / 기간 개월 수"""
+    per = b["reward"].get("period_of_reward") or "month"
+    if per != "day":
+        return 1.0 / MONTHS[per]
+    sc, per_day = b["scope"], A.get("txns_per_day") or {}
+    days = 0.0
+    for cat in cats:
+        s = spending.get(cat, 0) * day_share_of(sc, cat, A) * channel_share(sc, cat, A)
+        if s > 0:
+            n = _txn_model(s, cat, A, None, (b.get("conditions") or {}).get("min_txn_won"))[0]
+            days += n / per_day.get(cat, per_day.get("default", 1))
+    return min(30.0, days)
+
+
 def _tier_of(tiers, amount):
     hit = None
     for t in tiers:
@@ -436,11 +454,14 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
             log.append(f"    계산: {rw['type']} {v:g} → {total:,.0f}원")
     if rw["type"] == "won_per_period":
         prob = period_prob(b, cats, spending, A, share, user_share) if elig_total > 0 else 0.0
-        total = v / MONTHS[rw.get("period_of_reward") or "month"] * prob
+        times = period_factor(b, cats, spending, A)
+        total = v * times * prob
         if 0 < prob < 1:
             flags.add(f"{b['id']}: 정액 혜택을 받을 확률 {prob:.0%}로 계산(가맹점 비중·건당 최소 금액)")
+        if rw.get("period_of_reward") == "day":
+            flags.add(f"{b['id']}: 일 정액은 이용 일수 {times:.1f}일만큼 받는다고 계산")
         if log is not None:
-            log.append(f"    계산: {rw.get('period_of_reward')}마다 {v:,.0f}원 × 받을 확률 {prob:.0%} → 월 환산 {total:,.0f}원")
+            log.append(f"    계산: {rw.get('period_of_reward')}마다 {v:,.0f}원 × 월 {times:.2f}번 × 받을 확률 {prob:.0%} → 월 환산 {total:,.0f}원")
 
     if rw["kind"] == "point":
         total *= A["point_value_won"]
@@ -448,6 +469,12 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
         total *= A["mileage_value_won"]
     elif rw["kind"] == "donation":
         total = 0.0
+    if rw["type"] == "won_per_period" and total > elig_total:
+        # 정액 혜택은 대상 결제 금액보다 클 수 없다(2026-11-04. 통신비 3천원인데 월 5천원 할인처럼)
+        flags.add(f"{b['id']}: 정액 {total:,.0f}원을 대상 결제 {elig_total:,.0f}원까지로 자름")
+        if log is not None:
+            log.append(f"    대상 결제 {elig_total:,.0f}원보다 클 수 없어 {elig_total:,.0f}원으로 자름")
+        total = elig_total
 
     raw = total
     b["_trace"]["raw"] = raw

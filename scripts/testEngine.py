@@ -153,7 +153,8 @@ check("비중표: 사용자가 브랜드를 고른 카테고리는 입력값(합
 sp7 = {"bills": 1000, "etc": 400000}
 check("계약 혜택: 보험엔로카 보험 혜택은 계약이 있다고 안 하면 0원(예전: 생활요금 1,000원에도 월 26,000원)",
       calc.evaluate(R[2659], sp7, A7)["total"] == 0)
-check("계약 혜택: 보험이 있다고 하면 다시 계산", calc.evaluate(R[2659], sp7, E._A(None, None, ["insurance"]))["by_benefit"].get("s3b1") == 13000)
+# 생활요금 1,000원이면 정액은 대상 결제 1,000원까지로 잘리므로(11-04) 보험료가 들어갈 만큼 생활요금을 둔다
+check("계약 혜택: 보험이 있다고 하면 다시 계산", calc.evaluate(R[2659], dict(sp7, bills=100000), E._A(None, None, ["insurance"]))["by_benefit"].get("s3b1") == 13000)
 mob = next(b for b in R[343]["benefits"] if b["id"] == "s5b1")
 check("정액 혜택: 통신요금 5만원 이상 조건은 통신비 3만원이면 0, 6만원이면 1",
       calc.period_prob(mob, ["mobile"], {"mobile": 30000}, A7, 1.0, False) == 0 and calc.period_prob(mob, ["mobile"], {"mobile": 60000}, A7, 1.0, False) == 1)
@@ -204,6 +205,26 @@ check("국소 탐색: 빠른 첫 결과(kLimit)에는 돌지 않음", quick.get(
 cap = rec9(feeCap=20000)
 check(f"국소 탐색: 연회비 상한(연 2만원)을 지킴({sum(c['feeMonthly'] for c in cap['result']['cards']) * 12:,.0f}원)",
       sum(c["feeMonthly"] for c in cap["result"]["cards"]) * 12 <= 20000 + 1)
+
+# 10. 2026-11-04 정액 혜택: '일 N원'은 이용 일수만큼, 정액은 대상 결제보다 크지 않게
+sp10 = {"transport": 30000, "dining": 400000, "mart": 200000}
+bbig = calc.evaluate(R[10], sp10, A8)["by_benefit"]["s1b1"]
+bbig2 = calc.evaluate(R[10], dict(sp10, transport=120000), A8)["by_benefit"]["s1b1"]
+check(f"정액 혜택: B.Big 교통 일 할인은 교통비 3만원이면 이용 10일만큼 {bbig:,.0f}원(예전: 30일치 12,000원), 12만원이면 {bbig2:,.0f}원",
+      bbig <= 600 * 30000 / 1500 / 2 + 1 and bbig2 > bbig)
+tiny = {"card": {"name": "정액 시험"}, "performance": {"basis": "none", "tiers": [], "excluded_app_categories": []}, "benefits": [
+    {"id": "m", "scope": {"region": "domestic", "specificity": "category", "app_category": "mobile", "channel": "any", "merchants": []},
+     "reward": {"kind": "discount", "type": "won_per_period", "value_by_tier": [{"tier": None, "value": 5000}], "period_of_reward": "month"},
+     "conditions": {"tier_set": "none"}, "caps": [], "shared_cap_ids": []}], "shared_caps": []}
+check("정액 혜택: 월 5천원 할인도 통신비가 3천원이면 3천원까지", abs(calc.evaluate(tiny, {"mobile": 3000}, A8)["total"] - 3000) < 1e-6)
+E._SEED.clear()
+r10 = json.loads(E.recommend_json(json.dumps({"ids": [10], "spending": sp10, "margin": 0, "maxCards": 1, "withAlt": False})))
+d10 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in r10["result"]["cards"])
+check(f"정액 혜택: MILP도 같은 규칙(화면 순혜택 {r10['result']['net']:,.0f}원 = calc)", abs(d10 - r10["result"]["net"]) < 1)
+
+yb = lambda m: calc.evaluate(R[2596], {"etc": m}, A8)["by_benefit"].get("s1b3", 0)  # noqa: E731
+check(f"정액 혜택: 2596 '연 1,500만원 이상 시 2만원'은 월 100만원(연 1,200만)이면 0, 월 130만원이면 월 환산 {yb(1300000):,.0f}원",
+      yb(1000000) == 0 and abs(yb(1300000) - 20000 / 12) < 1)
 
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

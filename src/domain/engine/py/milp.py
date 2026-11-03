@@ -473,7 +473,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         if b["reward"]["type"] == "won_per_period":
             per = b["reward"].get("period_of_reward") or "month"
             vs = [(_value(b, t[0], A) or 0) for t in B.W[tset]] + [(_value(b, None, A) or 0)]
-            return max(vs) / MONTHS[per] * conv(b)
+            return max(vs) * __import__("calc").period_factor(b, bcats(b), S, A) * conv(b)
         for c in bcats(b):
             best = 0.0
             for t in B.W[tset]:
@@ -563,19 +563,23 @@ def _build_card(M, B, cats, S, A, BIGQ):
             import calc
             pp = calc.period_prob(b, bcats(b), S, A, scales_for(b)[0].get(b["id"], _elig_share(b["scope"], A)),
                                   calc._elig_share(b["scope"], A)[1])
+            # 월 몇 번 받나('일 N원'은 이용 일수, calc.period_factor와 같음). 카테고리 전액을 이 카드로 낼 때로 본다
+            pf = calc.period_factor(b, bcats(b), S, A)
             vmax = 0.0
             Mbig = 1.0
             for (tier, wt, lo, hi) in sts:
                 ok = tset == "none" or (tier is not None and (allowed_t is None or tier in allowed_t))
                 v = _value(b, tier, A) if ok else None
-                vm = (v or 0) / MONTHS[per] * conv(b) * pp
+                vm = (v or 0) * pf * conv(b) * pp
                 vmax = max(vmax, vm)
             Mbig = vmax + 1
             M.con({av: 1, u: -vmax}, hi=0)
+            # 정액은 이 카드가 맡은 대상 결제보다 클 수 없다(calc와 같음, 2026-11-04)
+            M.con({av: 1, **{B.x[c]: -factors(b, c) for c in bcats(b)}}, hi=0)
             for (tier, wt, lo, hi) in sts:
                 ok = tset == "none" or (tier is not None and (allowed_t is None or tier in allowed_t))
                 v = _value(b, tier, A) if ok else None
-                vm = (v or 0) / MONTHS[per] * conv(b) * pp
+                vm = (v or 0) * pf * conv(b) * pp
                 gle({av: 1.0}, [wt], vm, Mbig)
             B.aper[b["id"]] = av
             terms_total[av] = 1.0
@@ -669,14 +673,16 @@ def _build_card(M, B, cats, S, A, BIGQ):
             M.con({u: 1, B.y: -1}, hi=0)
             M.con({u: 1, **{B.x[c]: -1.0 / S[c] for c in bcats(b)}}, hi=0)
             av = M.var(f"ap[{B.sid}|{b['id']}]", 0, np.inf, False, 1.0)
+            pf = __import__("calc").period_factor(b, bcats(b), S, A)
             vals = []
             for (tier, wt, lo, hi) in sts:
                 ok = tset == "none" or (tier is not None and (allowed_t is None or tier in allowed_t))
                 v = _value(b, tier, A) if ok else None
-                vals.append((wt, (v or 0) / MONTHS[per] * conv(b)))
+                vals.append((wt, (v or 0) * pf * conv(b)))
             vmax = max([v for _, v in vals] + [0.0])
             Mbig = vmax + 1
             M.con({av: 1, u: -vmax}, hi=0)
+            M.con({av: 1, **{B.x[c]: -1.0 for c in bcats(b)}}, hi=0)  # 맡은 결제보다 클 수 없다(calc와 같음)
             for wt, vm in vals:
                 gle({av: 1.0}, [wt], vm, Mbig)
             B.aper[b["id"]] = av

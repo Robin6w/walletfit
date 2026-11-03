@@ -73,9 +73,55 @@ interface Props {
   onToggleMine: () => void;
   onToggleCompare: () => void;
   onClose: () => void;
+  /** 결과 화면에서 열 때 맨 위에 보여 줄 '이 조합에서 이 카드가 하는 일'(2026-11-03). 있으면 전체 혜택 목록은 접어 둔다 */
+  plan?: ReactNode;
 }
 
-export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCompare, net, onToggleMine, onToggleCompare, onClose }: Props) {
+/** 결과 화면에서 열면 접어 두는 목록(처음엔 '이 조합에서' 칸만 보이게) */
+function Collapse({ open, label, children }: { open: boolean; label: string; children: ReactNode }) {
+  if (open) return <>{children}</>;
+  return (
+    <details>
+      <summary style={{ fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer" }}>{label}</summary>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>{children}</div>
+    </details>
+  );
+}
+
+/**
+ * 고르는 혜택 한 묶음(2026-11-03). 순위형('대형할인점 > 편의점' 같은 순서쌍 42가지)은 대상 업종만 한 번씩 보여 주고,
+ * 옵션이 많으면 앞 몇 개만 보이고 펼치게 한다. 제목의 정제용 내부 표기('(순위별 요율 [0.1, 0.1]: …)')는 지운다
+ */
+function ChoiceGroup({ label, options }: { label: string; options: string[] }) {
+  const name = label.replace(/\s*\([^()]*\[[^\]]*\][^()]*\)/g, "").trim() || "고르는 혜택";
+  const line: CSSProperties = { fontSize: 14, lineHeight: 1.7, color: "#3A4A78" };
+  if (options.length > 1 && options.every((o) => o.includes(" > "))) {
+    const areas = Array.from(new Set(options.flatMap((o) => o.split(" > ").map((x) => x.trim()))));
+    return (
+      <div style={line}>
+        <strong>{name}</strong>: {areas.join(" · ")} 가운데 그달 많이 쓴 순서대로 높은 할인율이 자동으로 붙어요
+        <span style={{ color: "#5E6D96" }}> (순서 조합 {options.length}가지)</span>
+      </div>
+    );
+  }
+  if (options.length <= 6) {
+    return (
+      <div style={line}>
+        <strong>{name}</strong>: {options.join(" / ")}
+      </div>
+    );
+  }
+  return (
+    <details style={line}>
+      <summary style={{ cursor: "pointer" }}>
+        <strong>{name}</strong>: {options.slice(0, 4).join(" / ")} 외 {options.length - 4}가지
+      </summary>
+      <div style={{ marginTop: 4 }}>{options.join(" / ")}</div>
+    </details>
+  );
+}
+
+export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCompare, net, onToggleMine, onToggleCompare, onClose, plan }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
@@ -143,6 +189,8 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
           </div>
         </header>
 
+        {plan}
+
         {loading && !view && <p style={muted}>혜택 정보를 불러오고 있어요…</p>}
         {!loading && (!view || view.b.length === 0) && (
           <Section title="혜택" sub="원문에서 계산할 수 있는 혜택을 찾지 못한 카드예요">
@@ -151,7 +199,8 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
         )}
 
         {view && view.b.length > 0 && (
-          <Section title={`혜택 ${view.b.length}개`} sub={`${sourceText(view)}${counted < view.b.length ? ` 추천 계산에는 ${counted}개를 써요.` : ""}`}>
+          <Section title={`${plan ? "카드 전체 혜택" : "혜택"} ${view.b.length}개`} sub={`${sourceText(view)}${counted < view.b.length ? ` 추천 계산에는 ${counted}개를 써요.` : ""}`}>
+            <Collapse open={!plan} label={`혜택 ${view.b.length}개 모두 보기`}>
             {groups.map((g) => (
               <div key={g.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#3A4A78" }}>
@@ -164,6 +213,7 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
                 </ul>
               </div>
             ))}
+            </Collapse>
           </Section>
         )}
 
@@ -212,9 +262,7 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
         {view && view.choice.length > 0 && (
           <Section title="고르는 혜택" sub="이 가운데 하나를 골라 쓰는 혜택이에요">
             {view.choice.map((g) => (
-              <div key={g.label} style={{ fontSize: 14, lineHeight: 1.7, color: "#3A4A78" }}>
-                <strong>{g.label}</strong>: {g.options.join(" / ")}
-              </div>
+              <ChoiceGroup key={g.label} label={g.label} options={g.options} />
             ))}
           </Section>
         )}

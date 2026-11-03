@@ -167,5 +167,18 @@ r7 = json.loads(E.recommend_json(json.dumps({"ids": OWNED, "spending": SPEND, "m
 d7 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A7)["total"] - c["feeMonthly"] for c in r7["result"]["cards"])
 check(f"비중표 켠 추천: 조합 순혜택 = calc 직접 계산 ({r7['result']['net']:,.0f}원)", abs(d7 - r7["result"]["net"]) < 1)
 
+# 8. 2026-11-03 C1: 좁은 업종 혜택은 카테고리 지출 중 덮는 비중만(benefit-coverage.json)
+E.init_json(read("data/catalog/cards-benefit.json"), read("data/catalog/assumptions.json"), read("data/catalog/merchant-share.json"),
+            read("data/catalog/benefit-conditions.json"), read("data/catalog/benefit-coverage.json"))
+R, A8 = E.STATE["records"], E._A(None)
+cov = json.loads(read("data/catalog/benefit-coverage.json"))["benefits"]
+ev = next(b for b in R[2998]["benefits"] if b["id"] == "s2b6")
+check(f"C1: MOVING LIFE 'EV충전'은 주유 지출의 {cov['2998']['s2b6']['coverage']:.0%}만 대상(예전 100%)",
+      calc._elig_share(ev["scope"], A8)[0] == cov["2998"]["s2b6"]["coverage"] and not calc.splits_spend(ev))
+r8 = json.loads(E.recommend_json(json.dumps({"ids": [2998, 2616, 2686, 51], "spending": {"gas": 150000, "dining": 200000, "etc": 300000},
+                                             "margin": 20000, "maxCards": 3, "withAlt": False})))
+d8 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A8)["total"] - c["feeMonthly"] for c in r8["result"]["cards"])
+check(f"C1 켠 추천: 조합 순혜택 = calc 직접 계산 ({r8['result']['net']:,.0f}원)", abs(d8 - r8["result"]["net"]) < 1)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

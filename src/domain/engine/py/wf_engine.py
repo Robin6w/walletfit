@@ -54,9 +54,10 @@ def _share_lookup(ms):
     return {"categories": cats, "alias": alias, "version": ms.get("version")}
 
 
-def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=None):
+def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=None, coverage_text=None):
     """share_text: 가맹점 비중표(data/catalog/merchant-share.json). 없으면 브랜드·묶음 혜택은 기본 가정값(35%·70%)
-    conditions_text: 계약이 있어야 받는 혜택 목록(data/catalog/benefit-conditions.json). 혜택에 contract 키를 붙인다(2026-11-03)"""
+    conditions_text: 계약이 있어야 받는 혜택 목록(data/catalog/benefit-conditions.json). 혜택에 contract 키를 붙인다(2026-11-03)
+    coverage_text: 좁은 업종 혜택의 덮는 비중(data/catalog/benefit-coverage.json). 혜택 scope에 coverage를 붙인다(2026-11-03 C1)"""
     data = json.loads(catalog_text)
     STATE["records"] = {int(c["sid"]): c["record"] for c in data["cards"]}
     STATE["status"] = {int(c["sid"]): c["status"] for c in data["cards"]}
@@ -71,9 +72,15 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
             for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
                 if b["id"] in m:
                     b["contract"] = m[b["id"]]
+    if coverage_text:
+        for sid, m in json.loads(coverage_text).get("benefits", {}).items():
+            for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
+                if b["id"] in m:
+                    b["scope"]["coverage"] = m[b["id"]]["coverage"]
     _SEED.clear()  # 앞선 계산 결과는 다른 데이터·가정값으로 낸 것이라 버린다
     return json.dumps({"cards": len(STATE["records"]), "counts": data.get("counts", {}),
-                       "merchantShare": bool(share_text), "contracts": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b.get("contract"))})
+                       "merchantShare": bool(share_text), "contracts": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b.get("contract")),
+                       "coverage": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b["scope"].get("coverage") is not None)})
 
 
 # ---------- 공통 ----------

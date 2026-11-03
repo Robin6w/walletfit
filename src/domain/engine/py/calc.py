@@ -50,7 +50,8 @@ def splits_spend(b):
     """같은 카테고리 '업종 전체' 혜택끼리 지출을 나눠 가지는지. 겹쳐 받는(stacks) 혜택은 같은 지출에 더해 주므로 나누지 않는다"""
     sc = b["scope"]
     return (sc["region"] != "overseas" and sc["specificity"] == "category" and bool(sc["app_category"])
-            and b.get("stacking", "exclusive") == "exclusive")
+            and b.get("stacking", "exclusive") == "exclusive"
+            and sc.get("coverage", 1.0) >= 1.0)  # 좁은 업종 혜택(치과·약국 등)끼리는 지출이 달라 나누지 않는다
 
 
 def _chans(b):
@@ -79,6 +80,9 @@ def _elig_share(sc, A):
     if spec in ("brand", "merchant_group") and ub and sc.get("app_category") in ub:
         m = {_norm_m(k): v for k, v in ub[sc["app_category"]].items() if not k.startswith("_")}
         return min(1.0, sum(m.get(_norm_m(x), 0.0) for x in sc.get("merchants", []))), True
+    if spec == "category" and sc.get("coverage") is not None:
+        # 좁은 업종 혜택이 카테고리 지출 중 덮는 비중(benefit-coverage.json, init_json이 붙임. 2026-11-03 C1)
+        return sc["coverage"], False
     return A["eligible_share_by_specificity"][spec], False
 
 
@@ -136,6 +140,8 @@ def period_prob(b, cats, spending, A, share, user_share):
     p = 1.0
     if sc["specificity"] in ("brand", "merchant_group"):
         p = (1.0 if share > 0 else 0.0) if user_share else min(1.0, share)
+    elif sc.get("coverage") is not None:
+        p = sc["coverage"]  # 좁은 업종(자동차보험 등)을 쓸 확률로 본다
     m = cond.get("min_txn_won")
     if m:
         none = 1.0

@@ -1,0 +1,3844 @@
+{
+ "version": "v1",
+ "generatedAt": "2026-11-03",
+ "threshold": 0.5,
+ "note": "좁은 업종 혜택이 카테고리 지출 중 덮는 비중(하위 업종 비중은 가정값). 엔진이 대상 지출에 곱한다. 1_혜택정보구조화/C1",
+ "benefits": {
+  "8": {
+   "s2b4": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "16": {
+   "s5b1": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   }
+  },
+  "26": {
+   "s2b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "39": {
+   "s2b2": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   }
+  },
+  "62": {
+   "s5b3_2": {
+    "coverage": 0.22,
+    "found": [
+     "cc",
+     "kinder",
+     "studymat"
+    ]
+   },
+   "s5b3_3": {
+    "coverage": 0.22,
+    "found": [
+     "cc",
+     "kinder",
+     "studymat"
+    ]
+   }
+  },
+  "106": {
+   "s2b1": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   },
+   "s4b2_3": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s5b1_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "108": {
+   "s1b2_5": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s1b7": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   }
+  },
+  "113": {
+   "s1b3": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "115": {
+   "s3b1": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   },
+   "s6b1_4": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s7b1_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "121": {
+   "s8b13": {
+    "coverage": 0.4,
+    "found": [
+     "__lodging",
+     "rental"
+    ]
+   }
+  },
+  "129": {
+   "s2b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "130": {
+   "s2b2_4": {
+    "coverage": 0.48,
+    "found": [
+     "apt",
+     "citygas"
+    ]
+   },
+   "s2b4_2": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   },
+   "s2b4_3": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   }
+  },
+  "131": {
+   "s2b3_4": {
+    "coverage": 0.48,
+    "found": [
+     "apt",
+     "citygas"
+    ]
+   },
+   "s2b3_5": {
+    "coverage": 0.48,
+    "found": [
+     "apt",
+     "citygas"
+    ]
+   },
+   "s2b4_2": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   },
+   "s2b4_3": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   }
+  },
+  "133": {
+   "s3b4_1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "136": {
+   "s1b2_3": {
+    "coverage": 0.15,
+    "found": [
+     "range"
+    ]
+   }
+  },
+  "146": {
+   "s3b6": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s3b7_2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "148": {
+   "s2b2_2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s2b2_5": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "158": {
+   "s1b3_1": {
+    "coverage": 0.42,
+    "found": [
+     "airline",
+     "duty"
+    ]
+   }
+  },
+  "162": {
+   "s1b1_4": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "163": {
+   "s1b1_4": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "164": {
+   "s2b1_2": {
+    "coverage": 0.38,
+    "found": [
+     "airline",
+     "ferry",
+     "x_rail"
+    ]
+   },
+   "s2b1_4": {
+    "coverage": 0.38,
+    "found": [
+     "airline",
+     "ferry",
+     "x_rail"
+    ]
+   },
+   "s2b1_5": {
+    "coverage": 0.38,
+    "found": [
+     "airline",
+     "ferry",
+     "x_rail"
+    ]
+   }
+  },
+  "177": {
+   "s1b1_3": {
+    "coverage": 0.1,
+    "found": [
+     "nh"
+    ]
+   }
+  },
+  "182": {
+   "s1b1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   }
+  },
+  "183": {
+   "s1b1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   }
+  },
+  "185": {
+   "s1b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "186": {
+   "s2b1_2": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s2b1_3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "189": {
+   "s4b1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "190": {
+   "s4b1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "248": {
+   "s1b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "260": {
+   "s2b3": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "273": {
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "325": {
+   "s2b2_5": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "332": {
+   "s3b1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "339": {
+   "s2b2": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "341": {
+   "s3b2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "346": {
+   "s4b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "350": {
+   "s1b2": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "360": {
+   "s1b8": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "367": {
+   "s3b1": {
+    "coverage": 0.1,
+    "found": [
+     "nh"
+    ]
+   }
+  },
+  "375": {
+   "s3b1_9": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "380": {
+   "s2b2": {
+    "coverage": 0.05,
+    "found": [
+     "airport"
+    ]
+   }
+  },
+  "391": {
+   "s1b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "451": {
+   "s2b1_1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s4b2_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "452": {
+   "s2b1_1": {
+    "coverage": 0.42,
+    "found": [
+     "airline",
+     "duty"
+    ]
+   },
+   "s4b2_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "454": {
+   "s2b2": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "455": {
+   "s5b1": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "466": {
+   "s1b2": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   },
+   "s1b3": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "469": {
+   "s8b5": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s8b8": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   }
+  },
+  "470": {
+   "s2b2": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "487": {
+   "s8b1_1": {
+    "coverage": 0.1,
+    "found": [
+     "elec"
+    ]
+   }
+  },
+  "488": {
+   "s2b1": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "auto_ins",
+     "nonlife"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "489": {
+   "s1b3": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty",
+     "lux_hotel"
+    ]
+   },
+   "s1b4": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging",
+     "lux_hotel"
+    ]
+   },
+   "s3b2": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "498": {
+   "s1b1_2": {
+    "coverage": 0.1,
+    "found": [
+     "nh"
+    ]
+   }
+  },
+  "508": {
+   "s3b8": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "512": {
+   "s2b6": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "513": {
+   "s2b6": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "528": {
+   "s6b1_4": {
+    "coverage": 0.05,
+    "found": [
+     "rental",
+     "x_rail"
+    ]
+   },
+   "s9b1_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s9b1_2": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s9b2": {
+    "coverage": 0.02,
+    "found": [
+     "cc"
+    ]
+   },
+   "s9b4_1": {
+    "coverage": 0.3,
+    "found": [
+     "cosmetics"
+    ]
+   }
+  },
+  "543": {
+   "s1b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "544": {
+   "s1b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "545": {
+   "s1b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "546": {
+   "s6b6_3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "551": {
+   "s5b6_1": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s5b10_4": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   }
+  },
+  "575": {
+   "s5b1_3": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "578": {
+   "s1b3_2": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   }
+  },
+  "580": {
+   "s5b1_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s5b1_3": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s10b5": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s10b8": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s10b10_1": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s10b11_1": {
+    "coverage": 0.08,
+    "found": [
+     "studymat"
+    ]
+   },
+   "s10b11_2": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   }
+  },
+  "591": {
+   "s4b1_3": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "614": {
+   "s7b1_2": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   }
+  },
+  "630": {
+   "s2b5_1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s2b10_3": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s2b15_1": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s2b15_2": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "632": {
+   "s3b2": {
+    "coverage": 0.1,
+    "found": [
+     "elec"
+    ]
+   }
+  },
+  "634": {
+   "s2b11_3": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s2b18_1": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s2b18_2": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "652": {
+   "s2b2": {
+    "coverage": 0.33,
+    "found": [
+     "parking",
+     "repair"
+    ]
+   },
+   "s3b1_3": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s3b2_1": {
+    "coverage": 0.05,
+    "found": [
+     "rental"
+    ]
+   }
+  },
+  "654": {
+   "s3b2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s5b2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s6b2_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s6b2_2": {
+    "coverage": 0.15,
+    "found": [
+     "range"
+    ]
+   }
+  },
+  "668": {
+   "s6b1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "679": {
+   "s2b1": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s4b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "680": {
+   "s2b1": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s4b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "693": {
+   "s4b2": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s4b4": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "696": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "697": {
+   "s5b3_1": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s5b6": {
+    "coverage": 0.12,
+    "found": [
+     "elec",
+     "water"
+    ]
+   }
+  },
+  "712": {
+   "s3b1": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "713": {
+   "s3b1": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "721": {
+   "s2b1_3": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "722": {
+   "s2b2": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "735": {
+   "s2b1_2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s2b1_3": {
+    "coverage": 0.2,
+    "found": [
+     "family",
+     "fastfood"
+    ]
+   },
+   "s2b1_4": {
+    "coverage": 0.2,
+    "found": [
+     "family",
+     "fastfood"
+    ]
+   },
+   "s2b1_8": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "740": {
+   "s1b2_3": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s1b3_1": {
+    "coverage": 0.05,
+    "found": [
+     "rental",
+     "x_rail"
+    ]
+   }
+  },
+  "741": {
+   "s1b2_3": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s1b3_1": {
+    "coverage": 0.05,
+    "found": [
+     "rental",
+     "x_rail"
+    ]
+   }
+  },
+  "751": {
+   "s3b1_2": {
+    "coverage": 0.1,
+    "found": [
+     "cc",
+     "studymat"
+    ]
+   },
+   "s3b1_3": {
+    "coverage": 0.1,
+    "found": [
+     "cc",
+     "studymat"
+    ]
+   },
+   "s4b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "752": {
+   "s3b1_2": {
+    "coverage": 0.1,
+    "found": [
+     "cc",
+     "studymat"
+    ]
+   },
+   "s3b1_3": {
+    "coverage": 0.1,
+    "found": [
+     "cc",
+     "studymat"
+    ]
+   }
+  },
+  "753": {
+   "s2b3_1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "754": {
+   "s3b2": {
+    "coverage": 0.02,
+    "found": [
+     "postnatal"
+    ]
+   },
+   "s3b6": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "767": {
+   "s6b1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "768": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "770": {
+   "s1b1": {
+    "coverage": 0.25,
+    "found": [
+     "range",
+     "screen"
+    ]
+   },
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "778": {
+   "s7b1_3": {
+    "coverage": 0.02,
+    "found": [
+     "cc"
+    ]
+   }
+  },
+  "780": {
+   "s3b2": {
+    "coverage": 0.15,
+    "found": [
+     "nonlife"
+    ]
+   },
+   "s3b3": {
+    "coverage": 0.1,
+    "found": [
+     "elec"
+    ]
+   }
+  },
+  "781": {
+   "s1b1_2": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   },
+   "s1b2_2": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   },
+   "s2b1_1": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "834": {
+   "s4b3": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "854": {
+   "s1b2": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   }
+  },
+  "859": {
+   "s1b2": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   }
+  },
+  "884": {
+   "s1b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "889": {
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "895": {
+   "s4b3": {
+    "coverage": 0.08,
+    "found": [
+     "citygas"
+    ]
+   }
+  },
+  "912": {
+   "s2b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "942": {
+   "s2b1_2": {
+    "coverage": 0.08,
+    "found": [
+     "family"
+    ]
+   },
+   "s2b1_4": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "949": {
+   "s4b8": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s5b3": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s5b5_1": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "950": {
+   "s4b8": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s5b3": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s5b5_1": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "951": {
+   "s1b1": {
+    "coverage": 0.07,
+    "found": [
+     "rental"
+    ]
+   }
+  },
+  "1010": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "1013": {
+   "s1b10": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s1b11": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   }
+  },
+  "1155": {
+   "s2b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "1170": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "cosmetics"
+    ]
+   },
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "hair",
+     "skin"
+    ]
+   }
+  },
+  "1171": {
+   "s3b1_3": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s4b1_1": {
+    "coverage": 0.2,
+    "found": [
+     "family",
+     "fastfood"
+    ]
+   },
+   "s4b1_2": {
+    "coverage": 0.2,
+    "found": [
+     "family",
+     "fastfood"
+    ]
+   },
+   "s5b1_3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "1180": {
+   "s2b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "1315": {
+   "s2b2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "1379": {
+   "s2b1": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   },
+   "s4b1_4": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s5b1_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "1394": {
+   "s1b2_5": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "1433": {
+   "s2b3": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   },
+   "s2b4": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "1558": {
+   "s1b4": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "1577": {
+   "s2b3": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   },
+   "s2b4": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "1593": {
+   "s5b1": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   }
+  },
+  "1597": {
+   "s1b2": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "1731": {
+   "s6b1": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "1859": {
+   "s4b5": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "1865": {
+   "s4b1": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "1884": {
+   "s1b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "1907": {
+   "s1b17": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "1909": {
+   "s2b4_1": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s2b4_2": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s2b4_3": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s2b4_4": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s2b4_5": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "1961": {
+   "s2b1_1": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s3b1_2": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s4b1_2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s5b1_3": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "1964": {
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s7b1_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s9b1": {
+    "coverage": 0.1,
+    "found": [
+     "home"
+    ]
+   },
+   "s10b1": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "1988": {
+   "s3b1": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "2058": {
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2131": {
+   "s1b4_2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2132": {
+   "s2b2_1": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s2b2_2": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s2b2_3": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   }
+  },
+  "2150": {
+   "s3b3": {
+    "coverage": 0.12,
+    "found": [
+     "kinder"
+    ]
+   }
+  },
+  "2175": {
+   "s2b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s2b2_1": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b2_2": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "2178": {
+   "s1b2_5": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s1b3_4": {
+    "coverage": 0.3,
+    "found": [
+     "outlet"
+    ]
+   }
+  },
+  "2179": {
+   "s1b8": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2180": {
+   "s1b2_4": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   },
+   "s1b3_2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s1b5_1": {
+    "coverage": 0.3,
+    "found": [
+     "outlet"
+    ]
+   },
+   "s1b5_2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s1b7_4": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s1b8_1": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s1b9_1": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "2184": {
+   "s1b9": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   },
+   "s1b19": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   }
+  },
+  "2185": {
+   "s2b1": {
+    "coverage": 0.15,
+    "found": [
+     "nonlife"
+    ]
+   }
+  },
+  "2197": {
+   "s2b1": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   }
+  },
+  "2230": {
+   "s1b2": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s2b1": {
+    "coverage": 0.23,
+    "found": [
+     "auto_ins",
+     "nonlife"
+    ]
+   }
+  },
+  "2234": {
+   "s2b3": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2238": {
+   "s5b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2252": {
+   "s1b2": {
+    "coverage": 0.1,
+    "found": [
+     "nh"
+    ]
+   }
+  },
+  "2264": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2277": {
+   "s2b3": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   },
+   "s2b4": {
+    "coverage": 0.08,
+    "found": [
+     "family"
+    ]
+   },
+   "s2b5": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2283": {
+   "s4b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2284": {
+   "s3b2": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "2290": {
+   "s4b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2302": {
+   "s2b3_4": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   },
+   "s2b3_5": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   },
+   "s2b3_6": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2327": {
+   "s3b1": {
+    "coverage": 0.42,
+    "found": [
+     "airline",
+     "duty"
+    ]
+   }
+  },
+  "2330": {
+   "s1b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   },
+   "s2b1": {
+    "coverage": 0.2,
+    "found": [
+     "__util",
+     "citygas",
+     "elec"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.3,
+    "found": [
+     "life",
+     "nonlife"
+    ]
+   },
+   "s7b1": {
+    "coverage": 0.08,
+    "found": [
+     "studymat"
+    ]
+   }
+  },
+  "2332": {
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   }
+  },
+  "2336": {
+   "s1b1_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s1b1_4": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s6b1_1": {
+    "coverage": 0.3,
+    "found": [
+     "cosmetics"
+    ]
+   },
+   "s6b1_2": {
+    "coverage": 0.3,
+    "found": [
+     "cosmetics"
+    ]
+   }
+  },
+  "2339": {
+   "s1b2_2": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   },
+   "s1b2_3": {
+    "coverage": 0.42,
+    "found": [
+     "__lodging",
+     "duty"
+    ]
+   }
+  },
+  "2349": {
+   "s3b1_2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2362": {
+   "s2b1_1": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   }
+  },
+  "2366": {
+   "s2b2": {
+    "coverage": 0.23,
+    "found": [
+     "auto_ins",
+     "nonlife"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.1,
+    "found": [
+     "elec"
+    ]
+   }
+  },
+  "2383": {
+   "s3b1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s3b4": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b3": {
+    "coverage": 0.15,
+    "found": [
+     "bakery"
+    ]
+   }
+  },
+  "2406": {
+   "s5b1_1": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s5b1_2": {
+    "coverage": 0.08,
+    "found": [
+     "family"
+    ]
+   }
+  },
+  "2407": {
+   "s3b1": {
+    "coverage": 0.15,
+    "found": [
+     "nonlife"
+    ]
+   }
+  },
+  "2408": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s4b1": {
+    "coverage": 0.1,
+    "found": [
+     "home"
+    ]
+   }
+  },
+  "2409": {
+   "s7b1_2": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2416": {
+   "s3b1_2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s3b1_3": {
+    "coverage": 0.08,
+    "found": [
+     "family"
+    ]
+   },
+   "s3b1_6": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2421": {
+   "s2b3_1": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   },
+   "s2b3_2": {
+    "coverage": 0.1,
+    "found": [
+     "internet"
+    ]
+   }
+  },
+  "2435": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "2441": {
+   "s7b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2442": {
+   "s1b9_3": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s1b9_4": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s1b9_5": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s2b3_2": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s2b5_1": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s2b5_2": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2449": {
+   "s1b1_1": {
+    "coverage": 0.45,
+    "found": [
+     "internet",
+     "skt"
+    ]
+   }
+  },
+  "2459": {
+   "s2b3": {
+    "coverage": 0.15,
+    "found": [
+     "agency"
+    ]
+   }
+  },
+  "2460": {
+   "s2b9": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "2461": {
+   "s2b5": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "2463": {
+   "s3b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2464": {
+   "s3b1": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   },
+   "s3b2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2474": {
+   "s1b1": {
+    "coverage": 0.35,
+    "found": [
+     "skt"
+    ]
+   }
+  },
+  "2475": {
+   "s1b2_2": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   }
+  },
+  "2476": {
+   "s4b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2480": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s2b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   }
+  },
+  "2508": {
+   "s2b3": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2530": {
+   "s3b1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   }
+  },
+  "2533": {
+   "s2b5": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "2534": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "auto_ins",
+     "life",
+     "nonlife"
+    ]
+   }
+  },
+  "2536": {
+   "s1b3": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   },
+   "s1b5": {
+    "coverage": 0.42,
+    "found": [
+     "airline",
+     "duty"
+    ]
+   }
+  },
+  "2539": {
+   "s3b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2544": {
+   "s2b2_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2545": {
+   "s2b2_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2548": {
+   "s3b1": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2550": {
+   "s12b1": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2554": {
+   "s3b4_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "2555": {
+   "s1b4": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s1b7": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2556": {
+   "s1b4": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s1b7": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2559": {
+   "s1b1": {
+    "coverage": 0,
+    "found": [
+     "x_toll"
+    ]
+   },
+   "s1b2": {
+    "coverage": 0,
+    "found": [
+     "x_toll"
+    ]
+   },
+   "s2b1_1": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "2560": {
+   "s1b1_3": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s2b4_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   }
+  },
+  "2561": {
+   "s1b1_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s1b2": {
+    "coverage": 0.05,
+    "found": [
+     "rental"
+    ]
+   }
+  },
+  "2570": {
+   "s3b1": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   }
+  },
+  "2588": {
+   "s4b2": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2603": {
+   "s2b1_1": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b1_2": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b1_3": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   }
+  },
+  "2604": {
+   "s1b2": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   },
+   "s7b1_2": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   }
+  },
+  "2610": {
+   "s2b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2616": {
+   "s1b1": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2617": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2618": {
+   "s2b2": {
+    "coverage": 0.08,
+    "found": [
+     "toll"
+    ]
+   }
+  },
+  "2619": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s1b4": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2622": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s4b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2628": {
+   "s3b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s10b1": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "2631": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2635": {
+   "s1b3": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2641": {
+   "s1b1": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   },
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   }
+  },
+  "2645": {
+   "s1b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   },
+   "s1b2": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   },
+   "s1b3_1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s1b4_1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2649": {
+   "s1b2": {
+    "coverage": 0.2,
+    "found": [
+     "__util"
+    ]
+   },
+   "s1b5": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2659": {
+   "s1b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "auto_ins"
+    ]
+   }
+  },
+  "2661": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "2666": {
+   "s3b1": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2674": {
+   "s1b3": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2691": {
+   "s5b1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s7b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   },
+   "s8b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   }
+  },
+  "2699": {
+   "s2b2": {
+    "coverage": 0.05,
+    "found": [
+     "bar"
+    ]
+   }
+  },
+  "2703": {
+   "s6b2": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "2706": {
+   "s2b5": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "life",
+     "nonlife"
+    ]
+   }
+  },
+  "2708": {
+   "s2b6_1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s2b6_2": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2711": {
+   "s1b4_1": {
+    "coverage": 0.1,
+    "found": [
+     "lux_hotel"
+    ]
+   }
+  },
+  "2712": {
+   "s1b4_1": {
+    "coverage": 0.1,
+    "found": [
+     "lux_hotel"
+    ]
+   }
+  },
+  "2722": {
+   "s3b10_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2731": {
+   "s2b3": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2735": {
+   "s2b3_1": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2740": {
+   "s2b5_2": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2744": {
+   "s1b1": {
+    "coverage": 0.04,
+    "found": [
+     "ev"
+    ]
+   },
+   "s2b1_1": {
+    "coverage": 0.12,
+    "found": [
+     "parking",
+     "wash"
+    ]
+   },
+   "s2b1_2": {
+    "coverage": 0.12,
+    "found": [
+     "parking",
+     "wash"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.08,
+    "found": [
+     "auto_ins"
+    ]
+   }
+  },
+  "2746": {
+   "s2b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2758": {
+   "s2b1_3": {
+    "coverage": 0.05,
+    "found": [
+     "rental",
+     "x_rail"
+    ]
+   },
+   "s2b1_4": {
+    "coverage": 0.05,
+    "found": [
+     "rental",
+     "x_rail"
+    ]
+   },
+   "s2b3_3": {
+    "coverage": 0.02,
+    "found": [
+     "cc"
+    ]
+   }
+  },
+  "2760": {
+   "s2b1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2775": {
+   "s1b6": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2780": {
+   "s2b4_5": {
+    "coverage": 0.02,
+    "found": [
+     "checkup"
+    ]
+   },
+   "s3b2": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s3b4_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s3b5": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s4b2": {
+    "coverage": 0.04,
+    "found": [
+     "wash"
+    ]
+   }
+  },
+  "2781": {
+   "s3b2": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   },
+   "s3b5": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b1_1": {
+    "coverage": 0.12,
+    "found": [
+     "parking",
+     "wash"
+    ]
+   },
+   "s4b1_2": {
+    "coverage": 0.12,
+    "found": [
+     "parking",
+     "wash"
+    ]
+   }
+  },
+  "2785": {
+   "s1b2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2786": {
+   "s1b2": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2788": {
+   "s2b2_1": {
+    "coverage": 0.17,
+    "found": [
+     "duty",
+     "lux_hotel"
+    ]
+   }
+  },
+  "2789": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   },
+   "s2b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.04,
+    "found": [
+     "wash"
+    ]
+   },
+   "s5b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "nonlife"
+    ]
+   }
+  },
+  "2795": {
+   "s2b1": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   },
+   "s2b2_4": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "2810": {
+   "s1b1": {
+    "coverage": 0.1,
+    "found": [
+     "mvno"
+    ]
+   }
+  },
+  "2811": {
+   "s1b1_1": {
+    "coverage": 0.1,
+    "found": [
+     "mvno"
+    ]
+   }
+  },
+  "2816": {
+   "s3b3": {
+    "coverage": 0.25,
+    "found": [
+     "repair"
+    ]
+   }
+  },
+  "2835": {
+   "s3b3": {
+    "coverage": 0.43,
+    "found": [
+     "kakaot",
+     "parking"
+    ]
+   },
+   "s4b3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.2,
+    "found": [
+     "__util"
+    ]
+   },
+   "s6b5_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2836": {
+   "s4b3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.2,
+    "found": [
+     "__util"
+    ]
+   }
+  },
+  "2839": {
+   "s2b5": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   }
+  },
+  "2845": {
+   "s5b2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s7b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   },
+   "s7b2": {
+    "coverage": 0.04,
+    "found": [
+     "wash"
+    ]
+   }
+  },
+  "2852": {
+   "s4b1": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s8b1": {
+    "coverage": 0.08,
+    "found": [
+     "family"
+    ]
+   }
+  },
+  "2860": {
+   "s1b1_1": {
+    "coverage": 0.2,
+    "found": [
+     "__util",
+     "citygas",
+     "elec"
+    ]
+   },
+   "s1b1_2": {
+    "coverage": 0.2,
+    "found": [
+     "__util",
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2871": {
+   "s6b2": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   }
+  },
+  "2874": {
+   "s3b6": {
+    "coverage": 0.07,
+    "found": [
+     "duty"
+    ]
+   }
+  },
+  "2875": {
+   "s2b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2876": {
+   "s6b2": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2879": {
+   "s2b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2880": {
+   "s1b1_3": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   },
+   "s1b1_4": {
+    "coverage": 0.29,
+    "found": [
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2885": {
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2887": {
+   "s1b1": {
+    "coverage": 0.03,
+    "found": [
+     "studyroom"
+    ]
+   },
+   "s1b3": {
+    "coverage": 0.2,
+    "found": [
+     "stationery"
+    ]
+   },
+   "s2b2": {
+    "coverage": 0.12,
+    "found": [
+     "fastfood"
+    ]
+   }
+  },
+  "2902": {
+   "s4b2": {
+    "coverage": 0.1,
+    "found": [
+     "lux_hotel"
+    ]
+   }
+  },
+  "2903": {
+   "s2b2": {
+    "coverage": 0.06,
+    "found": [
+     "lpg"
+    ]
+   }
+  },
+  "2904": {
+   "s1b2": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   },
+   "s1b8": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "nonlife"
+    ]
+   }
+  },
+  "2905": {
+   "s5b1": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
+    ]
+   },
+   "s6b1": {
+    "coverage": 0.45,
+    "found": [
+     "ktx"
+    ]
+   },
+   "s7b1": {
+    "coverage": 0.4,
+    "found": [
+     "bus"
+    ]
+   },
+   "s8b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   }
+  },
+  "2915": {
+   "s1b3": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "2916": {
+   "s2b6_3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s2b6_6": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "2925": {
+   "s4b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2927": {
+   "s3b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2929": {
+   "s1b4_2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "2930": {
+   "s1b4": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   },
+   "s1b8_3": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s1b8_4": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s2b3_2": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2931": {
+   "s2b2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "2932": {
+   "s2b10": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s2b12": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "2933": {
+   "s2b2": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s2b8": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2934": {
+   "s3b9": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   }
+  },
+  "2938": {
+   "s2b2": {
+    "coverage": 0.3,
+    "found": [
+     "ssm"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2939": {
+   "s2b4": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2940": {
+   "s2b4": {
+    "coverage": 0.18,
+    "found": [
+     "citygas",
+     "elec"
+    ]
+   }
+  },
+  "2942": {
+   "s2b1_1": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b1_2": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   },
+   "s2b1_3": {
+    "coverage": 0.37,
+    "found": [
+     "parking",
+     "repair",
+     "wash"
+    ]
+   }
+  },
+  "2953": {
+   "s3b5": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2967": {
+   "s1b1_4": {
+    "coverage": 0.12,
+    "found": [
+     "dentist"
+    ]
+   },
+   "s1b2_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s1b2_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2970": {
+   "s7b1": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   },
+   "s7b2_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s7b2_4": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   }
+  },
+  "2976": {
+   "s2b2": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.3,
+    "found": [
+     "__ins",
+     "life",
+     "nonlife"
+    ]
+   },
+   "s5b3_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s6b2": {
+    "coverage": 0.3,
+    "found": [
+     "hair"
+    ]
+   }
+  },
+  "2979": {
+   "s3b1_4": {
+    "coverage": 0.04,
+    "found": [
+     "ev"
+    ]
+   },
+   "s4b1_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2986": {
+   "s3b2_3": {
+    "coverage": 0.42,
+    "found": [
+     "airline",
+     "duty",
+     "x_rail"
+    ]
+   },
+   "s8b1": {
+    "coverage": 0.3,
+    "found": [
+     "__ins"
+    ]
+   }
+  },
+  "2988": {
+   "s6b1_1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "2994": {
+   "s2b6_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "2998": {
+   "s2b6": {
+    "coverage": 0.1,
+    "found": [
+     "ev",
+     "lpg"
+    ]
+   }
+  },
+  "3018": {
+   "s1b6": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   },
+   "s1b8": {
+    "coverage": 0.4,
+    "found": [
+     "hair",
+     "skin"
+    ]
+   },
+   "s1b9_1": {
+    "coverage": 0.3,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s1b9_2": {
+    "coverage": 0.15,
+    "found": [
+     "range"
+    ]
+   },
+   "s1b10": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   },
+   "s1b12_1": {
+    "coverage": 0,
+    "found": [
+     "x_rail"
+    ]
+   },
+   "s2b3_2": {
+    "coverage": 0.15,
+    "found": [
+     "range"
+    ]
+   }
+  },
+  "3022": {
+   "s4b2": {
+    "coverage": 0.1,
+    "found": [
+     "lux_hotel"
+    ]
+   },
+   "s4b4_2": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "3041": {
+   "s2b1_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s2b1_2": {
+    "coverage": 0.02,
+    "found": [
+     "cc"
+    ]
+   },
+   "s9b1": {
+    "coverage": 0.4,
+    "found": [
+     "apt"
+    ]
+   }
+  },
+  "3045": {
+   "s2b2_1": {
+    "coverage": 0.29,
+    "found": [
+     "optician",
+     "oriental",
+     "pharmacy"
+    ]
+   },
+   "s2b2_2": {
+    "coverage": 0.29,
+    "found": [
+     "optician",
+     "oriental",
+     "pharmacy"
+    ]
+   },
+   "s3b1_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s4b2_1": {
+    "coverage": 0.4,
+    "found": [
+     "hair",
+     "skin"
+    ]
+   }
+  },
+  "3051": {
+   "s3b1": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   }
+  },
+  "3052": {
+   "s2b6_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   }
+  },
+  "3053": {
+   "s5b1": {
+    "coverage": 0.35,
+    "found": [
+     "airline"
+    ]
+   }
+  },
+  "3084": {
+   "s2b5": {
+    "coverage": 0.35,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
+  "3087": {
+   "s1b8": {
+    "coverage": 0.03,
+    "found": [
+     "optician"
+    ]
+   },
+   "s1b9_1": {
+    "coverage": 0.22,
+    "found": [
+     "fitness"
+    ]
+   },
+   "s1b11": {
+    "coverage": 0.2,
+    "found": [
+     "pharmacy"
+    ]
+   }
+  },
+  "3089": {
+   "s2b1": {
+    "coverage": 0.08,
+    "found": [
+     "parking"
+    ]
+   }
+  }
+ }
+}

@@ -22,6 +22,8 @@ import assumptionsUrl from "@data/catalog/assumptions.json?url";
 // 가맹점 비중표와 계약이 있어야 받는 혜택 목록(2026-11-03). 엔진이 브랜드 혜택 비중·계약형 혜택 계산에 쓴다
 import merchantShareUrl from "@data/catalog/merchant-share.json?url";
 import benefitConditionsUrl from "@data/catalog/benefit-conditions.json?url";
+// 좁은 업종 혜택이 카테고리 지출 중 덮는 비중(자동차보험·EV 충전 등, 2026-11-03)
+import benefitCoverageUrl from "@data/catalog/benefit-coverage.json?url";
 
 interface PyProxyFn {
   (...args: string[]): string;
@@ -65,7 +67,7 @@ function getRuntime() {
       const pyodideModule = (await import(/* @vite-ignore */ `${PYODIDE_DIST_PATH}pyodide.mjs`)) as {
         loadPyodide: (options: { indexURL: string }) => Promise<PyodideLike>;
       };
-      const [pyodide, catalogText, assumptionsText, shareText, conditionsText] = await Promise.all([
+      const [pyodide, catalogText, assumptionsText, shareText, conditionsText, coverageText] = await Promise.all([
         pyodideModule.loadPyodide({ indexURL: PYODIDE_DIST_PATH }),
         fetch(benefitCatalogUrl).then((r) => {
           if (!r.ok) throw new Error(`혜택 표를 불러오지 못했어요 (${r.status})`);
@@ -74,6 +76,7 @@ function getRuntime() {
         fetch(assumptionsUrl).then((r) => r.text()),
         fetch(merchantShareUrl).then((r) => r.text()),
         fetch(benefitConditionsUrl).then((r) => r.text()),
+        fetch(benefitCoverageUrl).then((r) => r.text()),
       ]);
       await pyodide.loadPackage(["scipy", "numpy"]);
       // loadPackage는 파일이 없어도 예외 없이 넘어가서, 나중에 'No module named scipy'로만 보인다. 여기서 바로 알려 준다
@@ -91,7 +94,7 @@ function getRuntime() {
       pyodide.FS.writeFile(`${PY_DIR}/wf_engine.py`, engineSource);
       pyodide.runPython(`import sys\nif "${PY_DIR}" not in sys.path: sys.path.insert(0, "${PY_DIR}")`);
       const engine = pyodide.pyimport("wf_engine");
-      engine.init_json(catalogText, assumptionsText, shareText, conditionsText);
+      engine.init_json(catalogText, assumptionsText, shareText, conditionsText, coverageText);
       return { pyodide, engine };
     })();
   }

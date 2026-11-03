@@ -49,13 +49,9 @@ def _norm_m(s):
 
 
 def _elig_share(sc, A):
-    """calc.py와 같은 규칙: 사용자가 브랜드 금액을 넣었으면(user_brand_share) 그 비중, 아니면 기본 가정값."""
-    spec = sc["specificity"]
-    ub = A.get("user_brand_share")
-    if spec in ("brand", "merchant_group") and ub and sc.get("app_category") in ub:
-        m = {_norm_m(k): v for k, v in ub[sc["app_category"]].items() if not k.startswith("_")}
-        return min(1.0, sum(m.get(_norm_m(x), 0.0) for x in sc.get("merchants", [])))
-    return A["eligible_share_by_specificity"][spec]
+    """calc._elig_share와 같은 값(비중만)"""
+    import calc
+    return calc._elig_share(sc, A)[0]
 
 
 def _hour_share(sc, A):

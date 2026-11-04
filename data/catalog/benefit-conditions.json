@@ -1,15 +1,14 @@
 {
- "version": "v1",
+ "version": "v2",
  "generatedAt": "2026-11-04",
- "note": "계약이 있어야 받는 혜택. 엔진은 기본으로 빼고 요청의 contracts에 키가 있으면 켠다. 1_혜택정보구조화/조건분류",
+ "note": "benefits: 계약이 있어야 받는 혜택(엔진은 기본으로 빼고 요청의 contracts에 키가 있으면 켠다). choice_benefits: 고르는 질문의 답이 맞아야 받는 혜택(답이 없으면 그 답의 share만큼, 요청의 choices로 답하면 맞을 때만). 1_혜택정보구조화/조건분류",
  "asks": {
   "insurance": "보험료를 이 카드로 내고 있나요(자동차보험 포함)?",
   "rental": "정수기·가전 렌탈료를 카드로 내고 있나요?",
   "installment": "장기 할부로 큰 물건을 살 계획이 있나요?",
   "apt_fee": "아파트 관리비를 카드로 자동이체하나요?",
   "bank_account": "카드사 은행 계좌·금융상품을 쓰고 있나요?",
-  "paid_membership": "혜택에 필요한 유료 멤버십에 가입했나요?",
-  "telecom_skt": "SKT 휴대폰을 쓰나요(T멤버십 바코드 결제)?"
+  "paid_membership": "혜택에 필요한 유료 멤버십에 가입했나요?"
  },
  "benefits": {
   "1": {
@@ -132,7 +131,7 @@
    "s3b1_1": "installment",
    "s3b1_2": "installment",
    "s3b1_3": "installment",
-   "s4b1": "rental",
+   "s4b1": "installment",
    "s5b1": "installment"
   },
   "762": {
@@ -319,8 +318,8 @@
   "2433": {
    "s1b1": "installment"
   },
-  "2449": {
-   "s2b1": "telecom_skt"
+  "2472": {
+   "s1b1": "installment"
   },
   "2476": {
    "s2b2": "paid_membership"
@@ -436,6 +435,164 @@
   "3097": {
    "s3b1": "paid_membership",
    "s3b2": "paid_membership"
+  }
+ },
+ "choices": {
+  "telecom": {
+   "question": "어느 통신사 휴대폰을 쓰나요?",
+   "options": {
+    "skt": {
+     "label": "SKT",
+     "share": 0.39
+    },
+    "kt": {
+     "label": "KT",
+     "share": 0.238
+    },
+    "lgu": {
+     "label": "LG U+",
+     "share": 0.195
+    },
+    "mvno": {
+     "label": "알뜰폰",
+     "share": 0.176
+    }
+   },
+   "source": "과기정통부 무선통신서비스 가입 현황 2025년 6월 휴대폰 회선(SKT 2,235만·KT 1,366만·LG U+ 1,118만·알뜰폰 1,011만 / 5,730만)"
+  },
+  "climate_pass": {
+   "question": "서울 기후동행카드(대중교통 정기권)를 쓰나요?",
+   "options": {
+    "yes": {
+     "label": "써요",
+     "share": 0.021
+    },
+    "no": {
+     "label": "안 써요",
+     "share": 0.979
+    }
+   },
+   "source": "서울 대중교통 이용자 중 11.8%(2024-09, 서울시) × 서울 인구 비중 약 18% ≈ 2.1%(전국 기준). 가정값, 확인 필요"
+  }
+ },
+ "choice_benefits": {
+  "191": {
+   "s1b2": "telecom:skt"
+  },
+  "192": {
+   "s1b1": "telecom:kt"
+  },
+  "193": {
+   "s1b2": "telecom:lgu"
+  },
+  "227": {
+   "s1b1": "telecom:skt"
+  },
+  "264": {
+   "s1b1_1": "telecom:kt",
+   "s1b1_2": "telecom:kt"
+  },
+  "301": {
+   "s1b1": "telecom:kt"
+  },
+  "302": {
+   "s1b1": "telecom:lgu"
+  },
+  "354": {
+   "s1b1": "telecom:lgu"
+  },
+  "436": {
+   "s1b1_1": "telecom:kt",
+   "s1b1_2": "telecom:kt"
+  },
+  "522": {
+   "s1b1": "telecom:mvno"
+  },
+  "523": {
+   "s1b1": "telecom:mvno"
+  },
+  "573": {
+   "s2b1": "telecom:mvno"
+  },
+  "725": {
+   "s2b1_3": "telecom:mvno"
+  },
+  "726": {
+   "s1b1": "telecom:mvno"
+  },
+  "727": {
+   "s1b1": "telecom:mvno"
+  },
+  "784": {
+   "s2b1": "telecom:lgu"
+  },
+  "785": {
+   "s2b1": "telecom:kt"
+  },
+  "838": {
+   "s1b1_1": "telecom:kt",
+   "s1b1_2": "telecom:kt"
+  },
+  "1007": {
+   "s1b1": "telecom:kt"
+  },
+  "1259": {
+   "s1b1_1": "telecom:lgu",
+   "s1b1_2": "telecom:lgu"
+  },
+  "1289": {
+   "s1b1": "telecom:skt",
+   "s1b2": "telecom:skt"
+  },
+  "1390": {
+   "s1b1": "telecom:lgu"
+  },
+  "1529": {
+   "s1b1": "telecom:kt"
+  },
+  "1555": {
+   "s1b1": "telecom:skt"
+  },
+  "2449": {
+   "s1b1_1": "telecom:skt",
+   "s1b1_2": "telecom:skt",
+   "s2b1": "telecom:skt"
+  },
+  "2467": {
+   "s1b1": "telecom:mvno"
+  },
+  "2468": {
+   "s1b1": "telecom:mvno"
+  },
+  "2474": {
+   "s1b1": "telecom:skt"
+  },
+  "2484": {
+   "s1b1": "telecom:kt"
+  },
+  "2485": {
+   "s1b1": "telecom:kt"
+  },
+  "2502": {
+   "s1b1": "telecom:kt"
+  },
+  "2523": {
+   "s1b1": "telecom:lgu"
+  },
+  "2607": {
+   "s1b1": "telecom:kt"
+  },
+  "2741": {
+   "s2b1": "telecom:kt"
+  },
+  "2765": {
+   "s2b1": "climate_pass:yes"
+  },
+  "3032": {
+   "s1b1": "telecom:skt"
+  },
+  "3058": {
+   "s2b3": "telecom:skt"
   }
  }
 }

@@ -4,6 +4,7 @@ import { korWon } from "@/v1/format";
 import { Link } from "@/v2/app/router";
 import { CategoryIcon } from "@/v2/ui/icons";
 import { BRAND_TABS, canonicalBrand, logoOf, pickedCount, type BrandPicks } from "@/v2/model/brands";
+import { ChoiceQuestions } from "@/v2/make/ChoiceQuestions";
 
 /* 디자인 원본 F-D-Brands(A3·B3) 값을 그대로 옮김 */
 
@@ -93,18 +94,20 @@ interface Props {
   onPicks: (next: BrandPicks) => void;
   /** 브랜드 찾기 후보를 뽑을 카드(가진 카드 또는 새 카드 후보) */
   brandIds: number[];
+  /** 가진 카드(그 카드 혜택에 나오는 가게는 카드 1장에만 나와도 후보로 남긴다) */
+  ownIds: number[];
   prev: string;
   next: string;
 }
 
 /** A3·B3 자주 가는 곳(선택). 고른 곳들이 그 카테고리 지출의 70%를 나눠 쓴다고 본다 */
-export function StepBrands({ spending, picks, onPicks, brandIds, prev, next }: Props) {
+export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, next }: Props) {
   const tabs = BRAND_TABS.filter((t) => (spending[t.cat] ?? 0) > 0);
   const [cur, setCur] = useState<string>(tabs[0]?.cat ?? "cafe");
   const [finding, setFinding] = useState(false);
   const [q, setQ] = useState("");
   const tab = tabs.find((t) => t.cat === cur) ?? tabs[0];
-  const engine = useBrands(brandIds.length ? brandIds : null);
+  const engine = useBrands(brandIds.length ? brandIds : null, ownIds);
 
   const pickOf = (cat: string) => picks[cat] ?? { brands: [] };
   const setPick = (cat: string, brands: string[], none = false) => {
@@ -218,21 +221,9 @@ export function StepBrands({ spending, picks, onPicks, brandIds, prev, next }: P
                       type="search"
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      placeholder="가게 이름"
+                      placeholder="가게 이름으로 찾기"
                       style={{ flex: 1, minWidth: 0, height: 44, boxSizing: "border-box", padding: "0 14px", border: "1px solid #D3DDF2", borderRadius: 12, background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, color: "#0D1B4A" }}
                     />
-                    {q.trim() && !tileBrands.includes(q.trim()) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          toggle(tab.cat, canonicalBrand(q.trim()));
-                          setQ("");
-                        }}
-                        style={{ height: 44, padding: "0 16px", borderRadius: 12, border: "none", background: "#2457F5", color: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-                      >
-                        '{q.trim()}' 추가
-                      </button>
-                    )}
                   </div>
                   {candidates.length > 0 ? (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -248,7 +239,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, prev, next }: P
                       ))}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 13, color: "#5E6D96" }}>{engine.isComputing ? "카드 혜택에 나오는 가게를 찾고 있어요" : "담은 카드의 할인에 나오는 다른 가게가 없어요. 이름을 적어 추가할 수 있어요."}</span>
+                    <span style={{ fontSize: 13, color: "#5E6D96" }}>{engine.isComputing ? "카드 혜택에 나오는 가게를 찾고 있어요" : query ? "그 이름이 나오는 카드 할인이 없어요. 할인이 없는 가게는 고르지 않아도 돼요." : "담은 카드의 할인에 나오는 다른 가게가 없어요."}</span>
                   )}
                 </div>
               )}
@@ -264,6 +255,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, prev, next }: P
             </section>
           </>
         )}
+        <ChoiceQuestions spending={spending} />
       </div>
 
       <aside aria-label="고른 곳" style={{ flex: "1 1 300px", minWidth: 0, position: "sticky", top: 100 }}>

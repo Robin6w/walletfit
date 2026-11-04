@@ -41,7 +41,11 @@ function BenefitRow({ b }: { b: CardViewBenefit }) {
       {(conds.length > 0 || b.st !== "auto" || b.m.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {b.st === "review" && <span style={{ ...tag, background: "#FFF6E5", border: "1px solid #F5DDB0", color: "#8A5300" }}>사람 확인 중 · 추천 계산에서 뺌</span>}
-          {b.st === "no_calc" && <span style={{ ...tag, background: "#F1F1F4", border: "1px solid #E1E1E8", color: "#55556A" }}>계산하지 않는 혜택</span>}
+          {b.st === "no_calc" && (
+            <span style={{ ...tag, background: "#F1F1F4", border: "1px solid #E1E1E8", color: "#55556A" }}>
+              {b.ex === "place" ? "경기장·공항처럼 장소가 정해진 혜택이라 추천 계산에서 뺌" : "계산하지 않는 혜택"}
+            </span>
+          )}
           {conds.map((c) => (
             <span key={c} style={tag}>
               {c}

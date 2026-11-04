@@ -39,6 +39,8 @@ export interface CardViewBenefit {
   cnt?: Record<string, number>;
   /** 이 혜택이 적용되는 실적 구간 id */
   in?: string[];
+  /** 계산에서 뺀 이유 중 사용자에게 보여 줄 것: place = 경기장·공항·리조트 안 결제처럼 장소가 정해진 혜택(2026-11-04) */
+  ex?: "place";
 }
 
 export interface CardViewEntry {

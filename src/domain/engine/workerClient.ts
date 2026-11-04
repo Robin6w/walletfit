@@ -2,8 +2,7 @@
  * 계산 엔진 Worker(walletOptimizer.worker.ts)를 앱 전체에서 하나만 띄워 같이 씁니다.
  * Worker를 새로 만들 때마다 Pyodide를 다시 부팅해야 해서(수 초), 처음 쓸 때 한 번만 만듭니다.
  *
- * - engineCall: 새 계산(추천 엔진 v2 + calc.py). 응답 type "engine_result"
- * - legacySolve: 이전 계산(walletOptimizerCore.py). 응답 type "result"
+ * 요청은 engineCall(추천 엔진 v2 + calc.py) 하나뿐이고, 응답 type은 "engine_result"
  */
 type Resolver = (data: unknown) => void;
 
@@ -17,7 +16,7 @@ const readyListeners = new Set<() => void>();
 function failAll(message: string) {
   for (const [id, resolve] of pending) {
     pending.delete(id);
-    resolve({ ok: false, feasible: false, error: message });
+    resolve({ ok: false, error: message });
   }
 }
 
@@ -32,7 +31,7 @@ export function getWorker(): Worker {
         readyListeners.forEach((fn) => fn());
         return;
       }
-      if (type !== "result" && type !== "engine_result") return;
+      if (type !== "engine_result") return;
       const resolve = pending.get(requestId);
       if (!resolve) return;
       pending.delete(requestId);
@@ -50,7 +49,7 @@ export function getWorker(): Worker {
   return sharedWorker;
 }
 
-export function postRequest<T>(type: "engine" | "solve", payload: Record<string, unknown>): Promise<T> {
+export function postRequest<T>(type: "engine", payload: Record<string, unknown>): Promise<T> {
   const requestId = ++seq;
   const worker = getWorker();
   return new Promise<T>((resolve) => {

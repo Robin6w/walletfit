@@ -210,7 +210,7 @@ function parseBenefitSummary(benefitSummary: string): RewardRule[] {
  * 경계들을 모두 합친 카드 공통 구간표를 만들고, 구간마다 해당 카테고리의 그 시점 요율을
  * 채운다. 구간 데이터가 없는 카테고리(flatBenefits)는 모든 구간에서 동일한 값을 쓴다.
  *
- * 주의: 지금 최적화 엔진(walletOptimizerCore.py)은 아직 tiers[0]만 본다(다구간 실적을
+ * 주의: 예전 최적화 엔진(walletOptimizerCore.py, 삭제됨)은 tiers[0]만 봤다(다구간 실적을
  * "당월 배정된 실적 스스로가 구간을 정한다"는 식으로 endogenous하게 판단하는 기능은
  * 아직 없음). 그래서 tiers[0]은 항상 minSpend=0 구간, 즉 "실적을 전혀 안 채웠을 때도
  * 보장되는 가장 낮은 요율"이 되도록 만든다 — 실제보다 부풀려진 요율을 보여주는 것보다

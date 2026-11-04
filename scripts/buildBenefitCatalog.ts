@@ -4,13 +4,12 @@
  * 앱의 모든 카드는 이 파일의 혜택 표(양식 v0.2.1)로 새 계산기(calc.py)와 추천 엔진 v2(milp.py)를 거칩니다.
  * 카드마다 혜택 표를 가져오는 곳은 아래 순서로 고릅니다.
  *
- *   0. extracted : 원문 전체 정제 결과(1,180장) 1_혜택정보구조화/정제/out_full/records — 아래 모든 표보다 먼저
- *   1. reviewed  : 사람이 검수한 정답표        1_혜택정보구조화/cards, cards_test
- *   2. gold_ai   : 원문 대조로 만든 정답표      1_혜택정보구조화/cards_eval (사람 확인 전)
- *   3. extracted : AI 추출 + 원문 대조 통과     1_혜택정보구조화/extracted_scn, extracted_eval
- *   4. auto      : 위에 없는 카드. 카드고릴라 혜택 요약 한 줄로 만든 표(원문 대조 전)
- *                  - 요약 해석(1_혜택정보구조화/요약해석/summary-labels.json)이 있으면 그 해석으로(summaryRecord.ts)
- *                  - 없으면 예전 변환기(cardConverter.ts + autoRecord.ts)로
+ *   1. extracted : 원문 전체 정제 결과(발급 중 1,180장 + 단종 372장) 1_혜택정보구조화/정제/out_full/records
+ *   2. gold_ai   : 원문 대조로 만든 정답표(2장)  1_혜택정보구조화/cards_eval (사람 확인 전)
+ *   3. auto      : 둘 다 없는 새 카드. 혜택 없이 넣어 화면이 '혜택 정보 없음'으로 보여 준다(원문 정제를 돌리면 채워짐)
+ *
+ * 2026-11-04 정리: 예전 출처(cards·cards_test·extracted_scn·extracted_eval)와 요약 한 줄 변환(autoRecord·summaryRecord)은
+ * 단종 카드까지 원문 정제가 끝나 쓰이지 않아 뺐다(빌드 결과가 같은 것을 확인)
  *
  * 실행: npm run build:benefit
  */
@@ -18,10 +17,8 @@ import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { toWalletCard } from "../src/domain/engine/cardConverter";
 import type { CatalogListing } from "../src/domain/types/catalog";
-import { autoRecord } from "./autoRecord";
 import { buildCardView } from "./buildCardView";
 import { splitCategories } from "./splitCategories";
-import { summaryRecord, type SummaryLabel } from "./summaryRecord";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const DS = path.join(ROOT, "1_혜택정보구조화");
@@ -34,11 +31,7 @@ type BenefitRecord = Record<string, any>;
 const SOURCES: { dir: string; status: Status }[] = [
   // 원문 전체 정제(2026-10-30, 발급 중 1,180장, 양식 v0.3): 예전 표보다 먼저 쓴다(사용자 결정: 다 이번 것으로)
   { dir: "정제/out_full/records", status: "extracted" },
-  { dir: "cards", status: "reviewed" },
-  { dir: "cards_test", status: "reviewed" },
   { dir: "cards_eval", status: "gold_ai" },
-  { dir: "extracted_scn", status: "extracted" },
-  { dir: "extracted_eval", status: "extracted" },
 ];
 
 /**
@@ -56,6 +49,19 @@ function slim(record: BenefitRecord) {
     for (const k of ["excluded", "excluded_types", "merchant_types", "brands", "payment_methods", "issuer_type"]) delete b.scope?.[k];
     if (typeof b.source_quote === "string" && b.source_quote.length > 400) b.source_quote = b.source_quote.slice(0, 400);
   }
+}
+
+/** 원문 정제가 없는 새 카드: 카드 정보만 있고 혜택은 비운 레코드 */
+function emptyRecord(entry: CatalogListing): BenefitRecord {
+  const card = toWalletCard(entry);
+  return {
+    schema_version: "0.3",
+    card: { source_id: entry.sourceId, name: entry.name, issuer: entry.issuer, card_type: card.cardType, annual_fee: { domestic: card.annualFee, overseas: null }, discontinued: !!entry.isDiscontinued },
+    performance: { basis: "unknown", tiers: [], excluded_app_categories: [] },
+    shared_caps: [],
+    choice_groups: [],
+    benefits: [],
+  };
 }
 
 function readTables(): Map<number, { status: Status; record: BenefitRecord; file: string }> {
@@ -81,11 +87,6 @@ function readTables(): Map<number, { status: Status; record: BenefitRecord; file
 function main() {
   const catalog = JSON.parse(readFileSync(path.join(ROOT, "data/catalog/cards-catalog.json"), "utf-8")) as CatalogListing[];
   const tables = readTables();
-  const labelPath = path.join(DS, "요약해석", "summary-labels.json");
-  const labels = new Map<number, SummaryLabel>(
-    existsSync(labelPath) ? (JSON.parse(readFileSync(labelPath, "utf-8")) as SummaryLabel[]).map((l) => [l.sid, l]) : [],
-  );
-  let fromLabels = 0;
   const counts: Record<Status, number> = { reviewed: 0, gold_ai: 0, extracted: 0, auto: 0 };
   const cards: { sid: number; status: Status; from: string; record: BenefitRecord }[] = [];
 
@@ -102,15 +103,7 @@ function main() {
       cards.push({ sid: entry.sourceId, status: t.status, from: t.file, record: t.record });
       counts[t.status] += 1;
     } else {
-      const card = toWalletCard(entry);
-      const fromSummary = summaryRecord(entry, card, labels.get(entry.sourceId));
-      if (fromSummary) fromLabels += 1;
-      cards.push({
-        sid: entry.sourceId,
-        status: "auto",
-        from: fromSummary ? "요약해석/summary-labels.json" : "cards-catalog.json",
-        record: fromSummary ?? autoRecord(entry, card),
-      });
+      cards.push({ sid: entry.sourceId, status: "auto", from: "cards-catalog.json", record: emptyRecord(entry) });
       counts.auto += 1;
     }
   }
@@ -143,7 +136,8 @@ function main() {
     path.join(ROOT, "data/catalog/assumptions.json"),
     readFileSync(path.join(DS, "assumptions.json"), "utf-8"),
   );
-  console.log(`카드 ${cards.length}장 → ${path.relative(ROOT, OUT)}`, counts, `(자동 중 요약 해석 ${fromLabels}장)`);
+  console.log(`카드 ${cards.length}장 → ${path.relative(ROOT, OUT)}`, counts);
+  if (counts.auto) console.warn(`원문 정제가 없는 카드 ${counts.auto}장은 혜택 없이 넣었어요(정제/extract.py로 채우기)`);
 }
 
 main();

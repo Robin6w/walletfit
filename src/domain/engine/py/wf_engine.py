@@ -9,16 +9,15 @@ WalletFit 계산 엔진 어댑터 (Pyodide 워커와 테스트에서 같이 씁�
 워커는 문자열(JSON)만 주고받는다: init_json / recommend_json / rank_json / brands_json / explain_json
 """
 import itertools
-import json, copy, math, time
+import json, copy, math, re, time
 import calc
 import milp
 
 WHOLE_CATS = ("mobile", "transport")  # 자동납부·후불교통은 카드 1장에만 등록되므로 나누지 않는다
 SHORTLIST = 12                        # 후보가 이보다 많으면 카드 한 장 계산값으로 먼저 추린다
 SHORTLIST_MAX = 20                    # 추린 후보 상한(상위 8장 + 카테고리별 1장). 2026-10-30 측정: 40장부터 3장 계산이 30초를 넘김
-PRICE_ROUND = False                   # 커널 서치 한 바퀴(아래)를 쓸지. 2026-10-30 측정(지출 6가지): 합 +1.2%에 최대 시간 26초 → 42초라 꺼 둔다
-PRICE_ADD = 4                         # 첫 풀이 뒤 조합을 낫게 할 만한 카드를 이만큼 더 넣고 한 번 더 푼다(커널 서치)
-PRICE_MIN_GAIN = 1000                 # 그 카드를 넣을 만한 최소 기대 이득(원/월)
+PRICE_MIN_GAIN = 1000                 # 교체 탐색에서 넣어 볼 만한 카드의 최소 기대 이득(원/월)
+# (2026-11-04: 꺼 둔 커널 서치 한 바퀴(PRICE_ROUND, 10-30 측정 합 +1.2%에 시간 26→42초)와 노드 수 제한(NODE_LIMIT)은 지웠다)
 EFFICIENT_RELATIVE_CUTOFF = 0.3       # '효율적' 모드: 1등 카드 순혜택의 30% 미만을 버는 카드는 뺀다
 MAX_BAR = 5                           # 카드 수 막대는 1~5장
 # 3장 이상 MILP 시간 제한(초). 2026-10-29에는 후보 58장이라 2초로 충분했다.
@@ -26,10 +25,6 @@ MAX_BAR = 5                           # 카드 수 막대는 1~5장
 # (월 100만원: 2장 82,625원 → 3장 88,093원, 월 150만원: 3장 129,762원 → 4장 138,984원).
 # 2·5·8·12초를 재 보니 8초부터 결과가 같아 8초로 둔다(계산 시간 최대 약 7초 → 20초)
 K3_TIME_LIMIT = 8
-# 느린 기기 대비(2026-10-30): 장수마다 시간 대신 탐색 노드 수로 끊는다. 0이면 위 시간 제한을 쓴다.
-# SAFETY_TIME_LIMIT은 아주 느린 기기에서 끝없이 기다리지 않게 하는 마지막 안전장치
-NODE_LIMIT = 0
-SAFETY_TIME_LIMIT = 60
 # 4~5장은 교체 탐색(2026-10-30): 후보 20장으로 4~5장 MILP를 풀면 8초 제한에 걸려 기기 속도마다 결과가 달랐다.
 # 앞 장수의 조합 + '넣으면 늘 만한' 후보 SWAP_ADD장만으로 작은 MILP를 SWAP_ROUNDS번 푼다(고정-최적화, 커널 서치와 같은 생각).
 # 문제가 작아 매번 끝까지 풀리므로 어느 기기에서나 같은 결과가 나온다
@@ -78,6 +73,12 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
             for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
                 if b["id"] in m:
                     b["contract"] = m[b["id"]]
+        # 고르는 질문(통신사·기후동행, 2026-11-04): 혜택 scope에 choice 키, 답이 없을 때 쓸 확률은 가정값에
+        STATE["A"]["choice_share"] = {f"{q}:{o}": v["share"] for q, c in cd.get("choices", {}).items() for o, v in c["options"].items()}
+        for sid, m in cd.get("choice_benefits", {}).items():
+            for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
+                if b["id"] in m:
+                    b["scope"]["choice"] = m[b["id"]]
     if coverage_text:
         for sid, m in json.loads(coverage_text).get("benefits", {}).items():
             for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
@@ -95,16 +96,19 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
 MIN_TICKETS = 5
 
 
-def _A(brand_share, tickets=None, contracts=None):
+def _A(brand_share, tickets=None, contracts=None, choices=None):
     """tickets: 명세서에서 읽은 카테고리별 결제 금액 {cat: [원, …]}(2026-10-31). 건당 최소 금액·횟수 조건 계산에 쓴다.
     '_'로 시작하는 키는 부가 정보: '_wd:<cat>'은 그 카테고리의 요일별 결제 금액 [월, …, 일](요일 한정 혜택용, 2026-11-01).
     tickets가 오면 명세서 경로다: 명세서로 알 수 없는 '간편결제로 결제하는 비중'은 가정(30%) 대신 0으로 둔다(추정으로 혜택을 부풀리지 않게).
-    contracts: 사용자가 있다고 답한 계약 키(insurance, rental 등, benefit-conditions.json asks). 없으면 계약형 혜택은 뺀다"""
+    contracts: 사용자가 있다고 답한 계약 키(insurance, rental 등, benefit-conditions.json asks). 없으면 계약형 혜택은 뺀다
+    choices: 고르는 질문의 답 {질문: 답}(예: {"telecom": "kt", "climate_pass": "no"}, benefit-conditions.json choices). 없는 질문은 확률로"""
     A = copy.deepcopy(STATE["A"])
     if brand_share:
         A["user_brand_share"] = brand_share
     if contracts:
         A["user_contracts"] = list(contracts)
+    if choices:
+        A["user_choices"] = {k: v for k, v in choices.items() if v}
     if tickets:
         A["statement_mode"] = True
         A["payment_method_share"]["default"] = 0.0
@@ -418,11 +422,6 @@ def _gains(rows, X, skip, spending):
     return [s for _, s in sorted(gains, key=lambda x: (-x[0], x[1]))]
 
 
-def _price_in(rows, X, pool, spending, n=PRICE_ADD):
-    """커널 서치의 '묶음 넣기'를 가볍게 한 것: 후보에 없던 카드 중 조합을 낫게 할 만한 것 n장을 MILP에 다시 넣는다."""
-    return _gains(rows, X, set(pool), spending)[:n]
-
-
 def _swap_k(rows, pool, X_prev, K, spending, A, margin, fee_cap=None, fixed=(), lb=None, time_limit=10):
     """K장 교체 탐색: K-1장 조합 + 넣어 볼 후보로 K장 MILP를 푼다. 작은 MILP 안에서 넣기·바꾸기(1장 빼고 2장 넣기 등)를 한 번에 본다.
     후보는 먼저 어림 이득 상위 SWAP_ADD장(나아지면 그 조합에서 다시, SWAP_ROUNDS번까지), 더 나아지지 않으면 마지막으로
@@ -547,7 +546,7 @@ def recommend_json(payload_text):
     fee_cap = p.get("feeCap")
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in ids]
     time_limit = float(p.get("timeLimit") or 10)
-    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
 
@@ -555,7 +554,7 @@ def recommend_json(payload_text):
     # 앞선 계산의 후보와 장수별 결과를 남겨 두고 다음 계산은 그다음 장수부터 이어서 한다(같은 계산을 두 번 하지 않게).
     # 장수 상한을 3 → 5로 올려 다시 부를 때도 4장부터 이어서 푼다
     k_limit = int(p["kLimit"]) if p.get("kLimit") else None
-    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), p.get("tickets"), mode, p.get("contracts")], sort_keys=True)
+    seed_key = json.dumps([sorted(ids), spending, margin, fee_cap, fixed, p.get("brandShare"), p.get("tickets"), mode, p.get("contracts"), p.get("choices")], sort_keys=True)
     seed = _SEED.get(seed_key)
     if seed:
         rows, pool = seed["rows"], list(seed["pool"])
@@ -563,7 +562,7 @@ def recommend_json(payload_text):
         rows = _score_rows(ids, spending, A, margin) if len(ids) > SHORTLIST else None
         pool = _shortlist(ids, spending, A, margin, fixed, rows=rows)
 
-    def run(pool, seed=None, save=True):
+    def run(pool, seed=None):
         recs_sel = {s: _raised(STATE["records"][s], margin) for s in pool}
         ev = Evaluator(recs_sel, A)
         # 2026-10-30: 예전엔 장수 상한과 관계없이 늘 5장까지 풀었다. 이제 상한까지만 풀고(기본 3장),
@@ -594,9 +593,6 @@ def recommend_json(payload_text):
             if swap:
                 X, obj = _swap_k(rows, pool, X_prev, K, spending, A, margin, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
                                  time_limit=time_limit)
-            elif NODE_LIMIT:
-                X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
-                                  time_limit=SAFETY_TIME_LIMIT, node_limit=NODE_LIMIT)
             else:
                 st = []
                 X, obj = _solve_k(recs_sel, spending, A, K, fee_cap=fee_cap, fixed=fixed, lb=obj_prev,
@@ -626,7 +622,7 @@ def recommend_json(payload_text):
                 break
             by_k[K] = {"X": X, "netSel": net}
             X_prev, obj_prev = X, obj
-        if save and (not seed or max(by_k, default=0) > max(seed["by_k"], default=0) or stopped):
+        if not seed or max(by_k, default=0) > max(seed["by_k"], default=0) or stopped:
             _SEED.pop(seed_key, None)
             _SEED[seed_key] = {"rows": rows, "pool": list(pool), "stopped": stopped, "obj": obj_prev,
                                "by_k": copy.deepcopy({k: v for k, v in by_k.items() if not v.get("same")})}
@@ -635,14 +631,6 @@ def recommend_json(payload_text):
         return by_k, recs_sel, ev
 
     by_k, recs_sel, ev = run(pool, seed)
-    if PRICE_ROUND and rows and by_k:
-        # 커널 서치 한 바퀴: 첫 조합을 기준으로 후보 밖에서 조합을 낫게 할 만한 카드를 넣고 다시 푼다. 나아질 때만 바꾼다
-        best = max(by_k.values(), key=lambda v: v["netSel"])
-        extra = _price_in(rows, best["X"], pool, spending)
-        if extra:
-            by_k2, recs2, ev2 = run(pool + extra, save=False)
-            if by_k2 and max(v["netSel"] for v in by_k2.values()) > best["netSel"] + 1:
-                by_k, recs_sel, ev, pool = by_k2, recs2, ev2, pool + extra
 
     if not by_k:
         return json.dumps({"ok": False, "error": "조건에 맞는 조합을 찾지 못했어요"})
@@ -718,7 +706,7 @@ def alt_json(payload_text):
     spending = _clean_spend(p.get("spending"))
     if not pool or not spending:
         return json.dumps({"ok": True, "alt": None})
-    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     fixed = [int(x) for x in p.get("fixed", []) if int(x) in pool]
     alt = _alt_of(pool, spending, A, int(p.get("k") or 1), fee_cap=p.get("feeCap"), fixed=fixed,
                   time_limit=float(p.get("timeLimit") or 10))
@@ -731,7 +719,7 @@ def explain_json(payload_text):
     ids = [int(x) for x in p["ids"] if int(x) in STATE["records"]]
     spending = _clean_spend(p.get("spending"))
     margin = int(p.get("margin") or 0)
-    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
     recs_sel = {s: _raised(STATE["records"][s], margin) for s in ids}
@@ -750,7 +738,7 @@ def rank_json(payload_text):
     """카드마다 지출 전부를 그 카드로 냈을 때의 월 혜택(전체 카드 정렬, 혜택별 추천, 카드 목록)."""
     p = json.loads(payload_text)
     spending = _clean_spend(p.get("spending"))
-    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     detail = bool(p.get("detail"))
     out = []
@@ -771,24 +759,57 @@ def rank_json(payload_text):
     return json.dumps({"ok": True, "rows": out})
 
 
+# '다른 곳 찾기' 후보에서 뺄 이름(2026-11-04): 혜택 문구의 가맹점 칸을 그대로 모아 업종 이름·문구·장소 한정이 섞여 있었다
+GENERIC_NAME = re.compile(r"^(화장품|헬스장|헬스클럽|휘트니스|피트니스|필라테스|요가|미용실|헤어샵|네일|피부과|학원|병원|약국|서점|영화관|극장|커피전문점|"
+                          r"제과점|베이커리|편의점|주유소|충전소|백화점|아울렛|대형마트|할인점|면세점|레스토랑|패밀리레스토랑|음식점|일반음식점|카페|"
+                          r"스포츠센터|골프장|골프연습장|노래방|PC방|세탁소|안경점|숙박|호텔|항공|여행사|온라인쇼핑몰|오픈마켓|소셜커머스|홈쇼핑|"
+                          r"패스트푸드|치킨|피자|햄버거|분식|배달앱|간편결제|식자재매장|식자재마트|전기차충전소|공공급속충전기)$")
+PHRASE_NAME = re.compile(r"가맹점|이용금액|이용 금액|업종|영역|그룹\s*내|\s내\s|내\s*(?:매장|가맹점|이용)|등$|전체|일부|제휴|앱\s*(?:결제|내)|\(.*등.*\)")
+PLACE_ONLY = re.compile(r"홈\s*구장|야구장|홈\s*경기|정규\s*시즌|챔피언스\s*필드|스타디움|경기장|구단|팀\s*스토어|공항\s*내|리조트\s*내|휴게소|역사\s*내|기프트샵|위팬샵")
+
+
+def _brand_key(name):
+    """같은 곳의 다른 표기('현대홈쇼핑 Hmall'·'현대홈쇼핑(Hmall)')를 하나로 묶는 키"""
+    return re.sub(r"[^0-9a-z가-힣]", "", calc._norm_m(name))
+
+
 def brands_json(payload_text):
-    """담은 카드의 브랜드 한정 혜택에 나오는 브랜드(자주 가는 곳 질문에 쓸 목록)."""
+    """담은 카드의 브랜드 한정 혜택에 나오는 브랜드(자주 가는 곳 '다른 곳 찾기' 목록).
+    2026-11-04 정리: 업종 이름('화장품')·문구('○○ 내 이용금액')·장소 한정('홈경기')은 빼고, 같은 곳의 다른 표기는 하나로 묶는다.
+    남기는 곳은 가맹점 비중표에 있는 곳(문 닫은 곳 빼고), 후보 카드 2장 이상의 혜택에 나오는 곳, 보유 카드(own) 혜택에 나오는 곳"""
     p = json.loads(payload_text)
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]]
+    own = {int(x) for x in p.get("own", [])}
+    ms = STATE["A"].get("merchant_share") or {"categories": {}, "alias": {}}
     cats = {}
     for sid in ids:
         rec = STATE["records"][sid]
         for b in rec["benefits"]:
             sc = b.get("scope") or {}
-            if sc.get("specificity") not in ("brand", "merchant_group") or not sc.get("app_category") or sc.get("region") == "overseas":
+            if (b.get("status", "auto") != "auto" or sc.get("specificity") not in ("brand", "merchant_group") or not sc.get("app_category")
+                    or sc.get("region") == "overseas"):
                 continue
             slot = cats.setdefault(sc["app_category"], {})
             for m in sc.get("merchants", [])[:12]:
-                key = calc._norm_m(m)
-                row = slot.setdefault(key, {"name": m, "cards": []})
+                if GENERIC_NAME.match(m.strip()) or PHRASE_NAME.search(m) or PLACE_ONLY.search(m):
+                    continue
+                nm = calc._norm_m(m)
+                row = slot.setdefault(_brand_key(ms["alias"].get(nm, nm)), {"names": {}, "cards": [], "own": False})
+                row["names"][m] = row["names"].get(m, 0) + 1
                 if rec["card"]["name"] not in row["cards"]:
                     row["cards"].append(rec["card"]["name"])
-    out = {c: sorted(v.values(), key=lambda r: (-len(r["cards"]), r["name"])) for c, v in cats.items()}
+                row["own"] |= sid in own
+    out = {}
+    for cat, rows in cats.items():
+        t = ms["categories"].get(cat, {}).get("shares", {})
+        keep = []
+        for row in rows.values():
+            name = max(row["names"], key=lambda n: (row["names"][n], -len(n)))
+            n = calc._norm_m(name)
+            in_table = t.get(ms["alias"].get(n, n), 0) > 0
+            if in_table or len(row["cards"]) >= 2 or row["own"]:
+                keep.append({"name": name, "cards": row["cards"]})
+        out[cat] = sorted(keep, key=lambda r: (-len(r["cards"]), r["name"]))
     return json.dumps({"ok": True, "categories": out, "defaultShare": STATE["A"]["eligible_share_by_specificity"]["brand"]})
 
 
@@ -832,7 +853,7 @@ def category_rank_json(payload_text):
     base = _clean_spend(p.get("spending"))
     base[cat] = amount
     base = {c: v for c, v in base.items() if v > 0}
-    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"))
+    A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     rows = []
     for sid in ids:

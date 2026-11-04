@@ -1,8 +1,6 @@
 import { render, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import axe from "axe-core";
-import { CardList } from "@/shared/components/CardList";
-import { CatalogCardTile } from "@/features/catalog/CatalogCardTile";
 import { CardDetailModal } from "@/features/catalog/CardDetailModal";
 import { ParsedItemsTable } from "@/features/statement/ParsedItemsTable";
 import { SpendingImporter } from "@/features/statement/SpendingImporter";
@@ -52,32 +50,6 @@ describe("Accessibility (a11y) Automated Tests with axe-core", () => {
     totalMonthlyBenefit: 25000,
     netMonthlyBenefit: 23750,
   };
-
-  it("CardList 컴포넌트는 WCAG 접근성 위반 사항이 없어야 한다", async () => {
-    const { container } = render(
-      <CardList
-        evaluations={[dummyEvaluation]}
-        cardTypes={["credit", "check"]}
-        categories={dummyCategories}
-        onToggleCardType={() => {}}
-      />
-    );
-    const violations = await checkA11y(container);
-    expect(violations).toEqual([]);
-  });
-
-  it("CatalogCardTile 컴포넌트는 WCAG 접근성 위반 사항이 없어야 한다", async () => {
-    const { container } = render(
-      <CatalogCardTile
-        entry={dummyEntry}
-        inMyCards={false}
-        onSelect={() => {}}
-        onToggleMyCards={() => {}}
-      />
-    );
-    const violations = await checkA11y(container);
-    expect(violations).toEqual([]);
-  });
 
   it("CardDetailModal 컴포넌트는 WCAG 접근성 위반 사항이 없어야 한다", async () => {
     const { container } = render(

@@ -35,7 +35,7 @@ interface Props {
 }
 
 export function WizardV1({ scope, onScope, step, onStep, myCards, onNavigate, onResult, onAsk, onSave }: Props) {
-  const { spending, updateCategory, setSpending } = useMonthlySpend(categories);
+  const { spending, updateCategory } = useMonthlySpend(categories);
   const { brandSpend, setBrand } = useBrandSpend();
   const [margin, setMargin] = useMargin();
   const [includeUnverified, setIncludeUnverified] = useIncludeUnverified();
@@ -241,7 +241,7 @@ export function WizardV1({ scope, onScope, step, onStep, myCards, onNavigate, on
       bottomBar={bottom}
     >
       {step === 1 && <CardsStep scope={scope} ids={owned} onToggle={(sid) => myCards.toggle(sid)} onSwitchScope={() => onScope("all")} />}
-      {step === 2 && <SpendStep spending={spending} onChange={updateCategory} onReplace={setSpending} onOpenStatement={() => onNavigate("statement")} />}
+      {step === 2 && <SpendStep spending={spending} onChange={updateCategory} onOpenStatement={() => onNavigate("statement")} />}
       {step === 3 && (
         <BrandsStep
           cardCount={scope === "myCards" ? owned.length : 0}
@@ -305,7 +305,6 @@ export function WizardV1({ scope, onScope, step, onStep, myCards, onNavigate, on
               brandSpend={brandSpend}
               margin={margin}
               feeCap={feeCap}
-              onApplySpending={setSpending}
               efficientCeiling={shown?.efficientCeiling ?? null}
             />
           }

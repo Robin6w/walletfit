@@ -244,21 +244,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const backLabel = viaStatement ? "← 명세서 다시 올리기" : "← 지출 다시 입력";
   const resultQ = (q: Record<string, string | number | undefined>) => paths.make(flow, "result", { from: viaStatement ? "statement" : undefined, ...q });
   const saveLabel = refining ? "더 좋은 조합을 찾는 중…" : noMargin ? "이 조합으로 내 지갑에 저장" : "내 지갑에 저장";
-  // 소득으로 채운 지출의 카드 수: 결과 화면 추천과 같은 카드·조건·브랜드 비중으로 계산한다
-  const calcIds = flow === "own" ? inp.ownIds : newIds;
-  const countArgs = calcIds.length
-    ? (s: Record<string, number>) => ({
-        ids: calcIds,
-        ...(flow === "new" && pinned.length ? { fixed: pinned } : {}),
-        spending: s,
-        mode: c.mode,
-        ...(c.feeCap !== null ? { feeCap: c.feeCap } : {}),
-        margin: noMargin ? 0 : margin,
-        withAlt: false,
-        brandShare: inp.brandShareWith(s, effSource),
-        ...(tickets ? { tickets } : {}),
-      })
-    : null;
   // 여유 없이 계산 화면에서 여유(2만원·5만원)를 고르면 기본 결과로 돌아간다
   const setMarginBack = (m: number) => {
     inp.setMargin(m);
@@ -294,8 +279,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             brandShare={brandShare}
             tickets={tickets}
             efficientCeiling={null}
-            onApplySpending={(s) => inp.spend.setSpending(s)}
-            countArgs={countArgs}
           />
         )}
       </>
@@ -399,8 +382,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         brandShare={brandShare}
         tickets={tickets}
         efficientCeiling={shown.rec.efficientCeiling ?? null}
-        onApplySpending={(s) => inp.spend.setSpending(s)}
-        countArgs={countArgs}
       />
 
       {nm && (

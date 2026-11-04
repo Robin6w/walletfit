@@ -4,16 +4,14 @@
  * 메인(UI) 스레드를 막지 않도록 브라우저 안의 Python(WASM)에서 계산합니다. Pyodide 런타임은
  * public/pyodide-dist에 정적 파일로 직접 서빙합니다(학교/사내망에서 외부 CDN이 막히는 경우 대비).
  *
- * 메시지 두 종류를 받습니다.
- *  - "engine" (새 계산): 혜택 표(data/catalog/cards-benefit.json)를 읽는 추천 엔진 v2(milp.py)로 조합을 고르고,
- *    카드 한 장 계산기(calc.py)로 화면 숫자와 계산 근거(trace)를 만듭니다. wf_engine.py가 둘을 묶습니다.
- *    fn: recommend | explain | rank | brands | categoryRank | cardsInfo | alt
- *  - "solve" (이전 계산): walletOptimizerCore.py. 회귀 확인용 legacy 화면에서만 씁니다.
+ * "engine" 메시지를 받습니다: 혜택 표(data/catalog/cards-benefit.json)를 읽는 추천 엔진 v2(milp.py)로 조합을 고르고,
+ * 카드 한 장 계산기(calc.py)로 화면 숫자와 계산 근거(trace)를 만듭니다. wf_engine.py가 둘을 묶습니다.
+ * fn: recommend | explain | rank | brands | categoryRank | cardsInfo | alt
+ * (2026-11-04: 이전 계산 walletOptimizerCore.py의 "solve" 메시지는 쓰는 화면이 없어져 뺐습니다)
  *
  * 모듈(ESM) Worker로 띄웁니다(workerClient.ts의 `new Worker(url, { type: "module" })`).
  * dev 서버와 빌드 결과물에서 똑같이 동작하도록 pyodide.mjs를 동적 import로 불러옵니다.
  */
-import walletOptimizerCoreSource from "./walletOptimizerCore.py?raw";
 import calcSource from "./py/calc.py?raw";
 import milpSource from "./py/milp.py?raw";
 import engineSource from "./py/wf_engine.py?raw";
@@ -38,13 +36,6 @@ interface PyodideLike {
   globals: { get(name: string): PyProxyFn };
 }
 
-interface SolveRequestPayload {
-  requestId: number;
-  candidates: unknown;
-  spending: unknown;
-  options: unknown;
-}
-
 interface EngineRequestPayload {
   requestId: number;
   fn: "recommend" | "explain" | "rank" | "brands" | "categoryRank" | "cardsInfo" | "alt";
@@ -59,7 +50,6 @@ function errorText(err: unknown) {
 }
 
 let pyodideReadyPromise: Promise<{ pyodide: PyodideLike; engine: Record<string, PyProxyFn> }> | null = null;
-let legacyLoaded = false;
 
 function getRuntime() {
   if (!pyodideReadyPromise) {
@@ -87,7 +77,6 @@ function getRuntime() {
           );
         }
       }
-      // 이전 계산(walletOptimizerCore.py)은 v1 화면이 요청할 때만 불러온다(scipy 불러오기에 3초 넘게 걸림, 2026-10-29)
       pyodide.FS.mkdirTree(PY_DIR);
       pyodide.FS.writeFile(`${PY_DIR}/calc.py`, calcSource);
       pyodide.FS.writeFile(`${PY_DIR}/milp.py`, milpSource);
@@ -126,31 +115,15 @@ const ENGINE_FN: Record<EngineRequestPayload["fn"], string> = {
   alt: "alt_json",
 };
 
-self.onmessage = async (event: MessageEvent<{ type: string; payload: SolveRequestPayload | EngineRequestPayload }>) => {
+self.onmessage = async (event: MessageEvent<{ type: string; payload: EngineRequestPayload }>) => {
   const { type, payload } = event.data ?? {};
-  if (type === "engine") {
-    const p = payload as EngineRequestPayload;
-    try {
-      const { engine } = await getRuntime();
-      const out = engine[ENGINE_FN[p.fn]](JSON.stringify(p.args));
-      postMessage({ type: "engine_result", requestId: p.requestId, data: JSON.parse(String(out)) });
-    } catch (err) {
-      postMessage({ type: "engine_result", requestId: p.requestId, data: { ok: false, error: errorText(err) } });
-    }
-    return;
-  }
-  if (type !== "solve") return;
-  const p = payload as SolveRequestPayload;
+  if (type !== "engine") return;
+  const p = payload;
   try {
-    const { pyodide } = await getRuntime();
-    if (!legacyLoaded) {
-      pyodide.runPython(walletOptimizerCoreSource);
-      legacyLoaded = true;
-    }
-    const solveFn = pyodide.globals.get("solve_wallet_json");
-    const resultJson = solveFn(JSON.stringify(p.candidates), JSON.stringify(p.spending), JSON.stringify(p.options));
-    postMessage({ type: "result", requestId: p.requestId, data: JSON.parse(resultJson) });
+    const { engine } = await getRuntime();
+    const out = engine[ENGINE_FN[p.fn]](JSON.stringify(p.args));
+    postMessage({ type: "engine_result", requestId: p.requestId, data: JSON.parse(String(out)) });
   } catch (err) {
-    postMessage({ type: "result", requestId: p.requestId, data: { feasible: false, error: String(err) } });
+    postMessage({ type: "engine_result", requestId: p.requestId, data: { ok: false, error: errorText(err) } });
   }
 };

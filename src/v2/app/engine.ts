@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { engineCall, type EngineFn } from "@/domain/engine/walletEngine";
 import { ENGINE_VERSION } from "@/domain/engine/engineVersion";
+import { withChoices } from "@/domain/engine/choices";
 
 /**
  * v2 화면의 계산 엔진 호출. 같은 인자로 다시 부르면 저장해 둔 결과를 바로 쓴다.
@@ -20,7 +21,8 @@ const PERSIST_MAX = 8;
 type Persisted = { ver: string; items: [string, unknown][] };
 
 function keyOf(fn: EngineFn, args: unknown): string {
-  return `${fn}:${JSON.stringify(args)}`;
+  // 통신사·기후동행 답이 바뀌면 다른 계산으로 본다(engineCall이 같은 답을 실어 보냄)
+  return `${fn}:${JSON.stringify(withChoices(args))}`;
 }
 
 function loadPersisted(): [string, unknown][] {

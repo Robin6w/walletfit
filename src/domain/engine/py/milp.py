@@ -4,7 +4,7 @@ WalletFit 카드 조합 MILP (혜택 양식 v0.2 기반)
 1번 작업의 혜택 레코드(schema v0.2)를 그대로 읽어, 카드 여러 장의 조합과 카테고리 배정을 한 번에 고른다.
 calc.py(카드 한 장 계산기)가 하는 계산을 선형식으로 옮긴 것이라, 고른 결과는 calc.py로 다시 계산해 검산한다.
 
-지금 앱 엔진(walletOptimizerCore.py) 대비 바뀐 점
+예전 앱 엔진(walletOptimizerCore.py, 2026-11-04 삭제) 대비 바뀐 점
   1. 지출 전액 배정: 각 카테고리 지출은 고른 카드 중 하나로 반드시 결제된다(Σ_c x = s).
      혜택 없는 지출도 그 카드 실적에 들어간다.
   2. 실적 구간: 카드에 배정된 지출(실적 제외 카테고리 빼고, 할인받은 결제 빼고)로 구간이 정해진다.
@@ -621,6 +621,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         B.bsum[b["id"]] = terms_total
         B.ub[b["id"]] = _ub(b)
         _own_caps(M, B, b, sts, tset, terms_total, cs_lookup=lambda t, c: (B.rho.get((b["id"], t, c))), Mbig=B.ub[b["id"]] + 1)
+        _choice_scale(M, B, b, A)
 
     # --- 여러 개 고르는 선택형에서 같은 카테고리 '업종 전체' 혜택이 2개 이상 고를 수 있으면,
     #     같은 지출을 두 번 쓰지 않도록(계산기의 '나눠 가짐'과 같은 효과) 지출 사용량 합 ≤ 배정 지출
@@ -725,6 +726,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         B.bsum[b["id"]] = terms_total
         B.ub[b["id"]] = _ub(b)
         _own_caps(M, B, b, sts, tset, terms_total, cs_lookup=lambda t, c: (B.rho.get((b["id"], t, c))), Mbig=B.ub[b["id"]] + 1)
+        _choice_scale(M, B, b, A)
 
     # --- 공유 한도(카드 구간 기준) ---
     act_ids = {b["id"] for b in specific + general}
@@ -884,6 +886,17 @@ def _build_card(M, B, cats, S, A, BIGQ):
                     gge(t1, [cwt], 0.0, Mbig)
         M.con({B.d: 1, **{g: -1.0 for g in g_all}}, lo=0, hi=0)
         M.con({B.d: 1, B.y: -Mbig}, hi=0)
+
+
+def _choice_scale(M, B, b, A):
+    """통신사 전용 혜택처럼 그 답일 확률만큼만 받는 혜택(calc.choice_share, 2026-11-04): 자체 한도까지 적용한 금액에 확률을 곱한다.
+    금액 변수는 혜택마다 따로라 목적식 계수와 공유 한도에 쓰는 합(bsum)만 바꾸면 calc와 같아진다"""
+    q = __import__("calc").choice_share(b["scope"], A)
+    if q >= 1:
+        return
+    for v in B.bsum[b["id"]]:
+        M.obj[v] *= q
+    B.bsum[b["id"]] = {v: cc * q for v, cc in B.bsum[b["id"]].items()}
 
 
 def _own_caps(M, B, b, sts, tset, terms_total, cs_lookup, Mbig=1e7):

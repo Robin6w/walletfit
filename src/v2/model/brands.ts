@@ -21,7 +21,10 @@ export type BrandPicks = Record<string, BrandPick>;
 export const BRAND_TABS: { cat: string; label: string; brands: string[] }[] = [
   { cat: "cafe", label: "카페·디저트", brands: ["스타벅스", "투썸플레이스", "메가MGC커피", "이디야커피", "컴포즈커피", "빽다방", "커피빈", "폴바셋", "파리바게뜨"] },
   { cat: "convenience", label: "편의점", brands: ["GS25", "CU", "세븐일레븐", "이마트24"] },
-  { cat: "dining", label: "외식·배달", brands: ["배달의민족", "쿠팡이츠", "요기요"] },
+  // 2026-11-04: 예전 '외식·배달' 탭은 외식(dining)에 배달앱 셋을 걸어 두었는데, 배달앱 혜택은 모두 배달(delivery) 카테고리라
+  // 배민을 고르면 배민 할인은 그대로이고 외식 브랜드 할인만 0이 됐다. 외식은 가맹점 비중표에 있고 혜택 카드가 많은 순
+  { cat: "dining", label: "외식", brands: ["아웃백", "VIPS", "맥도날드", "롯데리아", "버거킹", "맘스터치", "도미노피자", "교촌치킨", "애슐리"] },
+  { cat: "delivery", label: "배달", brands: ["배달의민족", "쿠팡이츠", "요기요", "땡겨요"] },
   { cat: "onlineShopping", label: "온라인쇼핑", brands: ["쿠팡", "네이버쇼핑", "G마켓", "11번가", "SSG.COM"] },
   { cat: "gas", label: "주유", brands: ["SK에너지", "GS칼텍스", "S-OIL", "HD현대오일뱅크"] },
   // 2026-11-01: OTT/구독은 넷플릭스·멜론 등 브랜드 한정 혜택이 대부분이라, 고르지 않으면 'ChatGPT만 쓰는 사람'에게도

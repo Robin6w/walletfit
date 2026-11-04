@@ -1,20 +1,16 @@
 import { useState } from "react";
 import { categories, catLabel, MAIN_CATEGORIES } from "@/v1/catalog";
 import { WonInput, Btn } from "@/v1/ui";
-import { estimateSpendingFromIncome, ASSUMED_CARD_SPEND_RATIO } from "@/domain/engine/incomeEstimate";
 import type { MonthlySpend } from "@/domain/types/card";
 
 interface Props {
   spending: MonthlySpend;
   onChange: (cat: string, value: number) => void;
-  onReplace: (next: MonthlySpend) => void;
   onOpenStatement: () => void;
 }
 
-export function SpendStep({ spending, onChange, onReplace, onOpenStatement }: Props) {
+export function SpendStep({ spending, onChange, onOpenStatement }: Props) {
   const [extra, setExtra] = useState<string[]>(() => categories.map((c) => c.id).filter((id) => !MAIN_CATEGORIES.includes(id) && (spending[id] ?? 0) > 0));
-  const [incomeOpen, setIncomeOpen] = useState(false);
-  const [income, setIncome] = useState(0);
   const shown = [...MAIN_CATEGORIES, ...extra];
   const rest = categories.map((c) => c.id).filter((id) => !shown.includes(id));
 
@@ -29,30 +25,8 @@ export function SpendStep({ spending, onChange, onReplace, onOpenStatement }: Pr
           <Btn size="sm" onClick={onOpenStatement}>
             명세서로 채우기
           </Btn>
-          <Btn size="sm" kind={incomeOpen ? "tint" : "secondary"} onClick={() => setIncomeOpen((v) => !v)} aria-expanded={incomeOpen}>
-            월 소득으로 대략 채우기
-          </Btn>
         </div>
       </div>
-
-      {incomeOpen && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[16px] border border-tint-line bg-tint p-4 text-[14px]">
-          <span>월 소득(세후)</span>
-          <WonInput value={income} onChange={setIncome} label="월 소득" />
-          <span className="text-ink-2">의 {Math.round(ASSUMED_CARD_SPEND_RATIO * 100)}%를 카드로 쓴다고 보고 카테고리별 평균 비중으로 나눠요.</span>
-          <Btn
-            kind="primary"
-            size="sm"
-            disabled={!income}
-            onClick={() => {
-              onReplace(estimateSpendingFromIncome(income, categories, ASSUMED_CARD_SPEND_RATIO));
-              setIncomeOpen(false);
-            }}
-          >
-            채우기
-          </Btn>
-        </div>
-      )}
 
       <div className="mt-6 grid rounded-[20px] border border-line bg-surface px-4 md:grid-cols-2 md:gap-x-10 md:px-6">
         {shown.map((id) => (

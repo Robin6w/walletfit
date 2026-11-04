@@ -3,10 +3,8 @@ import { ChevronDown } from "lucide-react";
 import type { CardKind, MonthlySpend } from "@/domain/types/card";
 import type { EnginePack } from "@/domain/types/engine";
 import { IssuerExclusionFilter } from "@/features/wallet/IssuerExclusionFilter";
-import { IncomeCardCountEstimator } from "@/features/wallet/IncomeCardCountEstimator";
-import { toWalletCard } from "@/domain/engine/cardConverter";
 import { useExplain, toBrandShare } from "@/domain/engine/walletEngine";
-import { catalogBySourceId, categories, isUnread } from "@/v1/catalog";
+import { catalogBySourceId, isUnread } from "@/v1/catalog";
 import { Btn, Spinner } from "@/v1/ui";
 import { approxWon, korWon, num } from "@/v1/format";
 import { shortCard } from "@/v1/wallet/model";
@@ -34,7 +32,6 @@ interface Props {
   brandSpend: BrandSpend;
   margin: number;
   feeCap: number | null;
-  onApplySpending: (s: MonthlySpend) => void;
   efficientCeiling: number | null;
 }
 
@@ -46,7 +43,7 @@ export function Conditions(p: Props) {
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">
         <span>
           <span className="block text-[16px] font-extrabold">조건 바꾸기</span>
-          <span className="block text-[12.5px] text-ink-3">계산 방식 · 최대 카드 수 · 카드 종류 · 카드사 제외 · 소득으로 카드 수 추정 · 카드 바꿔보기</span>
+          <span className="block text-[12.5px] text-ink-3">계산 방식 · 최대 카드 수 · 카드 종류 · 카드사 제외 · 카드 바꿔보기</span>
         </span>
         <ChevronDown className={`h-5 w-5 shrink-0 transition ${open ? "rotate-180" : ""}`} />
       </button>
@@ -124,15 +121,6 @@ export function Conditions(p: Props) {
             onToggleIssuer={p.onToggleIssuer}
             onIncludeAll={p.onIncludeAll}
             onExcludeAll={p.onExcludeAll}
-          />
-
-          <IncomeCardCountEstimator
-            categories={categories}
-            candidates={p.candidateIds.flatMap((sid) => { const e = catalogBySourceId.get(sid); return e ? [toWalletCard(e)] : []; }).slice(0, 60)}
-            maxAnnualFee={p.feeCap ?? undefined}
-            mode={p.mode}
-            onApplySpending={p.onApplySpending}
-            onApplyMaxCards={p.onMaxCards}
           />
 
           {p.pack && p.pack.cards.length > 0 && <SwapCard pack={p.pack} candidates={p.candidateIds} spending={p.spending} brandSpend={p.brandSpend} margin={p.margin} />}

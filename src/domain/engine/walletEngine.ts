@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getEngineState, getWorker, onEngineStateChange, postRequest } from "@/domain/engine/workerClient";
 import type { BrandRow, BrandShare, EnginePack, RankRow, RecommendArgs, RecommendResponse, BenefitStatus } from "@/domain/types/engine";
+import { withChoices } from "@/domain/engine/choices";
 
 /**
  * 새 계산 엔진 호출(wf_engine.py). 모든 카드는 혜택 표(data/catalog/cards-benefit.json)로 계산합니다.
@@ -13,7 +14,8 @@ import type { BrandRow, BrandShare, EnginePack, RankRow, RecommendArgs, Recommen
 export type EngineFn = "recommend" | "explain" | "rank" | "brands" | "categoryRank" | "cardsInfo" | "alt";
 
 export function engineCall<T>(fn: EngineFn, args: unknown): Promise<T> {
-  return postRequest<T>("engine", { fn, args });
+  // 통신사·기후동행 답(choices.ts)을 모든 계산에 싣는다(2026-11-04)
+  return postRequest<T>("engine", { fn, args: withChoices(args) });
 }
 
 export function warmUpEngine() {
@@ -91,10 +93,11 @@ export function useRank(args: { ids?: number[]; spending: Record<string, number>
   return useEngineQuery<{ ok: boolean; error?: string; rows: RankRow[] }>("rank", args);
 }
 
-export function useBrands(ids: number[] | null) {
+/** own: 가진 카드. 후보 카드 1장에만 나오는 가게도 가진 카드 혜택이면 '다른 곳 찾기'에 남긴다(2026-11-04) */
+export function useBrands(ids: number[] | null, own?: number[]) {
   return useEngineQuery<{ ok: boolean; error?: string; categories: Record<string, BrandRow[]>; defaultShare: number }>(
     "brands",
-    ids === null ? null : { ids },
+    ids === null ? null : own?.length ? { ids, own } : { ids },
   );
 }
 

@@ -216,7 +216,7 @@ export const TOPIC_REPLIES: FixedReply[] = [
   { id: "howto.credit_only", test: /신용\s*카드\s*만/, reply: "새 카드까지 넣어서 만들 때 카드 종류를 신용카드만 고르면 돼요.", go: "startNew" },
   { id: "howto.check_only", test: /체크\s*카드\s*만/, reply: "새 카드까지 넣어서 만들 때 카드 종류를 체크카드만 고르면 돼요.", go: "startNew" },
   { id: "howto.cardcount", test: /카드\s*(수|개수|몇\s*장)\S*\s*(정할|정하|고를|고르|선택|지정)/, reply: "추천 결과 화면의 조건 바꾸기에서 카드 수를 정할 수 있어요." },
-  { id: "howto.income", test: [/(소득|월급|연봉)/, /(채우|채울|채워|넣|계산|입력|맞춰)/], except: /공제|연말정산/, reply: "추천 결과 화면의 조건 바꾸기에서 월 소득으로 지출을 채울 수 있어요." },
+  { id: "howto.income", test: [/(소득|월급|연봉)/, /(채우|채울|채워|넣|계산|입력|맞춰)/], except: /공제|연말정산/, reply: "소득만으로는 지출을 채우지 않아요. 한 달 지출을 카테고리별로 넣거나 카드 명세서를 올려 주세요." },
   { id: "wallet.saved_diff", test: /(저장한|저장된)\s*(지갑|조합).{0,12}(달라|다르|다른|틀려|안\s*맞)/, reply: "상담은 가장 최근에 계산한 결과를 기준으로 답해요. 저장한 조합은 내 지갑에서 볼 수 있어요.", go: "wallet" },
   { id: "howto.save", test: [/(지갑|조합|결과)/, /저장/], reply: "추천 결과 화면에서 이 조합을 저장하면 내 지갑에서 다시 볼 수 있어요.", go: "wallet" },
   { id: "howto.trace", test: /계산\s*근거/, reply: "카드마다 혜택이 어떻게 계산됐는지 단계별로 보여 주는 화면이에요." },

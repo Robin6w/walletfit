@@ -42,7 +42,7 @@ export default function MakeFlow({ flow, step }: { flow: Flow; step?: string }) 
   // 자주 가는 곳·명세서에서 브랜드를 찾을 카드: 보유 흐름은 가진 카드, 새 카드 흐름은 새 카드 후보까지
   const brandIds = useMemo(() => (flow === "own" ? inp.ownIds : Array.from(new Set([...inp.ownIds, ...inp.newPool]))), [flow, inp.ownIds, inp.newPool]);
   const needBrands = cur === "brands" || cur === "statement";
-  const engineBrands = useBrands(needBrands && brandIds.length ? brandIds : null);
+  const engineBrands = useBrands(needBrands && brandIds.length ? brandIds : null, inp.ownIds);
   const extraBrands = useMemo(
     () => Object.values(engineBrands.data?.categories ?? engineBrands.lastGood?.categories ?? {}).flatMap((rows) => rows.map((r) => r.name)),
     [engineBrands.data, engineBrands.lastGood],
@@ -89,6 +89,7 @@ export default function MakeFlow({ flow, step }: { flow: Flow; step?: string }) 
           picks={inp.picks}
           onPicks={inp.setPicks}
           brandIds={brandIds}
+          ownIds={inp.ownIds}
           prev={paths.make(flow, "spend")}
           next={paths.make(flow, "result")}
         />

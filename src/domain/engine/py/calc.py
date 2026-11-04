@@ -32,9 +32,25 @@ def usable(b):
 
 def contract_off(b, A):
     """보험·렌탈·장기 할부처럼 카드와 따로 계약이 있어야 받는 혜택인데, 사용자가 그 계약이 있다고 답하지 않았으면 True.
-    혜택의 contract 키는 wf_engine.init_json이 benefit-conditions.json으로 붙인다(2026-11-03)"""
+    혜택의 contract 키는 wf_engine.init_json이 benefit-conditions.json으로 붙인다(2026-11-03).
+    고르는 질문(통신사 등)에 다른 답을 했어도 True(2026-11-04)"""
     k = b.get("contract")
-    return bool(k) and k not in (A.get("user_contracts") or ())
+    return (bool(k) and k not in (A.get("user_contracts") or ())) or choice_share(b["scope"], A) == 0
+
+
+def choice_share(sc, A):
+    """고르는 질문의 답이 맞아야 받는 혜택(KT 통신요금 할인, 기후동행 정기권 요금 할인 등, 2026-11-04)의 대상 비중.
+    scope의 choice 키('telecom:kt')는 wf_engine.init_json이 benefit-conditions.json의 choice_benefits로 붙인다.
+    답이 없으면 그 답일 확률(통신사 점유율 등, choices의 share), 답했으면 맞으면 1·틀리면 0. 예전에는 누구에게나 전액이었다.
+    통신사는 쓰거나 안 쓰거나라서 대상 지출이 아니라 혜택 금액(자체 한도까지 적용한 값)에 곱한다(benefit_amount, milp 목적식)"""
+    k = sc.get("choice")
+    if not k:
+        return 1.0
+    q, opt = k.split(":", 1)
+    ans = (A.get("user_choices") or {}).get(q)
+    if ans:
+        return 1.0 if ans == opt else 0.0
+    return (A.get("choice_share") or {}).get(k, 1.0)
 
 
 def channel_share(sc, cat, A):
@@ -492,6 +508,10 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
             total = min(total, monthly)
         elif cap["basis"] == "spend" and elig_total > monthly:
             total *= monthly / elig_total
+    q = choice_share(sc, A)
+    if q < 1:
+        flags.add(f"{b['id']}: {sc['choice']} 전용 혜택이라 그 답일 확률 {q:.0%}만큼 계산(답하면 맞을 때만 전액)")
+        total, raw = total * q, raw * q
     b["_elig_by_cat"] = elig_by_cat
     b["_trace"]["after_own_cap"] = total
     return total, elig_total, raw
@@ -572,7 +592,8 @@ def evaluate(rec, spending, A, option_ids=None, log=None, trace=None):
     q = q_raw
     seen = {}
     for _ in range(8):  # 할인받은 결제가 실적에서 빠지는 카드는 고정점까지 반복
-        flags = {f"{b['id']}: 계약이 있어야 받는 혜택이라 뺌({b['contract']})" for b in off}
+        flags = {f"{b['id']}: 계약이 있어야 받는 혜택이라 뺌({b['contract']})" if b.get("contract") else f"{b['id']}: 다른 답이라 뺌({b['scope'].get('choice')})"
+             for b in off}
         tiers_now = {"card": _tier_of(perf["tiers"], q) if perf["basis"] != "none" else None}
         for ts in rec.get("local_tier_sets", []):
             tiers_now[ts["id"]] = _tier_of(ts["tiers"], local_q[ts["id"]])

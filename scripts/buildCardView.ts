@@ -49,6 +49,7 @@ export function cardViewOf(status: string, r: Rec): CardViewEntry {
         caps: (b.caps ?? []).map((c: Rec) => ({ period: c.period ?? "month", amounts: amounts(c.by_tier) })),
         ...(b.shared_cap_ids?.length ? { sh: b.shared_cap_ids as string[] } : {}),
         st: b.status ?? "auto",
+        ...(typeof b.status_reason === "string" && b.status_reason.startsWith("장소 한정") ? { ex: "place" as const } : {}),
         q: typeof b.source_quote === "string" ? b.source_quote.slice(0, 240) : "",
         m: (sc.merchants ?? []).slice(0, 8),
         ch: sc.channel ?? "any",

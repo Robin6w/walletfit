@@ -226,5 +226,36 @@ yb = lambda m: calc.evaluate(R[2596], {"etc": m}, A8)["by_benefit"].get("s1b3", 
 check(f"정액 혜택: 2596 '연 1,500만원 이상 시 2만원'은 월 100만원(연 1,200만)이면 0, 월 130만원이면 월 환산 {yb(1300000):,.0f}원",
       yb(1000000) == 0 and abs(yb(1300000) - 20000 / 12) < 1)
 
+# 11. 2026-11-04 통신사·기후동행 전용 혜택: 답이 없으면 그 답일 확률만큼, 답하면 맞을 때만 전액
+E.init_json(read("data/catalog/cards-benefit.json"), read("data/catalog/assumptions.json"), read("data/catalog/merchant-share.json"),
+            read("data/catalog/benefit-conditions.json"), read("data/catalog/benefit-coverage.json"))
+R = E.STATE["records"]
+sp11 = {"mobile": 60000, "etc": 500000}
+kt = lambda ch: calc.evaluate(R[2484], sp11, E._A(None, None, None, ch))["total"]  # noqa: E731  KT 통신요금 청구할인
+share_kt = json.loads(read("data/catalog/benefit-conditions.json"))["choices"]["telecom"]["options"]["kt"]["share"]
+check(f"통신사 전용: KT 할인은 답이 없으면 KT 점유율 {share_kt:.1%}만큼({kt(None):,.0f}원), KT면 {kt({'telecom': 'kt'}):,.0f}원, SKT면 0",
+      abs(kt(None) - kt({"telecom": "kt"}) * share_kt) < 1 and kt({"telecom": "skt"}) == 0)
+for ch in (None, {"telecom": "mvno"}):
+    E._SEED.clear()
+    r11 = json.loads(E.recommend_json(json.dumps({"ids": [2467, 2484], "spending": sp11, "margin": 0, "maxCards": 2, "withAlt": False, "choices": ch})))
+    d11 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, E._A(None, None, None, ch))["total"] - c["feeMonthly"]
+              for c in r11["result"]["cards"])
+    check(f"통신사 전용: MILP도 같은 확률({ch}, 화면 {r11['result']['net']:,.0f}원 = calc)", abs(d11 - r11["result"]["net"]) < 1)
+
+# 12. 2026-11-04 '자주 가는 곳' 다른 곳 찾기 후보 정리: 업종 이름·문구·장소 한정은 빼고, 비중표·카드 2장 이상·가진 카드만
+pool12 = [s for s, st in E.STATE["status"].items() if st == "extracted"]
+br = json.loads(E.brands_json(json.dumps({"ids": pool12})))["categories"]
+names12 = {r["name"] for rows in br.values() for r in rows}
+check(f"후보 정리: 스타벅스·쿠팡은 남고 '헬스장'·'○○ 내 이용금액'·홈경기는 빠짐(카페 {len(br['cafe'])}곳, 온라인쇼핑 {len(br['onlineShopping'])}곳)",
+      {"스타벅스", "쿠팡"} <= names12 and not any(n in names12 for n in ("헬스장", "현대백화점그룹 내 이용금액")) and not any("홈경기" in n for n in names12))
+solo = [(s, m) for s in pool12 for b in R[s]["benefits"] if b.get("status", "auto") == "auto" and b["scope"].get("specificity") == "brand"
+        and b["scope"].get("app_category") == "cafe" for m in b["scope"].get("merchants", []) if m == "팔공티"]
+if solo:
+    s12 = solo[0][0]
+    with_own = {r["name"] for r in json.loads(E.brands_json(json.dumps({"ids": pool12, "own": [s12]})))["categories"]["cafe"]}
+    check("후보 정리: 카드 1장에만 나오는 가게(팔공티)는 그 카드를 가졌을 때만 후보", ("팔공티" in with_own) and ("팔공티" not in {r["name"] for r in br["cafe"]}))
+lg = next(b for b in R[1003]["benefits"] if b["id"] == "s8b1")
+check("장소 한정: LG트윈스 홈경기 할인은 계산하지 않는 혜택", lg.get("status") == "no_calc")
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

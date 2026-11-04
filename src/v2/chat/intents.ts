@@ -132,7 +132,7 @@ export const INTENTS: Intent[] = [
   { id: "howto.credit_only", group: HOWTO, name: "신용카드만", desc: "신용카드만으로 조합을 만들 수 있는지", answer: fixed, examples: ["신용카드만으로 만들 수 있어?", "신용카드만 쓰고 싶어", "신용카드만 넣어서 짜 줘"] },
   { id: "howto.check_only", group: HOWTO, name: "체크카드만", desc: "체크카드만으로 조합을 만들 수 있는지", answer: fixed, examples: ["체크카드만 쓰고 싶어", "체크카드만으로 만들 수 있어?", "체크카드만 넣어서 해 줘"] },
   { id: "howto.cardcount", group: HOWTO, name: "카드 수 정하기", desc: "조합에 쓸 카드 수를 정할 수 있는지", answer: fixed, examples: ["카드 수 정할 수 있어?", "카드 개수 고를 수 있어?", "카드 몇 장 쓸지 선택돼?"] },
-  { id: "howto.income", group: HOWTO, name: "소득으로 지출 채우기", desc: "월 소득으로 지출을 채울 수 있는지", answer: fixed, examples: ["소득으로 지출 채울 수 있어?", "월급 넣으면 계산돼?", "연봉 입력하면 지출 채워 줘?"] },
+  { id: "howto.income", group: HOWTO, name: "소득으로 지출 채우기", desc: "월 소득으로 지출을 채울 수 있는지(지원하지 않음, 직접 입력·명세서로 안내)", answer: fixed, examples: ["소득으로 지출 채울 수 있어?", "월급 넣으면 계산돼?", "연봉 입력하면 지출 채워 줘?"] },
   { id: "howto.save", group: HOWTO, name: "지갑 저장", desc: "조합(지갑)을 어떻게 저장하는지", answer: fixed, examples: ["지갑 저장은 어떻게 해?", "조합 저장하고 싶어", "결과 저장돼?"] },
   { id: "howto.trace", group: HOWTO, name: "계산 근거 보기", desc: "계산 근거 보기 화면이 무엇인지", answer: fixed, examples: ["계산 근거 보기가 뭐야?", "계산 근거 어디서 봐?", "계산 근거는 뭘 보여 줘"] },
 

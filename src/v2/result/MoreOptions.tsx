@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import type { CardKind, MonthlySpend } from "@/domain/types/card";
+import type { CardKind } from "@/domain/types/card";
 import type { BrandShare, EnginePack, Tickets } from "@/domain/types/engine";
 import { catalogBySourceId, isUnread } from "@/v1/catalog";
 import { approxWon, korWon } from "@/v1/format";
@@ -9,7 +9,6 @@ import type { Conditions } from "@/v2/make/flow";
 import { conditionsSummary } from "@/v2/model/conditionsView";
 import { shortOf } from "@/v2/model/resultView";
 import { cardShort, josa } from "@/v2/model/text";
-import { IncomeFill } from "@/v2/result/IncomeFill";
 import { SHADOW } from "@/v2/result/parts";
 import { CardImage } from "@/v2/ui/CardImage";
 
@@ -121,7 +120,7 @@ export interface ConditionsBarProps {
   noMargin: boolean;
   /** 실적 여유 없이 다시 계산하는 주소(보유한 카드로 흐름만) */
   noMarginTo: string;
-  /** 카드사 목록·카드 바꿔보기·소득으로 카드 수 계산 후보 */
+  /** 카드사 목록·카드 바꿔보기 후보 */
   candidateIds: number[];
   pack: EnginePack | null;
   spending: Record<string, number>;
@@ -129,9 +128,6 @@ export interface ConditionsBarProps {
   /** 명세서 결제 금액(명세서 경로만) */
   tickets?: Tickets;
   efficientCeiling: number | null;
-  onApplySpending: (s: MonthlySpend) => void;
-  /** 소득으로 채운 지출로 카드 수를 계산할 때 쓰는 추천 인자(결과 화면과 같은 조건) */
-  countArgs: ((spending: Record<string, number>) => { ids: number[] } & Record<string, unknown>) | null;
   /** 처음부터 펼쳐 둔다(조건 때문에 결과가 없을 때) */
   defaultOpen?: boolean;
 }
@@ -470,9 +466,6 @@ export function ConditionsBar(p: ConditionsBarProps) {
           )}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-            <div style={toolBox}>
-              <IncomeFill countArgs={p.countArgs} maxCards={c.maxCards} onApplySpending={p.onApplySpending} onApplyMaxCards={(n) => p.setConditions({ maxCards: n })} />
-            </div>
             {p.pack && p.pack.cards.length > 0 && (
               <div style={toolBox}>
                 <SwapCard pack={p.pack} candidates={p.candidateIds} spending={p.spending} brandShare={p.brandShare} tickets={p.tickets} margin={p.noMargin ? 0 : p.margin} />

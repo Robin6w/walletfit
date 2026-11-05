@@ -420,7 +420,10 @@ def _build_card(M, B, cats, S, A, BIGQ):
                 amt, el = unit * kk, base * kk
                 climit = unit * lim * k if multi else None
             elif typ == "won_per_liter":
-                amt, el = s_full / A["fuel_price_won_per_liter"] * v, s_full
+                # calc와 같게: 건당 상한·최소 결제·횟수 제한을 리터 환산 전에(2026-11-05)
+                n, base, _ = _txn_model(s_full, c, A, None, cond.get("min_txn_won"), cond.get("max_counted_txn_won"))
+                kk = n if lim is None else min(n, lim)
+                amt, el = base * kk / A["fuel_price_won_per_liter"] * v, base * kk
             elif typ == "per_unit_spend":
                 amt, el = s_full / rw["unit_spend_won"] * v, s_full
             else:
@@ -442,7 +445,10 @@ def _build_card(M, B, cats, S, A, BIGQ):
             a, e = unitv * n / unit_s, base * n / unit_s
             climit = unitv * lim if lim is not None else None
         elif typ == "won_per_liter":
-            a, e, climit = f / A["fuel_price_won_per_liter"] * v, f, None
+            n, base, _ = _txn_model(s1, c, A, None, cond.get("min_txn_won"), cond.get("max_counted_txn_won"))
+            per_l = base / A["fuel_price_won_per_liter"] * v  # 결제 1건당 혜택
+            a, e = per_l * n / unit_s, base * n / unit_s
+            climit = per_l * lim if lim is not None else None
         elif typ == "per_unit_spend":
             a, e, climit = f / rw["unit_spend_won"] * v, f, None
         elif typ == "won_per_period":

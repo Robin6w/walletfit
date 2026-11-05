@@ -444,7 +444,10 @@ def benefit_amount(rec, b, spending, tiers_now, A, flags, share_scale=None, cove
                 flags.add(f"{b['id']}: 무료 제공 가격 {A['item_prices'][rw['item_key']]:,}원 가정")
             amt, elig = unit * k, base * k
         elif typ == "won_per_liter":
-            amt, elig = s / A["fuel_price_won_per_liter"] * v, s
+            # 2026-11-05: '건당 10만원까지·월 4회'를 리터 환산 전에 적용(예전엔 무시해 주유 혜택이 최대 54% 부풀었다)
+            n, base, _ = _txn_model(s, cat, A, None, cond.get("min_txn_won"), cond.get("max_counted_txn_won"))
+            k = n if lim is None else min(n, lim)
+            amt, elig = base * k / A["fuel_price_won_per_liter"] * v, base * k
         elif typ == "per_unit_spend":
             amt, elig = s / rw["unit_spend_won"] * v, s
         elif typ == "won_per_period":

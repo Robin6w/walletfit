@@ -13,6 +13,7 @@ import json, os, sys, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src/domain/engine/py"))
 import calc  # noqa: E402
+import milp  # noqa: E402
 import wf_engine as E  # noqa: E402
 
 E.init_json(open(os.path.join(ROOT, "data/catalog/cards-benefit.json"), encoding="utf-8").read(),
@@ -256,6 +257,38 @@ if solo:
     check("후보 정리: 카드 1장에만 나오는 가게(팔공티)는 그 카드를 가졌을 때만 후보", ("팔공티" in with_own) and ("팔공티" not in {r["name"] for r in br["cafe"]}))
 lg = next(b for b in R[1003]["benefits"] if b["id"] == "s8b1")
 check("장소 한정: LG트윈스 홈경기 할인은 계산하지 않는 혜택", lg.get("status") == "no_calc")
+
+# 13. 2026-11-05 엔진 버그(검증 보고서 가 2·3·4)와 리터당 상한(나 9)
+sp13 = {"cafe": 100000, "convenience": 50000, "onlineShopping": 150000, "etc": 200000}
+A13 = E._A(None)
+idle = next(s for s in pool12 if milp.annual_fee(R[s]) >= 30000 and calc.evaluate(R[s], sp13, A13)["total"] == 0)
+E._SEED.clear()
+r13 = json.loads(E.recommend_json(json.dumps({"ids": [idle, 2929, 819, 2997], "spending": sp13, "margin": 20000, "maxCards": 3,
+                                              "fixed": [idle], "withAlt": False})))
+sids13 = r13["result"]["sids"]
+fee13 = sum(c["feeMonthly"] for c in r13["result"]["cards"])
+check(f"내 카드: 지출을 안 맡아도 결과에 남고 연회비가 빠짐({idle}, 연 {milp.annual_fee(R[idle]):,}원)",
+      idle in sids13 and abs(fee13 - sum(milp.annual_fee(R[s]) / 12 for s in sids13)) < 1
+      and all(b["net"] <= r13["result"]["net"] + 1 for b in r13["bar"] if b["k"] == r13["k"]))
+bars = [b["net"] for b in r13["bar"]]
+check("카드 수 막대가 장수가 늘며 줄지 않음", all(bars[i] >= bars[i - 1] - 1 for i in range(1, len(bars))), str(bars))
+E._SEED.clear()
+r13b = json.loads(E.recommend_json(json.dumps({"ids": [2929, 819, 2997, 591], "spending": sp13, "margin": 0, "maxCards": 2,
+                                               "fixed": [2929, 819, 2997], "withAlt": False})))
+check("모순 입력: 내 카드 3장 + 상한 2장이면 3장으로 계산", r13b.get("ok") and set(r13b["result"]["sids"]) >= {2929, 819, 2997})
+fees = sum(milp.annual_fee(R[s]) for s in (2929, 819, 2997))
+r13c = json.loads(E.recommend_json(json.dumps({"ids": [2929, 819, 2997, 591, idle], "spending": sp13, "margin": 0, "maxCards": 3,
+                                               "fixed": [idle], "feeCap": milp.annual_fee(R[idle]) - 1, "withAlt": False})))
+check("모순 입력: 내 카드 연회비가 상한보다 크면 이유를 알려 줌", not r13c.get("ok") and "연회비" in r13c.get("error", ""), r13c.get("error", ""))
+gas = next(b for b in R[2]["benefits"] if b["reward"]["type"] == "won_per_liter" and (b.get("conditions") or {}).get("max_counted_txn_won"))
+sp13g = {"gas": 400000, "etc": 300000}
+got = calc.evaluate(R[2], sp13g, A13)["by_benefit"].get(gas["id"], 0)
+naive = 400000 * calc._elig_share(gas["scope"], A13)[0] / A13["fuel_price_won_per_liter"] * gas["reward"]["value_by_tier"][0]["value"]
+check(f"리터당: 건당 {gas['conditions']['max_counted_txn_won']:,}원 상한을 환산 전에 적용({got:,.0f}원 < 상한 무시 {naive:,.0f}원)", 0 < got < naive)
+E._SEED.clear()
+r13g = json.loads(E.recommend_json(json.dumps({"ids": [2], "spending": sp13g, "margin": 0, "maxCards": 1, "withAlt": False})))
+d13 = calc.evaluate(R[2], {k: v for k, v in r13g["result"]["cards"][0]["alloc"].items() if v > 0}, A13)["total"] - r13g["result"]["cards"][0]["feeMonthly"]
+check("리터당: MILP로 고른 값 = calc", abs(d13 - r13g["result"]["net"]) < 1)
 
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

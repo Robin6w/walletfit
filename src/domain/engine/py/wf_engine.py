@@ -165,8 +165,9 @@ class Evaluator:
         return self.memo[key]
 
 
-def _net_of(ev, X):
-    return sum(ev.total(s, X[s]) - _fee_m(ev.recs[s]) for s in X if sum(X[s].values()) > 0.5)
+def _net_of(ev, X, keep=()):
+    """keep: 맡은 지출이 없어도 연회비를 내는 카드(꼭 넣을 내 카드). 2026-11-05: 예전엔 빠져서 순혜택이 부풀었다"""
+    return sum(ev.total(s, X[s]) - _fee_m(ev.recs[s]) for s in X if sum(X[s].values()) > 0.5 or s in keep)
 
 
 def _round_grid(X, spending, grid=5000):
@@ -322,7 +323,7 @@ def _ls_candidates(ids, rows, spending, A, margin):
     return cand
 
 
-def _fixed_alloc(recs_sel, ev, sids, spending, A, margin, cache, fee_cap=None):
+def _fixed_alloc(recs_sel, ev, sids, spending, A, margin, cache, fee_cap=None, keep=()):
     """카드 집합을 고정하고 지출 배분만 다시 고른다(카드 고정 작은 MILP + _refine). 반환: (calc 순혜택, 배분) — 못 풀면 (None, None)"""
     key = tuple(sorted(sids))
     if key in cache:
@@ -335,7 +336,7 @@ def _fixed_alloc(recs_sel, ev, sids, spending, A, margin, cache, fee_cap=None):
         cache[key] = (None, None)
     else:
         X = _refine(ev, X, spending)
-        cache[key] = (_net_of(ev, X), X)
+        cache[key] = (_net_of(ev, X, keep), X)
     return cache[key]
 
 
@@ -346,12 +347,12 @@ def _local_search(recs_sel, ev, by_k, cand, spending, A, margin, max_cards, fixe
     for k, v in list(by_k.items()):
         if v.get("same"):
             continue
-        net, X = _fixed_alloc(recs_sel, ev, [s for s in v["X"] if sum(v["X"][s].values()) > 0.5] or list(v["X"]),
-                              spending, A, margin, cache, fee_cap)
+        net, X = _fixed_alloc(recs_sel, ev, [s for s in v["X"] if sum(v["X"][s].values()) > 0.5 or s in fixed] or list(v["X"]),
+                              spending, A, margin, cache, fee_cap, keep=fixed)
         if net is not None and net > v["netSel"] + 1:
             by_k[k] = {"X": X, "netSel": net}
     best_k = max(by_k, key=lambda k: by_k[k]["netSel"])
-    cur = tuple(sorted(by_k[best_k]["X"]))
+    cur = tuple(sorted(set(by_k[best_k]["X"]) | set(fixed)))
     best = by_k[best_k]["netSel"]
     evals = 0
     while evals < LS_EVALS:
@@ -370,19 +371,21 @@ def _local_search(recs_sel, ev, by_k, cand, spending, A, margin, max_cards, fixe
             if evals >= LS_EVALS:
                 break
             evals += 1
-            net, _ = _fixed_alloc(recs_sel, ev, nb, spending, A, margin, cache, fee_cap)
+            net, _ = _fixed_alloc(recs_sel, ev, nb, spending, A, margin, cache, fee_cap, keep=fixed)
             if net is not None and net > best + 1:
                 best, imp = net, nb
         if not imp:
             break
         cur = imp
     k = len(cur)
-    if best > by_k.get(k, {"netSel": -1e18})["netSel"] + 1:
+    if cur in cache and best > by_k.get(k, {"netSel": -1e18})["netSel"] + 1:
         by_k[k] = {"X": cache[cur][1], "netSel": best}
-        # 더 많은 장수가 이보다 못하면 '한 장 더 넣어도 늘지 않음'으로 맞춘다(카드 수 막대가 줄지 않게)
-        for k2 in sorted(by_k):
-            if k2 > k and by_k[k2]["netSel"] < best:
-                by_k[k2] = dict(by_k[k], same=True)
+    # 카드 수 막대가 줄지 않게: 앞 장수보다 못하거나 '그대로' 복사본이면 앞 장수 조합으로 맞춘다.
+    # 2026-11-05: 예전엔 국소 탐색이 바꾼 장수 뒤의 복사본을 옛 값으로 남겨 막대가 줄었다(60건 중 3건)
+    ks = sorted(by_k)
+    for a, b in zip(ks, ks[1:]):
+        if by_k[b].get("same") or by_k[b]["netSel"] < by_k[a]["netSel"]:
+            by_k[b] = dict(by_k[a], same=True)
     return evals
 
 
@@ -549,6 +552,12 @@ def recommend_json(payload_text):
     A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     if not ids or not spending:
         return json.dumps({"ok": True, "empty": True})
+    # 모순 입력(2026-11-05): 내 카드가 장수 상한보다 많으면 상한을 올리고, 내 카드 연회비만으로 상한을 넘으면 이유를 돌려준다
+    # (예전엔 이유 없이 '조합을 찾지 못했어요')
+    max_cards = max(max_cards, len(fixed))
+    fixed_fee = sum(milp.annual_fee(STATE["records"][s]) for s in fixed)
+    if fee_cap is not None and fixed_fee > fee_cap:
+        return json.dumps({"ok": False, "error": f"내 카드 연회비 합(연 {fixed_fee:,.0f}원)이 연회비 상한(연 {fee_cap:,.0f}원)보다 커요. 상한을 올려 주세요"})
 
     # 점진적 결과(2026-10-30): 화면이 먼저 kLimit=2로 빨리(몇 초) 받아 보여 주고, 이어서 전체 장수를 계산해 바꾼다.
     # 앞선 계산의 후보와 장수별 결과를 남겨 두고 다음 계산은 그다음 장수부터 이어서 한다(같은 계산을 두 번 하지 않게).
@@ -613,7 +622,7 @@ def recommend_json(payload_text):
                     continue
                 X, obj = copy.deepcopy(X_prev), obj_prev
             X = _refine(ev, X, spending)
-            net = _net_of(ev, X)
+            net = _net_of(ev, X, fixed)
             if X_prev is not None and net < by_k[K - 1]["netSel"] + 1:
                 # 한 장 더 넣어도 늘지 않으면 이후 장수도 같은 조합
                 for k2 in range(K, k_top + 1):
@@ -661,11 +670,11 @@ def recommend_json(payload_text):
     for k in range(1, MAX_BAR + 1):
         if k in by_k:
             X = by_k[k]["X"]
-            real = _net_of(Evaluator({s: STATE["records"][s] for s in X}, A), X)
-            used = [s for s in X if sum(X[s].values()) > 0.5]
+            real = _net_of(Evaluator({s: STATE["records"][s] for s in X}, A), X, fixed)
+            used = [s for s in X if sum(X[s].values()) > 0.5 or s in fixed]
             # sids: 그 장수에서 고른 카드(2026-10-28 v2 화면의 '1장만 쓸 때 ○○ 한 장' 표시용)
             bar.append({"k": k, "net": real, "cards": len(used), "same": bool(by_k[k].get("same")), "sids": used})
-    rec_pack = _pack(by_k[k_rec]["X"], A, margin)
+    rec_pack = _pack(by_k[k_rec]["X"], A, margin, keep=fixed)
 
     # 4장 이상 여지(2026-10-30): 상한 장수까지 한 장 넣을 때마다 혜택이 늘었으면 더 넣어도 늘 수 있으니
     # 화면이 '4~5장 조합도 찾아보기'를 보여 준다. 그 전에 멈췄으면(더 넣어도 그대로) 보여 주지 않는다

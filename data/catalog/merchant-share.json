@@ -1,6 +1,6 @@
 {
  "version": "v0",
- "generatedAt": "2026-11-03",
+ "generatedAt": "2026-11-05",
  "definition": "비중 = 가맹점 국내 소비자 지출 ÷ 카테고리 국내 소비자 지출 전체(업종 전체 분모). 1_혜택정보구조화/비중표/설계.md",
  "categories": {
   "beautyFitness": {
@@ -1530,9 +1530,9 @@
      "sources": []
     },
     "G마켓": {
-     "share": 0.0584,
-     "low": 0.0292,
-     "high": 0.0876,
+     "share": 0.051,
+     "low": 0.0255,
+     "high": 0.0765,
      "basis": "card_payment_ratio",
      "year": "2025-03",
      "confidence": "하",
@@ -1611,9 +1611,9 @@
      "sources": []
     },
     "쿠팡": {
-     "share": 0.2972,
-     "low": 0.1932,
-     "high": 0.4012,
+     "share": 0.3588,
+     "low": 0.2281,
+     "high": 0.4843,
      "basis": "card_payment",
      "year": "2025",
      "confidence": "중",
@@ -1634,7 +1634,7 @@
      "status": "closed"
     }
    },
-   "tableSum": 0.7444,
+   "tableSum": 0.7986,
    "tail": {
     "low": 0.001,
     "mid": 0.005,

@@ -17,8 +17,21 @@
   "2": {
    "s5b1": "bank_account"
   },
+  "26": {
+   "s2b1": "apt_fee"
+  },
   "58": {
    "s2b1": "insurance"
+  },
+  "64": {
+   "s3b4": "rental"
+  },
+  "87": {
+   "s12b1": "rental"
+  },
+  "116": {
+   "s2b2_1": "bank_account",
+   "s2b2_2": "bank_account"
   },
   "134": {
    "s2b1": "insurance"
@@ -69,13 +82,17 @@
    "s5b1_2": "insurance"
   },
   "241": {
-   "s4b1": "bank_account"
+   "s4b1": "bank_account",
+   "s5b1_1": "apt_fee"
   },
   "248": {
    "s1b2": "apt_fee"
   },
   "303": {
    "s3b1": "insurance"
+  },
+  "350": {
+   "s1b2": "insurance"
   },
   "360": {
    "s1b2": "bank_account"
@@ -89,13 +106,42 @@
   "421": {
    "s4b1": "insurance"
   },
+  "423": {
+   "s1b2_2": "insurance"
+  },
+  "424": {
+   "s2b2_2": "insurance"
+  },
   "488": {
    "s3b1": "insurance"
+  },
+  "536": {
+   "s1b1": "rental"
   },
   "537": {
    "s1b1": "rental"
   },
+  "543": {
+   "s1b1_1": "apt_fee",
+   "s1b1_2": "apt_fee"
+  },
+  "544": {
+   "s1b1_1": "apt_fee",
+   "s1b1_2": "apt_fee"
+  },
+  "545": {
+   "s1b1_1": "apt_fee",
+   "s1b1_2": "apt_fee"
+  },
+  "551": {
+   "s4b1_2": "rental"
+  },
+  "580": {
+   "s9b1": "rental"
+  },
   "583": {
+   "s2b3_1": "apt_fee",
+   "s2b3_3": "rental",
    "s2b4": "insurance"
   },
   "594": {
@@ -105,12 +151,15 @@
    "s1b1": "rental"
   },
   "606": {
+   "s1b8": "rental",
    "s2b1": "paid_membership"
   },
   "607": {
+   "s1b6": "rental",
    "s2b1": "paid_membership"
   },
   "661": {
+   "s1b2": "rental",
    "s2b4": "paid_membership"
   },
   "681": {
@@ -123,12 +172,33 @@
    "s5b1": "rental",
    "s5b4": "insurance"
   },
+  "702": {
+   "s1b7_3": "insurance"
+  },
+  "703": {
+   "s1b7_3": "insurance"
+  },
+  "718": {
+   "s4b1_1": "apt_fee",
+   "s4b1_4": "insurance",
+   "s4b1_7": "rental"
+  },
+  "721": {
+   "s1b5": "rental"
+  },
+  "722": {
+   "s1b5": "rental"
+  },
   "729": {
+   "s2b1_3": "rental",
    "s3b1_1": "installment",
    "s3b1_2": "installment",
    "s3b1_3": "installment",
    "s4b1": "installment",
    "s5b1": "installment"
+  },
+  "751": {
+   "s4b2": "apt_fee"
   },
   "762": {
    "s5b2": "paid_membership"
@@ -150,6 +220,15 @@
   "889": {
    "s3b1": "apt_fee"
   },
+  "912": {
+   "s2b1": "apt_fee"
+  },
+  "949": {
+   "s4b8": "insurance"
+  },
+  "950": {
+   "s4b8": "insurance"
+  },
   "951": {
    "s1b1": "rental"
   },
@@ -166,6 +245,9 @@
   },
   "1035": {
    "s1b1": "insurance"
+  },
+  "1155": {
+   "s2b1": "apt_fee"
   },
   "1180": {
    "s2b2": "apt_fee"
@@ -209,7 +291,11 @@
    "s2b1": "installment"
   },
   "1884": {
-   "s1b1": "insurance"
+   "s1b1": "insurance",
+   "s2b1": "insurance"
+  },
+  "1912": {
+   "s1b1": "bank_account"
   },
   "1980": {
    "s1b1": "rental"
@@ -233,6 +319,12 @@
   "2132": {
    "s2b1": "insurance"
   },
+  "2179": {
+   "s1b8": "insurance"
+  },
+  "2185": {
+   "s2b1": "insurance"
+  },
   "2198": {
    "s1b1": "insurance"
   },
@@ -247,6 +339,9 @@
   "2234": {
    "s2b3": "apt_fee"
   },
+  "2238": {
+   "s5b1_1": "apt_fee"
+  },
   "2251": {
    "s1b1": "installment"
   },
@@ -255,7 +350,9 @@
    "s2b2": "paid_membership"
   },
   "2286": {
-   "s2b9": "paid_membership"
+   "s2b9": "paid_membership",
+   "s2b10_1": "apt_fee",
+   "s3b5_1": "apt_fee"
   },
   "2289": {
    "s1b1": "paid_membership",
@@ -272,12 +369,16 @@
   "2294": {
    "s2b4": "insurance"
   },
+  "2300": {
+   "s2b2": "bank_account"
+  },
   "2302": {
    "s1b1": "paid_membership",
    "s1b2": "paid_membership"
   },
   "2324": {
-   "s1b1": "insurance"
+   "s1b1": "insurance",
+   "s3b2_3": "rental"
   },
   "2330": {
    "s1b1": "apt_fee",
@@ -285,6 +386,13 @@
   },
   "2349": {
    "s3b1_2": "apt_fee"
+  },
+  "2358": {
+   "s2b1": "apt_fee"
+  },
+  "2365": {
+   "s2b1": "rental",
+   "s3b1": "insurance"
   },
   "2366": {
    "s2b1": "insurance",
@@ -295,6 +403,9 @@
   },
   "2407": {
    "s3b1": "insurance"
+  },
+  "2420": {
+   "s2b1_3": "rental"
   },
   "2421": {
    "s2b4": "rental"
@@ -315,10 +426,14 @@
    "s1b1": "installment"
   },
   "2534": {
-   "s2b1": "insurance"
+   "s2b1": "insurance",
+   "s5b2": "rental"
   },
   "2570": {
    "s5b2": "paid_membership"
+  },
+  "2571": {
+   "s2b1_3": "insurance"
   },
   "2631": {
    "s2b1": "insurance"
@@ -326,6 +441,10 @@
   "2635": {
    "s1b2": "rental",
    "s1b3": "insurance"
+  },
+  "2645": {
+   "s1b1": "apt_fee",
+   "s1b3_1": "insurance"
   },
   "2649": {
    "s1b5": "insurance"
@@ -337,6 +456,9 @@
   "2661": {
    "s3b1": "insurance"
   },
+  "2685": {
+   "s6b1": "insurance"
+  },
   "2701": {
    "s2b1": "installment",
    "s3b3": "rental",
@@ -345,8 +467,21 @@
   "2706": {
    "s2b5": "insurance"
   },
+  "2723": {
+   "s2b4_2": "apt_fee",
+   "s2b4_3": "apt_fee"
+  },
+  "2744": {
+   "s5b1": "insurance"
+  },
+  "2746": {
+   "s2b1": "apt_fee"
+  },
   "2789": {
    "s5b1": "insurance"
+  },
+  "2811": {
+   "s1b1_2": "rental"
   },
   "2822": {
    "s1b1": "rental",
@@ -357,17 +492,37 @@
   },
   "2875": {
    "s2b1": "insurance",
-   "s3b1_1": "insurance",
+   "s3b1_1": "apt_fee",
    "s3b1_2": "insurance"
+  },
+  "2876": {
+   "s6b1": "apt_fee"
+  },
+  "2879": {
+   "s2b2": "apt_fee"
+  },
+  "2880": {
+   "s2b2": "apt_fee"
+  },
+  "2885": {
+   "s3b1": "apt_fee"
   },
   "2896": {
    "s1b1": "insurance"
   },
   "2904": {
+   "s1b2": "apt_fee",
    "s1b8": "insurance"
+  },
+  "2925": {
+   "s4b1_1": "apt_fee"
   },
   "2927": {
    "s3b1": "apt_fee"
+  },
+  "2930": {
+   "s2b1_1": "apt_fee",
+   "s2b1_3": "apt_fee"
   },
   "2965": {
    "s2b1": "insurance"
@@ -382,10 +537,17 @@
    "s8b1": "insurance"
   },
   "2988": {
-   "s2b1": "paid_membership"
+   "s2b1": "paid_membership",
+   "s6b1_1": "apt_fee"
   },
   "2993": {
    "s1b6": "rental"
+  },
+  "2994": {
+   "s2b5": "insurance"
+  },
+  "3000": {
+   "s2b5": "rental"
   },
   "3018": {
    "s1b6": "apt_fee"
@@ -398,6 +560,9 @@
   },
   "3051": {
    "s5b2": "paid_membership"
+  },
+  "3052": {
+   "s2b5": "insurance"
   },
   "3085": {
    "s1b2": "installment"

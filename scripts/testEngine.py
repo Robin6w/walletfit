@@ -317,5 +317,18 @@ check("고른 곳 중 비중표에 없는 곳이 있으면 똑같이 나눈 값 
 park = [b for rec in R.values() for b in rec["benefits"] if "에버랜드" in (b["scope"].get("merchants") or []) and b["scope"].get("app_category")]
 check(f"놀이공원(에버랜드) 혜택은 카테고리를 채우지 않음({len(park)}개 채워짐)", not park)
 
+# 15. 2026-11-05 4묶음: 계약 대상이 가맹점·제목에만 있던 혜택(보험사·렌탈사·관리비·은행 계좌)도 계약형으로
+cond15 = json.loads(read("data/catalog/benefit-conditions.json"))["benefits"]
+sp15 = {"bills": 100000, "etc": 400000}
+h15 = lambda sid, bid, ct=None: calc.evaluate(R[sid], sp15, E._A(None, None, ct))["by_benefit"].get(bid, 0)  # noqa: E731
+check("계약형: 2365 '손해/생명보험사 자동이체'는 보험이 있다고 안 하면 0, 있으면 계산",
+      cond15["2365"].get("s3b1") == "insurance" and h15(2365, "s3b1") == 0 and h15(2365, "s3b1", ["insurance"]) > 0)
+check("계약형: 렌탈사 이름만 적힌 718 '생활요금 7%' 렌탈 조각과 949 '보험 이용액 1.2%'도 계약형",
+      cond15["718"].get("s4b1_7") == "rental" and cond15["949"].get("s4b8") == "insurance")
+check("계약형 오탐 아님: 2986 주유 10%·3097 OTT 30%·410 생활필수 0.5%·4대 사회보험·전기가스 섞인 공과금은 기본 계산",
+      "s8b2" not in cond15.get("2986", {}) and not {"s3b1", "s3b2"} & set(cond15.get("3097", {}))
+      and not any(k.startswith("s2b1") for k in cond15.get("410", {})) and "s2b10_3" not in cond15.get("2286", {})
+      and "s1b1" not in cond15.get("2533", {}) and "s6b6_2" not in cond15.get("546", {}))
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

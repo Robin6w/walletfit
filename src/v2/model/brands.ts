@@ -111,6 +111,9 @@ export function picksToBrandShare(spending: Record<string, number>, picks: Brand
     const each = PICKED_TOTAL_SHARE / brands.length;
     const m: Record<string, number> = {};
     for (const b of brands) for (const a of aliasesOf(b)) m[a] = each;
+    // 2026-11-05: 고른 가게라는 표시. 엔진(calc._user_brand_map)이 가맹점 비중표 비율로 70%를 다시 나눈다
+    // (스타벅스+작은 카페를 고르면 둘 다 35%가 아니라 스타벅스 몫이 더 큼). 명세서 금액 비중에는 붙이지 않는다
+    if (brands.length > 1) m._picks = 1;
     out[cat] = m;
   }
   return out;

@@ -8,7 +8,7 @@
    - 카드 수 막대가 장수에 따라 줄지 않는지
 3. 카드 바꿔보기(explain)와 브랜드 목록(brands)이 동작하는지
 """
-import json, os, sys, time
+import json, os, re, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src/domain/engine/py"))
@@ -289,6 +289,33 @@ E._SEED.clear()
 r13g = json.loads(E.recommend_json(json.dumps({"ids": [2], "spending": sp13g, "margin": 0, "maxCards": 1, "withAlt": False})))
 d13 = calc.evaluate(R[2], {k: v for k, v in r13g["result"]["cards"][0]["alloc"].items() if v > 0}, A13)["total"] - r13g["result"]["cards"][0]["feeMonthly"]
 check("리터당: MILP로 고른 값 = calc", abs(d13 - r13g["result"]["net"]) < 1)
+
+# 14. 2026-11-05 3묶음: 같은 구간 값 여럿·쿠팡 기준 비중·고른 가게 비율·카테고리 AI 분류
+PAYW = re.compile(r"pay|페이|결제|사이렌오더|실물카드|바로주유", re.I)
+multi = []
+for s, rec in R.items():
+    for b in rec["benefits"]:
+        g = {}
+        for v in b["reward"]["value_by_tier"]:
+            g.setdefault(v.get("tier"), []).append(v)
+        for vs in g.values():
+            if len({v["value"] for v in vs}) > 1:
+                multi.append((s, b["id"], [v.get("when", "") for v in vs]))
+check(f"같은 구간 값 여럿은 결제 수단별만 남음({len(multi)}개)", all(any(PAYW.search(w) for w in ws) for _, _, ws in multi),
+      [m for m in multi if not any(PAYW.search(w) for w in m[2])][:3])
+ms14 = E.STATE["A"]["merchant_share"]["categories"]["onlineShopping"]["shares"]
+check(f"온라인쇼핑 비중을 쿠팡 0.3588 기준으로(네이버 {ms14.get('네이버쇼핑')})", abs(ms14.get("네이버쇼핑", 0) - 0.3236) < 1e-4)
+picks = {"스타벅스": 0.35, "메가MGC커피": 0.35, "메가커피": 0.35, "_picks": 1}
+A14 = E._A({"cafe": dict(picks)})
+m14 = calc._user_brand_map(A14, "cafe")
+check(f"고른 가게 70%를 비중표 비율로(스타벅스 {m14['스타벅스']:.3f} > 메가 {m14['메가커피']:.3f}, 합 0.7)",
+      m14["스타벅스"] > m14["메가커피"] and abs(m14["스타벅스"] + m14["메가mgc커피"] - 0.7) < 1e-9 and m14["메가커피"] == m14["메가mgc커피"])
+m14b = calc._user_brand_map(E._A({"cafe": {k: v for k, v in picks.items() if k != "_picks"}}), "cafe")
+check("명세서 금액 비중(_picks 없음)은 그대로", m14b["스타벅스"] == 0.35)
+m14c = calc._user_brand_map(E._A({"cafe": {"스타벅스": 0.35, "동네카페가나다": 0.35, "_picks": 1}}), "cafe")
+check("고른 곳 중 비중표에 없는 곳이 있으면 똑같이 나눈 값 그대로", m14c["스타벅스"] == 0.35 and m14c["동네카페가나다"] == 0.35)
+park = [b for rec in R.values() for b in rec["benefits"] if "에버랜드" in (b["scope"].get("merchants") or []) and b["scope"].get("app_category")]
+check(f"놀이공원(에버랜드) 혜택은 카테고리를 채우지 않음({len(park)}개 채워짐)", not park)
 
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

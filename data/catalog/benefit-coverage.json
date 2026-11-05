@@ -2980,6 +2980,38 @@
     ]
    }
   },
+  "2363": {
+   "s4b1_1": {
+    "coverage": 0.1125,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b1_2": {
+    "coverage": 0.1125,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b1_3": {
+    "coverage": 0.02,
+    "found": [
+     "cc"
+    ]
+   },
+   "s4b1_4": {
+    "coverage": 0.1125,
+    "found": [
+     "hair"
+    ]
+   },
+   "s4b1_7": {
+    "coverage": 0.1125,
+    "found": [
+     "hair"
+    ]
+   }
+  },
   "2366": {
    "s2b2": {
     "coverage": 0.23,
@@ -3533,6 +3565,15 @@
     "coverage": 0.03,
     "found": [
      "optician"
+    ]
+   }
+  },
+  "2605": {
+   "s4b2": {
+    "coverage": 0.2,
+    "found": [
+     "bakery",
+     "ice"
     ]
    }
   },

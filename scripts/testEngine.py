@@ -330,5 +330,19 @@ check("계약형 오탐 아님: 2986 주유 10%·3097 OTT 30%·410 생활필수 
       and not any(k.startswith("s2b1") for k in cond15.get("410", {})) and "s2b10_3" not in cond15.get("2286", {})
       and "s1b1" not in cond15.get("2533", {}) and "s6b6_2" not in cond15.get("546", {}))
 
+# 16. 2026-11-05 묶음4: 실적 기준을 모름이던 카드(3개월·분기 기준)를 월 기준 구간으로
+p550 = R[550]["performance"]
+lo550 = calc.evaluate(R[550], {"cafe": 50000, "dining": 30000, "etc": 10000}, A13)["total"]
+hi550 = calc.evaluate(R[550], {"cafe": 50000, "dining": 30000, "etc": 70000}, A13)["total"]
+check(f"3개월 실적: 550 '최근 3개월 30만원'은 월 {p550['tiers'][0]['min_won']:,}원 구간(월 9만원 {lo550:,.0f}원, 15만원 {hi550:,.0f}원)",
+      p550["tiers"][0]["min_won"] == 100000 and lo550 == 0 and hi550 > 0)
+q2128 = lambda m: calc.evaluate(R[2128], {"etc": m}, A13)["by_benefit"].get("s1b2", 0)
+check(f"분기 실적: 2128 보너스 마일리지는 분기 100만원(월 34만원 {q2128(340000):,.0f}원)부터, 월 30만원이면 0",
+      q2128(300000) == 0 and q2128(340000) > 0)
+big = {"medical": 200000, "onlineShopping": 300000, "cafe": 100000, "dining": 200000, "mobile": 60000, "etc": 300000}
+check("모르는 채로 남은 카드: 1278 국민행복카드는 글·카드고릴라 금액이 없어 계산하지 않음(0원)", calc.evaluate(R[1278], big, A13)["total"] == 0)
+r644 = calc.evaluate(R[644], {"cafe": 100000, "convenience": 100000, "transport": 100000, "etc": 300000}, A13)
+check(f"구간표 없는 카드: 644는 신규 발급 통합 한도 5천원까지만({r644['total']:,.0f}원)", 0 < r644["total"] <= 5000 + 1e-6)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

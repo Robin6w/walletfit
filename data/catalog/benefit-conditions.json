@@ -1,6 +1,6 @@
 {
  "version": "v2",
- "generatedAt": "2026-11-04",
+ "generatedAt": "2026-11-05",
  "note": "benefits: 계약이 있어야 받는 혜택(엔진은 기본으로 빼고 요청의 contracts에 키가 있으면 켠다). choice_benefits: 고르는 질문의 답이 맞아야 받는 혜택(답이 없으면 그 답의 share만큼, 요청의 choices로 답하면 맞을 때만). 1_혜택정보구조화/조건분류",
  "asks": {
   "insurance": "보험료를 이 카드로 내고 있나요(자동차보험 포함)?",
@@ -81,10 +81,6 @@
    "s1b2": "bank_account"
   },
   "410": {
-   "s2b1_1": "insurance",
-   "s2b1_2": "insurance",
-   "s2b1_3": "insurance",
-   "s2b1_4": "insurance",
    "s2b3": "insurance"
   },
   "420": {
@@ -254,9 +250,6 @@
   "2251": {
    "s1b1": "installment"
   },
-  "2277": {
-   "s1b1": "paid_membership"
-  },
   "2283": {
    "s1b1": "rental",
    "s2b2": "paid_membership"
@@ -293,21 +286,12 @@
   "2349": {
    "s3b1_2": "apt_fee"
   },
-  "2358": {
-   "s3b1": "paid_membership"
-  },
   "2366": {
    "s2b1": "insurance",
    "s2b2": "insurance"
   },
-  "2376": {
-   "s3b1": "paid_membership"
-  },
   "2378": {
    "s1b3_2": "rental"
-  },
-  "2393": {
-   "s3b1": "paid_membership"
   },
   "2407": {
    "s3b1": "insurance"
@@ -335,9 +319,6 @@
   },
   "2570": {
    "s5b2": "paid_membership"
-  },
-  "2626": {
-   "s4b1": "paid_membership"
   },
   "2631": {
    "s2b1": "insurance"
@@ -388,9 +369,6 @@
   "2927": {
    "s3b1": "apt_fee"
   },
-  "2964": {
-   "s3b2": "paid_membership"
-  },
   "2965": {
    "s2b1": "insurance"
   },
@@ -401,15 +379,13 @@
    "s2b3": "insurance"
   },
   "2986": {
-   "s8b1": "insurance",
-   "s8b2": "insurance"
+   "s8b1": "insurance"
   },
   "2988": {
    "s2b1": "paid_membership"
   },
   "2993": {
-   "s1b6": "rental",
-   "s1b9": "paid_membership"
+   "s1b6": "rental"
   },
   "3018": {
    "s1b6": "apt_fee"
@@ -431,10 +407,6 @@
   },
   "3093": {
    "s1b1": "rental"
-  },
-  "3097": {
-   "s3b1": "paid_membership",
-   "s3b2": "paid_membership"
   }
  },
  "choices": {
@@ -593,6 +565,9 @@
   },
   "3058": {
    "s2b3": "telecom:skt"
+  },
+  "3094": {
+   "s3b1": "telecom:mvno"
   }
  }
 }

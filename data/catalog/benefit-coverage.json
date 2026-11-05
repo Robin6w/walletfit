@@ -1,6 +1,6 @@
 {
  "version": "v1",
- "generatedAt": "2026-11-04",
+ "generatedAt": "2026-11-05",
  "threshold": 0.5,
  "note": "좁은 업종 혜택이 카테고리 지출 중 덮는 비중(하위 업종 비중은 가정값). 엔진이 대상 지출에 곱한다. 1_혜택정보구조화/C1",
  "benefits": {
@@ -22,7 +22,7 @@
   },
   "26": {
    "s2b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -36,7 +36,7 @@
     ]
    },
    "s1b9_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -66,7 +66,7 @@
   },
   "62": {
    "s5b3_2": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "cc",
      "kinder",
@@ -74,7 +74,7 @@
     ]
    },
    "s5b3_3": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "cc",
      "kinder",
@@ -126,14 +126,14 @@
   },
   "101": {
    "s7b1_1": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
     ]
    },
    "s7b1_2": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
@@ -212,7 +212,7 @@
   },
   "121": {
    "s8b13": {
-    "coverage": 0.4,
+    "coverage": 0.22,
     "found": [
      "__lodging",
      "rental"
@@ -221,7 +221,7 @@
   },
   "129": {
    "s2b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -229,21 +229,21 @@
   },
   "130": {
    "s2b2_4": {
-    "coverage": 0.48,
+    "coverage": 0.42,
     "found": [
      "apt",
      "citygas"
     ]
    },
    "s2b4_2": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
     ]
    },
    "s2b4_3": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
@@ -252,28 +252,28 @@
   },
   "131": {
    "s2b3_4": {
-    "coverage": 0.48,
+    "coverage": 0.21,
     "found": [
      "apt",
      "citygas"
     ]
    },
    "s2b3_5": {
-    "coverage": 0.48,
+    "coverage": 0.21,
     "found": [
      "apt",
      "citygas"
     ]
    },
    "s2b4_2": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
     ]
    },
    "s2b4_3": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
@@ -325,6 +325,13 @@
    }
   },
   "144": {
+   "s2b1_1": {
+    "coverage": 0.32,
+    "found": [
+     "__lodging",
+     "agency"
+    ]
+   },
    "s3b1_1": {
     "coverage": 0.08,
     "found": [
@@ -357,13 +364,13 @@
   },
   "146": {
    "s3b6": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
    },
    "s3b7_2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -377,7 +384,7 @@
     ]
    },
    "s2b2_5": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -418,7 +425,7 @@
   },
   "164": {
    "s2b1_2": {
-    "coverage": 0.38,
+    "coverage": 0.1267,
     "found": [
      "airline",
      "ferry",
@@ -426,7 +433,7 @@
     ]
    },
    "s2b1_4": {
-    "coverage": 0.38,
+    "coverage": 0.1267,
     "found": [
      "airline",
      "ferry",
@@ -434,7 +441,7 @@
     ]
    },
    "s2b1_5": {
-    "coverage": 0.38,
+    "coverage": 0.1267,
     "found": [
      "airline",
      "ferry",
@@ -478,7 +485,7 @@
   },
   "185": {
    "s1b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -492,7 +499,7 @@
     ]
    },
    "s2b1_3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -516,7 +523,7 @@
   },
   "231": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -524,7 +531,7 @@
   },
   "232": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -532,7 +539,7 @@
   },
   "234": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -554,7 +561,7 @@
   },
   "248": {
    "s1b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -600,7 +607,7 @@
     ]
    },
    "s4b2": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -621,7 +628,7 @@
     ]
    },
    "s4b2": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -629,7 +636,7 @@
   },
   "273": {
    "s3b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -679,7 +686,7 @@
   },
   "346": {
    "s4b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -757,7 +764,7 @@
     ]
    },
    "s1b4_3": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
@@ -770,7 +777,7 @@
     ]
    },
    "s1b4_7": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
@@ -785,7 +792,7 @@
     ]
    },
    "s2b4_3": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
@@ -798,7 +805,7 @@
     ]
    },
    "s2b4_7": {
-    "coverage": 0.42,
+    "coverage": 0.21,
     "found": [
      "airline",
      "duty"
@@ -828,8 +835,14 @@
      "duty"
     ]
    },
+   "s4b2_1": {
+    "coverage": 0.11,
+    "found": [
+     "fitness"
+    ]
+   },
    "s4b2_2": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "fitness"
     ]
@@ -843,8 +856,14 @@
      "duty"
     ]
    },
+   "s4b2_1": {
+    "coverage": 0.11,
+    "found": [
+     "fitness"
+    ]
+   },
    "s4b2_2": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "fitness"
     ]
@@ -964,7 +983,7 @@
   },
   "489": {
    "s1b3": {
-    "coverage": 0.42,
+    "coverage": 0.24,
     "found": [
      "__lodging",
      "duty",
@@ -972,7 +991,7 @@
     ]
    },
    "s1b4": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging",
      "lux_hotel"
@@ -996,7 +1015,7 @@
   },
   "503": {
    "s4b1_7": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -1004,7 +1023,7 @@
   },
   "504": {
    "s4b1_5": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -1043,14 +1062,14 @@
     ]
    },
    "s9b1_1": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "fitness",
      "yoga"
     ]
    },
    "s9b1_2": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "fitness",
      "yoga"
@@ -1070,15 +1089,22 @@
    }
   },
   "538": {
+   "s2b1_1": {
+    "coverage": 0.1,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
    "s2b1_2": {
-    "coverage": 0.3,
+    "coverage": 0.1,
     "found": [
      "fitness",
      "yoga"
     ]
    },
    "s2b1_3": {
-    "coverage": 0.3,
+    "coverage": 0.1,
     "found": [
      "fitness",
      "yoga"
@@ -1097,7 +1123,7 @@
     ]
    },
    "s4b3": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1105,7 +1131,7 @@
   },
   "543": {
    "s1b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1113,7 +1139,7 @@
   },
   "544": {
    "s1b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1121,7 +1147,7 @@
   },
   "545": {
    "s1b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1129,7 +1155,7 @@
   },
   "546": {
    "s6b6_3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -1184,14 +1210,21 @@
   },
   "580": {
    "s5b1_1": {
-    "coverage": 0.3,
+    "coverage": 0.1,
     "found": [
      "fitness",
      "yoga"
     ]
    },
    "s5b1_3": {
-    "coverage": 0.3,
+    "coverage": 0.1,
+    "found": [
+     "fitness",
+     "yoga"
+    ]
+   },
+   "s5b1_4": {
+    "coverage": 0.1,
     "found": [
      "fitness",
      "yoga"
@@ -1233,7 +1266,7 @@
   },
   "591": {
    "s4b1_3": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1249,7 +1282,7 @@
   },
   "617": {
    "s1b1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -1263,10 +1296,9 @@
   },
   "628": {
    "s1b3": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -1291,7 +1323,7 @@
     ]
    },
    "s2b15_2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1320,7 +1352,7 @@
     ]
    },
    "s2b18_2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1335,7 +1367,7 @@
     ]
    },
    "s3b1_3": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -1430,7 +1462,7 @@
     ]
    },
    "s4b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1450,7 +1482,7 @@
     ]
    },
    "s4b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1472,10 +1504,9 @@
   },
   "696": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -1542,21 +1573,21 @@
     ]
    },
    "s2b1_3": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
     ]
    },
    "s2b1_4": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
     ]
    },
    "s2b1_8": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -1594,21 +1625,21 @@
   },
   "751": {
    "s3b1_2": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "cc",
      "studymat"
     ]
    },
    "s3b1_3": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "cc",
      "studymat"
     ]
    },
    "s4b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1616,14 +1647,14 @@
   },
   "752": {
    "s3b1_2": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "cc",
      "studymat"
     ]
    },
    "s3b1_3": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "cc",
      "studymat"
@@ -1654,7 +1685,7 @@
   },
   "760": {
    "s3b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -1674,10 +1705,9 @@
     ]
    },
    "s3b2": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -1699,10 +1729,9 @@
   },
   "768": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -1721,6 +1750,14 @@
     ]
    }
   },
+  "773": {
+   "s7b4": {
+    "coverage": 0.17,
+    "found": [
+     "__lodging"
+    ]
+   }
+  },
   "778": {
    "s7b1_3": {
     "coverage": 0.02,
@@ -1731,20 +1768,20 @@
   },
   "779": {
    "s2b1_3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
    },
    "s2b1_5": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
     ]
    },
    "s2b1_6": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
@@ -1779,7 +1816,7 @@
     ]
    },
    "s2b1_1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -1825,7 +1862,7 @@
   },
   "889": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1841,7 +1878,7 @@
   },
   "912": {
    "s2b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1855,7 +1892,7 @@
     ]
    },
    "s2b1_4": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -1884,7 +1921,7 @@
     ]
    },
    "s5b5_1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -1904,7 +1941,7 @@
     ]
    },
    "s5b5_1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -1928,10 +1965,9 @@
   },
   "1010": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -1952,7 +1988,7 @@
   },
   "1155": {
    "s2b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -1964,13 +2000,6 @@
     "found": [
      "cosmetics"
     ]
-   },
-   "s3b1": {
-    "coverage": 0.4,
-    "found": [
-     "hair",
-     "skin"
-    ]
    }
   },
   "1171": {
@@ -1981,21 +2010,21 @@
     ]
    },
    "s4b1_1": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
     ]
    },
    "s4b1_2": {
-    "coverage": 0.2,
+    "coverage": 0.075,
     "found": [
      "family",
      "fastfood"
     ]
    },
    "s5b1_3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2003,7 +2032,7 @@
   },
   "1180": {
    "s2b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2014,6 +2043,13 @@
     "coverage": 0.22,
     "found": [
      "fitness"
+    ]
+   },
+   "s2b3": {
+    "coverage": 0.32,
+    "found": [
+     "__lodging",
+     "agency"
     ]
    }
   },
@@ -2189,19 +2225,17 @@
     ]
    },
    "s5b5": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
   "1859": {
    "s4b5": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -2237,31 +2271,31 @@
   },
   "1909": {
    "s2b4_1": {
-    "coverage": 0.35,
+    "coverage": 0.034,
     "found": [
      "__lodging"
     ]
    },
    "s2b4_2": {
-    "coverage": 0.35,
+    "coverage": 0.034,
     "found": [
      "__lodging"
     ]
    },
    "s2b4_3": {
-    "coverage": 0.35,
+    "coverage": 0.034,
     "found": [
      "__lodging"
     ]
    },
    "s2b4_4": {
-    "coverage": 0.35,
+    "coverage": 0.034,
     "found": [
      "__lodging"
     ]
    },
    "s2b4_5": {
-    "coverage": 0.35,
+    "coverage": 0.034,
     "found": [
      "__lodging"
     ]
@@ -2300,8 +2334,14 @@
      "ssm"
     ]
    },
+   "s7b1_1": {
+    "coverage": 0.11,
+    "found": [
+     "fitness"
+    ]
+   },
    "s7b1_2": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "fitness"
     ]
@@ -2313,7 +2353,7 @@
     ]
    },
    "s10b1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -2329,7 +2369,7 @@
   },
   "2058": {
    "s3b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2337,7 +2377,7 @@
   },
   "2075": {
    "s5b1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -2349,21 +2389,21 @@
     ]
    },
    "s8b1_1": {
-    "coverage": 0.05,
+    "coverage": 0.0167,
     "found": [
      "rental",
      "x_rail"
     ]
    },
    "s8b1_2": {
-    "coverage": 0.05,
+    "coverage": 0.0167,
     "found": [
      "rental",
      "x_rail"
     ]
    },
    "s8b1_3": {
-    "coverage": 0.05,
+    "coverage": 0.0167,
     "found": [
      "rental",
      "x_rail"
@@ -2372,7 +2412,7 @@
   },
   "2076": {
    "s5b1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -2401,13 +2441,13 @@
     ]
    },
    "s5b1_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
    },
    "s5b1_3": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -2429,19 +2469,19 @@
   },
   "2132": {
    "s2b2_1": {
-    "coverage": 0.25,
+    "coverage": 0.0833,
     "found": [
      "repair"
     ]
    },
    "s2b2_2": {
-    "coverage": 0.25,
+    "coverage": 0.0833,
     "found": [
      "repair"
     ]
    },
    "s2b2_3": {
-    "coverage": 0.25,
+    "coverage": 0.0833,
     "found": [
      "repair"
     ]
@@ -2463,14 +2503,14 @@
     ]
    },
    "s2b2_1": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "repair",
      "wash"
     ]
    },
    "s2b2_2": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "repair",
      "wash"
@@ -2531,7 +2571,7 @@
     ]
    },
    "s1b7_4": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2581,7 +2621,7 @@
   },
   "2210": {
    "s3b2": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2613,7 +2653,7 @@
   },
   "2234": {
    "s2b3": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2621,7 +2661,7 @@
   },
   "2238": {
    "s5b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2647,7 +2687,7 @@
   },
   "2264": {
    "s2b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2663,7 +2703,7 @@
   },
   "2277": {
    "s2b3": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -2675,7 +2715,7 @@
     ]
    },
    "s2b5": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2699,7 +2739,7 @@
   },
   "2282": {
    "s2b4_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -2715,10 +2755,9 @@
   },
   "2284": {
    "s3b2": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -2756,7 +2795,7 @@
   },
   "2293": {
    "s2b2_1": {
-    "coverage": 0.33,
+    "coverage": 0.165,
     "found": [
      "citygas",
      "elec",
@@ -2764,7 +2803,7 @@
     ]
    },
    "s2b2_2": {
-    "coverage": 0.33,
+    "coverage": 0.165,
     "found": [
      "citygas",
      "elec",
@@ -2783,10 +2822,9 @@
   },
   "2300": {
    "s5b2": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s6b2_1": {
@@ -2798,7 +2836,7 @@
   },
   "2302": {
    "s2b3_4": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -2810,7 +2848,7 @@
     ]
    },
    "s2b3_6": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2824,7 +2862,7 @@
     ]
    },
    "s2b1_4": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -2841,7 +2879,7 @@
   },
   "2330": {
    "s1b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2878,25 +2916,25 @@
   },
   "2336": {
    "s1b1_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
    },
    "s1b1_4": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
    },
    "s6b1_1": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "cosmetics"
     ]
    },
    "s6b1_2": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "cosmetics"
     ]
@@ -2904,14 +2942,14 @@
   },
   "2339": {
    "s1b2_2": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
     ]
    },
    "s1b2_3": {
-    "coverage": 0.42,
+    "coverage": 0.12,
     "found": [
      "__lodging",
      "duty"
@@ -2920,7 +2958,7 @@
   },
   "2349": {
    "s3b1_2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2928,7 +2966,7 @@
   },
   "2358": {
    "s2b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -2965,14 +3003,14 @@
     ]
    },
    "s1b6_2": {
-    "coverage": 0.2,
+    "coverage": 0.1,
     "found": [
      "bakery",
      "ice"
     ]
    },
    "s1b6_3": {
-    "coverage": 0.2,
+    "coverage": 0.1,
     "found": [
      "bakery",
      "ice"
@@ -2987,7 +3025,7 @@
     ]
    },
    "s3b4": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3001,7 +3039,7 @@
   },
   "2406": {
    "s5b1_1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -3058,7 +3096,7 @@
     ]
    },
    "s3b1_6": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3066,13 +3104,13 @@
   },
   "2421": {
    "s2b3_1": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "internet"
     ]
    },
    "s2b3_2": {
-    "coverage": 0.1,
+    "coverage": 0.05,
     "found": [
      "internet"
     ]
@@ -3080,16 +3118,15 @@
   },
   "2435": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
   "2441": {
    "s7b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3110,7 +3147,7 @@
     ]
    },
    "s1b9_5": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3128,9 +3165,15 @@
     ]
    },
    "s2b5_2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
+    ]
+   },
+   "s2b8": {
+    "coverage": 0.06,
+    "found": [
+     "oriental"
     ]
    }
   },
@@ -3153,7 +3196,7 @@
   },
   "2460": {
    "s2b9": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -3161,7 +3204,7 @@
   },
   "2461": {
    "s2b5": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -3169,7 +3212,7 @@
   },
   "2463": {
    "s3b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3197,14 +3240,6 @@
     ]
    }
   },
-  "2475": {
-   "s1b2_2": {
-    "coverage": 0.06,
-    "found": [
-     "lpg"
-    ]
-   }
-  },
   "2476": {
    "s4b1": {
     "coverage": 0.08,
@@ -3215,10 +3250,9 @@
   },
   "2480": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s2b1": {
@@ -3243,6 +3277,17 @@
     ]
    }
   },
+  "2509": {
+   "s2b1_1": {
+    "coverage": 0.39,
+    "found": [
+     "__lodging",
+     "agency",
+     "duty",
+     "lux_hotel"
+    ]
+   }
+  },
   "2530": {
    "s3b1": {
     "coverage": 0.2,
@@ -3254,10 +3299,9 @@
   },
   "2533": {
    "s2b5": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -3297,19 +3341,19 @@
   },
   "2544": {
    "s2b2_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
    },
    "s5b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
    },
    "s6b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3317,19 +3361,19 @@
   },
   "2545": {
    "s2b2_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
    },
    "s5b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
    },
    "s6b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3345,7 +3389,7 @@
   },
   "2550": {
    "s12b1": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3353,7 +3397,7 @@
   },
   "2554": {
    "s3b4_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -3367,7 +3411,7 @@
     ]
    },
    "s1b7": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3381,7 +3425,7 @@
     ]
    },
    "s1b7": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3389,19 +3433,19 @@
   },
   "2559": {
    "s1b1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_toll"
     ]
    },
    "s1b2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_toll"
     ]
    },
    "s2b1_1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -3409,7 +3453,7 @@
   },
   "2560": {
    "s1b1_3": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -3424,7 +3468,7 @@
   },
   "2561": {
    "s1b1_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -3446,7 +3490,7 @@
   },
   "2588": {
    "s4b2": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3454,7 +3498,7 @@
   },
   "2603": {
    "s2b1_1": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -3462,7 +3506,7 @@
     ]
    },
    "s2b1_2": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -3470,7 +3514,7 @@
     ]
    },
    "s2b1_3": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -3502,10 +3546,9 @@
   },
   "2610": {
    "s2b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s5b1": {
@@ -3516,12 +3559,6 @@
    }
   },
   "2616": {
-   "s1b1": {
-    "coverage": 0.06,
-    "found": [
-     "lpg"
-    ]
-   },
    "s2b3": {
     "coverage": 0.4,
     "found": [
@@ -3531,10 +3568,9 @@
   },
   "2617": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s3b1": {
@@ -3554,10 +3590,9 @@
   },
   "2619": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s1b4": {
@@ -3569,10 +3604,9 @@
   },
   "2622": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s4b1": {
@@ -3584,10 +3618,9 @@
   },
   "2628": {
    "s3b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s5b1": {
@@ -3597,7 +3630,7 @@
     ]
    },
    "s10b1": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -3621,9 +3654,9 @@
   },
   "2641": {
    "s1b1": {
-    "coverage": 0.06,
+    "coverage": 0.04,
     "found": [
-     "lpg"
+     "ev"
     ]
    },
    "s3b1": {
@@ -3635,7 +3668,7 @@
   },
   "2645": {
    "s1b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -3654,7 +3687,7 @@
     ]
    },
    "s1b4_1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -3685,10 +3718,9 @@
   },
   "2661": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -3726,7 +3758,7 @@
     ]
    },
    "s2b3_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -3763,10 +3795,9 @@
   },
   "2703": {
    "s6b2": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
@@ -3789,7 +3820,7 @@
     ]
    },
    "s2b6_2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3854,14 +3885,14 @@
     ]
    },
    "s2b1_1": {
-    "coverage": 0.12,
+    "coverage": 0.06,
     "found": [
      "parking",
      "wash"
     ]
    },
    "s2b1_2": {
-    "coverage": 0.12,
+    "coverage": 0.06,
     "found": [
      "parking",
      "wash"
@@ -3876,7 +3907,7 @@
   },
   "2746": {
    "s2b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -3884,14 +3915,14 @@
   },
   "2758": {
    "s2b1_3": {
-    "coverage": 0.05,
+    "coverage": 0.025,
     "found": [
      "rental",
      "x_rail"
     ]
    },
    "s2b1_4": {
-    "coverage": 0.05,
+    "coverage": 0.025,
     "found": [
      "rental",
      "x_rail"
@@ -3920,7 +3951,7 @@
     ]
    },
    "s2b1_4": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3941,7 +3972,7 @@
     ]
    },
    "s2b1_4": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -3971,7 +4002,7 @@
     ]
    },
    "s3b2": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -3984,7 +4015,7 @@
     ]
    },
    "s3b5": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -4004,26 +4035,26 @@
   },
   "2781": {
    "s3b2": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
    },
    "s3b5": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
    },
    "s4b1_1": {
-    "coverage": 0.12,
+    "coverage": 0.06,
     "found": [
      "parking",
      "wash"
     ]
    },
    "s4b1_2": {
-    "coverage": 0.12,
+    "coverage": 0.06,
     "found": [
      "parking",
      "wash"
@@ -4057,10 +4088,9 @@
   },
   "2789": {
    "s1b1": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    },
    "s2b1": {
@@ -4084,12 +4114,6 @@
    }
   },
   "2795": {
-   "s2b1": {
-    "coverage": 0.06,
-    "found": [
-     "lpg"
-    ]
-   },
    "s2b2_4": {
     "coverage": 0.2,
     "found": [
@@ -4130,7 +4154,7 @@
     ]
    },
    "s4b3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -4150,7 +4174,7 @@
   },
   "2836": {
    "s4b3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -4206,7 +4230,7 @@
   },
   "2860": {
    "s1b1_1": {
-    "coverage": 0.2,
+    "coverage": 0.1,
     "found": [
      "__util",
      "citygas",
@@ -4214,7 +4238,7 @@
     ]
    },
    "s1b1_2": {
-    "coverage": 0.2,
+    "coverage": 0.1,
     "found": [
      "__util",
      "citygas",
@@ -4230,7 +4254,7 @@
     ]
    },
    "s2b2": {
-    "coverage": 0.4,
+    "coverage": 0.22,
     "found": [
      "__lodging",
      "rental"
@@ -4272,7 +4296,7 @@
   },
   "2879": {
    "s2b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4280,21 +4304,21 @@
   },
   "2880": {
    "s1b1_3": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "repair",
      "wash"
     ]
    },
    "s1b1_4": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "repair",
      "wash"
     ]
    },
    "s2b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4302,7 +4326,7 @@
   },
   "2885": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4322,7 +4346,7 @@
     ]
    },
    "s2b2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -4336,7 +4360,7 @@
     ]
    },
    "s2b2": {
-    "coverage": 0.12,
+    "coverage": 0.07,
     "found": [
      "fastfood"
     ]
@@ -4360,7 +4384,7 @@
   },
   "2904": {
    "s1b2": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4402,7 +4426,7 @@
   },
   "2915": {
    "s1b3": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -4410,13 +4434,13 @@
   },
   "2916": {
    "s2b6_3": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
    },
    "s2b6_6": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]
@@ -4424,7 +4448,7 @@
   },
   "2925": {
    "s4b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4432,7 +4456,7 @@
   },
   "2927": {
    "s3b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4440,7 +4464,7 @@
   },
   "2929": {
    "s1b4_2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -4453,20 +4477,8 @@
      "__ins"
     ]
    },
-   "s1b8_3": {
-    "coverage": 0.3,
-    "found": [
-     "hair"
-    ]
-   },
-   "s1b8_4": {
-    "coverage": 0.3,
-    "found": [
-     "hair"
-    ]
-   },
    "s2b3_2": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -4496,7 +4508,7 @@
   },
   "2933": {
    "s2b2": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -4510,7 +4522,7 @@
   },
   "2934": {
    "s3b9": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -4551,7 +4563,7 @@
   },
   "2942": {
    "s2b1_1": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -4559,7 +4571,7 @@
     ]
    },
    "s2b1_2": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -4567,7 +4579,7 @@
     ]
    },
    "s2b1_3": {
-    "coverage": 0.37,
+    "coverage": 0.1233,
     "found": [
      "parking",
      "repair",
@@ -4591,13 +4603,13 @@
     ]
    },
    "s1b2_1": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "fitness"
     ]
    },
    "s1b2_2": {
-    "coverage": 0.22,
+    "coverage": 0.11,
     "found": [
      "fitness"
     ]
@@ -4605,20 +4617,20 @@
   },
   "2970": {
    "s7b1": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
    },
    "s7b2_1": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "fitness",
      "yoga"
     ]
    },
    "s7b2_4": {
-    "coverage": 0.3,
+    "coverage": 0.15,
     "found": [
      "fitness",
      "yoga"
@@ -4646,8 +4658,32 @@
      "fitness"
     ]
    },
+   "s6b1_1": {
+    "coverage": 0.13,
+    "found": [
+     "__lodging",
+     "agency",
+     "duty"
+    ]
+   },
+   "s6b1_2": {
+    "coverage": 0.13,
+    "found": [
+     "__lodging",
+     "agency",
+     "duty"
+    ]
+   },
+   "s6b1_3": {
+    "coverage": 0.13,
+    "found": [
+     "__lodging",
+     "agency",
+     "duty"
+    ]
+   },
    "s6b2": {
-    "coverage": 0.3,
+    "coverage": 0.45,
     "found": [
      "hair"
     ]
@@ -4685,7 +4721,7 @@
   },
   "2988": {
    "s6b1_1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4701,25 +4737,17 @@
   },
   "2998": {
    "s2b6": {
-    "coverage": 0.1,
+    "coverage": 0.04,
     "found": [
-     "ev",
-     "lpg"
+     "ev"
     ]
    }
   },
   "3018": {
    "s1b6": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
-    ]
-   },
-   "s1b8": {
-    "coverage": 0.4,
-    "found": [
-     "hair",
-     "skin"
     ]
    },
    "s1b9_1": {
@@ -4742,7 +4770,7 @@
     ]
    },
    "s1b12_1": {
-    "coverage": 0,
+    "coverage": 0.0,
     "found": [
      "x_rail"
     ]
@@ -4782,7 +4810,7 @@
     ]
    },
    "s9b1": {
-    "coverage": 0.4,
+    "coverage": 0.34,
     "found": [
      "apt"
     ]
@@ -4790,7 +4818,7 @@
   },
   "3045": {
    "s2b2_1": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "optician",
      "oriental",
@@ -4798,7 +4826,7 @@
     ]
    },
    "s2b2_2": {
-    "coverage": 0.29,
+    "coverage": 0.145,
     "found": [
      "optician",
      "oriental",
@@ -4809,13 +4837,6 @@
     "coverage": 0.22,
     "found": [
      "fitness"
-    ]
-   },
-   "s4b2_1": {
-    "coverage": 0.4,
-    "found": [
-     "hair",
-     "skin"
     ]
    }
   },
@@ -4845,7 +4866,7 @@
   },
   "3084": {
    "s2b5": {
-    "coverage": 0.35,
+    "coverage": 0.17,
     "found": [
      "__lodging"
     ]

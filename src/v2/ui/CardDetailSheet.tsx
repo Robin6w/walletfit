@@ -40,18 +40,15 @@ const CONTRACT_WORD: Record<string, string> = {
   paid_membership: "유료 멤버십에 가입하는",
 };
 
-/** 추천 계산에서 뺀 이유 한 줄(2026-11-05 '쳐내고 알린다'). 뺀 게 아니면 null. review·no_calc 상태는 아래 칩이 따로 말한다 */
+/** 추천 계산에서 뺀 이유 한 줄(장소 한정·계약형만 알림). 알릴 게 없으면 null. review·no_calc 상태는 아래 칩이 따로 말한다 */
 function excludeNote(b: CardViewBenefit): string | null {
   switch (b.ex) {
     case "place":
       return "경기장·공항처럼 장소가 정해진 혜택이라 추천 계산에서 뺐어요";
-    case "overseas":
-      return "해외에서 쓰는 혜택이라 국내 지출로 추천을 계산할 때는 뺐어요";
     case "contract":
       return `${b.ct && CONTRACT_WORD[b.ct] ? `${CONTRACT_WORD[b.ct]} 경우에만` : "통신사 결합 같은 계약이 있어야"} 받는 혜택이라 기본 계산에서 뺐어요`;
-    case "nocat":
-      return "맞는 지출 카테고리가 없어 추천 계산에서 뺐어요";
     default:
+      // overseas·nocat은 사용자에게 알릴 필요가 없어 글을 달지 않는다(2026-11-05 결정). 계산에서는 빠지고 금액만 회색으로 둔다
       return null;
   }
 }
@@ -59,7 +56,7 @@ function excludeNote(b: CardViewBenefit): string | null {
 function BenefitRow({ b }: { b: CardViewBenefit }) {
   const conds = conditionTexts(b);
   const note = excludeNote(b);
-  const counted = b.st === "auto" && !note;
+  const counted = b.st === "auto" && !b.ex;
   return (
     <li style={{ listStyle: "none", padding: "12px 14px", borderRadius: 12, background: counted ? "#FFFFFF" : "#FAFAFC", border: "1px solid #E3EAF8", display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: "4px 12px" }}>

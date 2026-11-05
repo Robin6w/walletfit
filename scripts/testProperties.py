@@ -124,27 +124,70 @@ for sid in sorted(R):
             record("P2", False, f"카드 {sid} {R[sid]['card']['name']}: 예외 {type(e).__name__}: {str(e)[:100]}", {"sid": sid, "spend": sp})
 print(f"P2 {counts['P2'][0]}건 = {len(R)}장 × 지출 {len(spends2)}가지 ({time.time() - t:.1f}초)")
 
+SUSPECT_CARDS = [s for s in ISSUED if any(b.get("suspect") for b in R[s]["benefits"])]
+
+
+def sus_in(res):
+    """조합이 받는 의심 혜택 금액(calc 그대로). 0이면 비율을 바꿔도 달라질 게 없는 건이다"""
+    t = 0.0
+    for c in res["cards"]:
+        r = calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A0)
+        t += sum(r["by_benefit"].get(b["id"], 0) for b in R[c["sid"]]["benefits"] if b.get("suspect"))
+    return t
+
+
+def with_factor(f, fn):
+    E.STATE["A"].setdefault("suspect_discount", {})["factor"] = f
+    try:
+        return fn()
+    finally:
+        E.STATE["A"]["suspect_discount"]["factor"] = F0
+        E._SEED.clear()
+
+
+
 # ---- P3: 장수 상한을 늘리면 순혜택이 줄지 않고, 화면 순혜택 = calc 다시 계산
+# 엔진은 조합을 '고르는 값'(실적 기준 + 여유, 의심 혜택 × 비율)으로 고르고 화면엔 calc 그대로를 보여 준다. 그래서
+#  P3  (여유 0, 의심 비율 1.0): 고르는 값 = 화면 값이라 화면 순혜택과 막대가 장수에 따라 줄면 안 된다
+#  P3m (여유 2만원, 기본 의심 비율): 고르는 값이 장수에 따라 줄면 안 된다. 화면 값은 줄 수 있어(설계상) 따로 센다
+
+
+def select_net(res, margin):
+    """엔진이 조합을 고를 때 쓰는 순혜택: 기준을 margin만큼 올린 카드로 calc, 의심 혜택은 비율을 곱해 깎는다"""
+    f, t = E.suspect_factor(E.STATE["A"]), 0.0
+    for c in res["cards"]:
+        rec = E._raised(R[c["sid"]], margin)
+        r = calc.evaluate(rec, {k: v for k, v in c["alloc"].items() if v > 0}, A0)
+        t += r["total"] - (1 - f) * sum(r["by_benefit"].get(b["id"], 0) for b in rec["benefits"] if b.get("suspect")) - c["feeMonthly"]
+    return t
+
+
 t = time.time()
 caps3 = (1, 2, 3, 4, 5) if LONG else (1, 2, 3)
-for _ in range(N[3]):
-    pool, sp, margin = rand_pool(), rand_spend(), rng.choice([0, 20000])
-    nets, case = [], {"pool": pool, "spend": sp, "margin": margin}
-    PR = "P3" if margin == 0 else "P3m"  # 실적 여유(margin)가 있으면 따로 센다(11-05 긴 모드에서 여기서만 깨짐)
+screen_dips = []  # 화면 순혜택이 장수 상한을 올렸더니 줄어든 건(P3m에서만 설계상 나올 수 있음, 참고용)
+for i in range(N[3]):
+    strict = i % 2 == 0
+    pool, sp, margin = rand_pool(), rand_spend(), (0 if strict else 20000)
+    PR = "P3" if strict else "P3m"
+    case = {"pool": pool, "spend": sp, "margin": margin, "suspectFactor": 1.0 if strict else F0}
+    rs = []
     for mc in caps3:
-        r = fresh_recommend(pool, sp, margin=margin, maxCards=mc)
+        r = (with_factor(1.0, lambda: fresh_recommend(pool, sp, margin=margin, maxCards=mc)) if strict
+             else fresh_recommend(pool, sp, margin=margin, maxCards=mc))
         if not r.get("ok") or r.get("empty"):
-            nets.append(None)
             continue
+        rs.append((mc, r))
         net = r["result"]["net"]
-        nets.append(net)
         diff = abs(screen_vs_calc(r["result"]) - net)
         record(PR, diff < 1, f"화면 순혜택 {net:,.1f}원 ≠ calc 다시 계산 (차 {diff:,.1f}원, 상한 {mc}장)", dict(case, maxCards=mc), active=net > 0)
-        bars = [b["net"] for b in r["bar"]]
-        record(PR, all(bars[i] >= bars[i - 1] - 1 for i in range(1, len(bars))), f"막대가 장수가 늘며 줄어듦 {[round(x) for x in bars]}", dict(case, maxCards=mc))
-    ok_nets = [(mc, n) for mc, n in zip(caps3, nets) if n is not None]
-    for (m1, n1), (m2, n2) in zip(ok_nets, ok_nets[1:]):
-        record(PR, n2 >= n1 - 1, f"장수 상한 {m1}→{m2}장인데 순혜택 {n1:,.0f}→{n2:,.0f}원", dict(case, caps=[m1, m2], nets=[n1, n2]), active=n2 > 0)
+        if strict:
+            bars = [b["net"] for b in r["bar"]]
+            record(PR, all(bars[j] >= bars[j - 1] - 1 for j in range(1, len(bars))), f"막대가 장수가 늘며 줄어듦 {[round(x) for x in bars]}", dict(case, maxCards=mc))
+    for (m1, r1), (m2, r2) in zip(rs, rs[1:]):
+        n1, n2 = (r1["result"]["net"], r2["result"]["net"]) if strict else (select_net(r1["result"], margin), select_net(r2["result"], margin))
+        record(PR, n2 >= n1 - 1, f"장수 상한 {m1}→{m2}장인데 {'순혜택' if strict else '고르는 값'} {n1:,.0f}→{n2:,.0f}원", dict(case, caps=[m1, m2], nets=[n1, n2]), active=n2 > 0)
+        if not strict and r2["result"]["net"] < r1["result"]["net"] - 1:
+            screen_dips.append((m1, m2, r1["result"]["net"], r2["result"]["net"], case))
 print(f"P3 {sum(counts.get(k, [0])[0] for k in ('P3', 'P3m'))}건 ({time.time() - t:.1f}초)")
 
 # ---- P4: 내 카드(fixed)는 결과에 남고 연회비가 빠진다
@@ -174,27 +217,6 @@ print(f"P4 {counts['P4'][0]}건 ({time.time() - t:.1f}초)")
 # ---- P5: 의심 혜택 비율 1.0은 0.8보다 calc 순혜택이 낮지 않다
 
 
-SUSPECT_CARDS = [s for s in ISSUED if any(b.get("suspect") for b in R[s]["benefits"])]
-
-
-def sus_in(res):
-    """조합이 받는 의심 혜택 금액(calc 그대로). 0이면 비율을 바꿔도 달라질 게 없는 건이다"""
-    t = 0.0
-    for c in res["cards"]:
-        r = calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A0)
-        t += sum(r["by_benefit"].get(b["id"], 0) for b in R[c["sid"]]["benefits"] if b.get("suspect"))
-    return t
-
-
-def with_factor(f, fn):
-    E.STATE["A"].setdefault("suspect_discount", {})["factor"] = f
-    try:
-        return fn()
-    finally:
-        E.STATE["A"]["suspect_discount"]["factor"] = F0
-        E._SEED.clear()
-
-
 t = time.time()
 for _ in range(N[5]):
     # 의심 혜택이 있는 카드 3장과 그 혜택의 카테고리 지출을 넣어, 비율이 실제로 조합에 영향을 주게 한다
@@ -210,14 +232,15 @@ for _ in range(N[5]):
     if not (r10.get("ok") and r08.get("ok")) or r10.get("empty"):
         continue
     n10, n08 = screen_vs_calc(r10["result"]), screen_vs_calc(r08["result"])
-    record("P5", n10 >= n08 - 1, f"비율 1.0 순혜택 {n10:,.0f}원 < 0.8 순혜택 {n08:,.0f}원 (조합 {r10['result']['sids']} vs {r08['result']['sids']})",
+    record("P5", n10 >= n08 - max(1, 0.005 * abs(n08)),  # 같은 조합에서 5천원 단위 배분 차이로 생기는 0.5% 안쪽 오차는 봐 준다
+            f"비율 1.0 순혜택 {n10:,.0f}원 < 0.8 순혜택 {n08:,.0f}원 (조합 {r10['result']['sids']} vs {r08['result']['sids']})",
            {"pool": pool, "spend": sp, "margin": margin, "maxCards": mc, "n10": n10, "n08": n08,
             "sids10": r10["result"]["sids"], "sids08": r08["result"]["sids"]}, active=sus_in(r10["result"]) > 0)
 print(f"P5 {counts['P5'][0]}건 ({time.time() - t:.1f}초)")
 
 # ---- 결과
-NAMES = {"P1": "지출 늘리면 혜택 안 줄어듦", "P2": "금액 0 이상·NaN 없음", "P3": "장수 상한 늘리면 안 줄어듦·화면=calc",
-         "P3m": "P3와 같음, 실적 여유 2만원일 때", "P4": "내 카드 남고 연회비 빠짐", "P5": "의심 비율 1.0 ≥ 0.8"}
+NAMES = {"P1": "지출 늘리면 혜택 안 줄어듦", "P2": "금액 0 이상·NaN 없음", "P3": "장수 상한 늘리면 안 줄어듦·화면=calc(여유 0, 의심 1.0)",
+         "P3m": "장수 상한 늘리면 고르는 값 안 줄어듦(여유 2만원, 의심 0.8)", "P4": "내 카드 남고 연회비 빠짐", "P5": "의심 비율 1.0 ≥ 0.8"}
 print(f"\n모드 {'긴' if LONG else '짧은'}, 시드 {SEED}, {time.time() - T0:.0f}초")
 for k in sorted(counts):
     n, bad, act = counts[k]

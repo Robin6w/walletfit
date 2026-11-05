@@ -24,7 +24,6 @@ const Compare = lazy(() => import("@/v2/pages/Compare"));
 const Benefit = lazy(() => import("@/v2/pages/Benefit"));
 const MakeFlow = lazy(() => import("@/v2/make/MakeFlow"));
 const ChatDock = lazy(() => import("@/v2/chat/ChatDock"));
-const AppV1 = lazy(() => import("@/v1/AppV1").then((m) => ({ default: m.AppV1 })));
 
 function Loading() {
   return (
@@ -81,14 +80,6 @@ function Root() {
     if (prevPath.current !== route.path) window.scrollTo({ top: 0 });
     prevPath.current = route.path;
   }, [route.path]);
-
-  if (route.parts[0] === "v1") {
-    return (
-      <Suspense fallback={<Loading />}>
-        <AppV1 />
-      </Suspense>
-    );
-  }
 
   return (
     <div className={`w-root min-h-screen transition-[padding] duration-200 ${open ? "lg:pr-[420px]" : ""}`}>

@@ -1510,9 +1510,9 @@
    "type": "dispersed",
    "merchants": {
     "11번가": {
-     "share": 0.0418,
-     "low": 0.0209,
-     "high": 0.0627,
+     "share": 0.0504,
+     "low": 0.0252,
+     "high": 0.0756,
      "basis": "card_payment_ratio",
      "year": "2025-03",
      "confidence": "하",
@@ -1530,9 +1530,9 @@
      "sources": []
     },
     "G마켓": {
-     "share": 0.051,
-     "low": 0.0255,
-     "high": 0.0765,
+     "share": 0.0618,
+     "low": 0.0309,
+     "high": 0.0927,
      "basis": "card_payment_ratio",
      "year": "2025-03",
      "confidence": "하",
@@ -1559,9 +1559,9 @@
      "sources": []
     },
     "네이버쇼핑": {
-     "share": 0.268,
-     "low": 0.134,
-     "high": 0.402,
+     "share": 0.3236,
+     "low": 0.1618,
+     "high": 0.4854,
      "basis": "card_payment_ratio",
      "year": "2025-03",
      "confidence": "하",
@@ -1579,9 +1579,9 @@
      "sources": []
     },
     "옥션": {
-     "share": 0.0152,
-     "low": 0.0076,
-     "high": 0.0228,
+     "share": 0.0181,
+     "low": 0.0091,
+     "high": 0.0272,
      "basis": "card_payment_ratio",
      "year": "2025-03",
      "confidence": "하",
@@ -1634,7 +1634,7 @@
      "status": "closed"
     }
    },
-   "tableSum": 0.7986,
+   "tableSum": 0.8765,
    "tail": {
     "low": 0.001,
     "mid": 0.005,

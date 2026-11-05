@@ -88,13 +88,38 @@ def category_scales(benefits):
             for b in benefits if splits_spend(b)}
 
 
+def _user_brand_map(A, cat):
+    """사용자 브랜드 비중 {정규화 이름: 비중}. 화면에서 '자주 가는 곳'으로 여러 곳을 고른 카테고리(_picks 표시)는
+    고른 곳들의 합(70%)은 그대로 두고 가맹점 비중표 비율로 다시 나눈다(2026-11-05 3묶음 ③).
+    고른 곳 중 하나라도 비중표에 없으면 비율을 모르므로 똑같이 나눈 값 그대로 둔다. 명세서 금액 비중(_picks 없음)은 그대로"""
+    cache = A.setdefault("_ub_cache", {})
+    if cat in cache:
+        return cache[cat]
+    raw = A["user_brand_share"][cat]
+    m = {_norm_m(k): v for k, v in raw.items() if not k.startswith("_")}
+    ms = A.get("merchant_share")
+    t = (ms or {}).get("categories", {}).get(cat) if raw.get("_picks") else None
+    if t:
+        canon = {k: ms["alias"].get(k, k) for k in m}  # 별칭 → 비중표 이름
+        groups = {}
+        for k, c in canon.items():
+            groups.setdefault(c, []).append(k)
+        w = {c: t["shares"].get(c, 0.0) for c in groups}
+        if len(groups) > 1 and all(x > 0 for x in w.values()):
+            total = sum(m[ks[0]] for ks in groups.values())  # 고른 곳 몫의 합(보통 0.7)
+            sw = sum(w.values())
+            m = {k: total * w[c] / sw for c, ks in groups.items() for k in ks}
+    cache[cat] = m
+    return m
+
+
 def _elig_share(sc, A):
     """브랜드·가맹점 묶음 혜택의 대상 비중. 사용자가 브랜드 비중을 입력했으면(user_brand_share) 그 값을 쓰고,
     입력이 없으면 기본 가정값(eligible_share_by_specificity)을 쓴다. 반환: (비중, 사용자 입력 여부)"""
     spec = sc["specificity"]
     ub = A.get("user_brand_share")
     if spec in ("brand", "merchant_group") and ub and sc.get("app_category") in ub:
-        m = {_norm_m(k): v for k, v in ub[sc["app_category"]].items() if not k.startswith("_")}
+        m = _user_brand_map(A, sc["app_category"])
         return min(1.0, sum(m.get(_norm_m(x), 0.0) for x in sc.get("merchants", []))), True
     if spec == "category" and sc.get("coverage") is not None:
         # 좁은 업종 혜택이 카테고리 지출 중 덮는 비중(benefit-coverage.json, init_json이 붙임. 2026-11-03 C1)

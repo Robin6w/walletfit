@@ -344,5 +344,72 @@ check("모르는 채로 남은 카드: 1278 국민행복카드는 글·카드고
 r644 = calc.evaluate(R[644], {"cafe": 100000, "convenience": 100000, "transport": 100000, "etc": 300000}, A13)
 check(f"구간표 없는 카드: 644는 신규 발급 통합 한도 5천원까지만({r644['total']:,.0f}원)", 0 < r644["total"] <= 5000 + 1e-6)
 
+# 17. 2026-11-05 개선 13: 의심 혜택은 조합을 고를 때만 금액을 깎는다(assumptions.json suspect_discount.factor)
+sus = [(s, b["id"], b["suspect"]) for s, rec in R.items() for b in rec["benefits"] if b.get("suspect")]
+kinds = {k for _, _, ks in sus for k in ks}
+check(f"의심 혜택 표시 {len(sus)}개({sorted(kinds)})", len(sus) > 100 and kinds <= {"multi_value_tier", "cond_text_only", "high_rate_no_cap", "ai_category"})
+F0 = E.STATE["A"]["suspect_discount"]["factor"]
+
+
+def with_factor(f, fn):
+    E.STATE["A"]["suspect_discount"]["factor"] = f
+    E._SEED.clear()
+    try:
+        return fn()
+    finally:
+        E.STATE["A"]["suspect_discount"]["factor"] = F0
+        E._SEED.clear()
+
+
+def sus_amount(res, A_):
+    """조합에서 의심 혜택이 받는 금액(calc 그대로)"""
+    t = 0.0
+    for c in res["cards"]:
+        r = calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A_)
+        t += sum(r["by_benefit"].get(b["id"], 0) for b in R[c["sid"]]["benefits"] if b.get("suspect"))
+    return t
+
+
+# 17-1. 같은 업종 혜택 두 장(10% 의심 vs 9% 확인): 1.0이면 10%, 0.8이면 9% 카드(0.8 × 10% < 9%)
+def card15(sid, rate, suspect):
+    b = {"id": "b1", "title": f"외식 {rate:.0%} 할인", "scope": {"region": "domestic", "specificity": "category", "app_category": "dining", "channel": "any", "merchants": []},
+         "reward": {"kind": "discount", "type": "percent", "value_by_tier": [{"tier": None, "value": rate}]},
+         "conditions": {"tier_set": "none"}, "caps": [], "shared_cap_ids": []}
+    if suspect:
+        b["suspect"] = ["high_rate_no_cap"]
+    return {"card": {"name": f"의심 시험 {sid}", "source_id": sid, "issuer": "시험", "card_type": "credit", "annual_fee": {"domestic": 0, "overseas": None}},
+            "performance": {"basis": "none", "tiers": [], "excluded_app_categories": []}, "shared_caps": [], "choice_groups": [], "benefits": [b]}
+
+
+R[990001], R[990002] = card15(990001, 0.10, True), card15(990002, 0.09, False)
+E.STATE["status"][990001] = E.STATE["status"][990002] = "extracted"
+q15 = json.dumps({"ids": [990001, 990002], "spending": {"dining": 300000}, "margin": 0, "maxCards": 1, "withAlt": False})
+p10 = with_factor(1.0, lambda: json.loads(E.recommend_json(q15)))
+p08 = with_factor(0.8, lambda: json.loads(E.recommend_json(q15)))
+check(f"의심 혜택: 1.0이면 10% 의심 카드, 0.8이면 9% 카드({p10['result']['sids']} → {p08['result']['sids']})",
+      p10["result"]["sids"] == [990001] and p08["result"]["sids"] == [990002])
+check(f"의심 혜택: 화면 금액은 깎지 않은 calc 값({p10['result']['net']:,.0f}원, {p08['result']['net']:,.0f}원)",
+      abs(p10["result"]["net"] - 30000) < 1 and abs(p08["result"]["net"] - 27000) < 1)
+ex15 = with_factor(0.8, lambda: json.loads(E.explain_json(json.dumps({"ids": [990001], "spending": {"dining": 300000}}))))
+check("의심 혜택: 카드 바꿔보기 화면 값도 calc 그대로(30,000원)", abs(ex15["result"]["net"] - 30000) < 1)
+for k in (990001, 990002):
+    R.pop(k), E.STATE["status"].pop(k)
+
+# 17-2. 큰 후보(국소 탐색 포함): 1.0이면 표시를 지운 엔진과 같은 조합, 0.8이면 의심 혜택 금액이 늘지 않고 화면 값 = calc
+A15 = E._A(None)
+s10 = with_factor(1.0, rec9)
+saved = {(s, b["id"]): b.pop("suspect") for s, rec in R.items() for b in rec["benefits"] if b.get("suspect")}
+s_none = with_factor(0.8, rec9)  # 표시가 없으면 비율과 관계없이 예전 엔진
+for (s, bid), v in saved.items():
+    next(b for b in R[s]["benefits"] if b["id"] == bid)["suspect"] = v
+check(f"의심 혜택: 비율 1.0이면 지금과 같은 조합({s10['result']['sids']}, {s10['result']['net']:,.0f}원)",
+      s10["result"]["sids"] == s_none["result"]["sids"] and abs(s10["result"]["net"] - s_none["result"]["net"]) < 1)
+s08 = with_factor(0.8, rec9)
+a10, a08 = sus_amount(s10["result"], A15), sus_amount(s08["result"], A15)
+check(f"의심 혜택: 0.8이면 고른 조합의 의심 혜택 금액이 늘지 않음({a10:,.0f} → {a08:,.0f}원, {s10['result']['sids']} → {s08['result']['sids']})",
+      a08 <= a10 + 1)
+d15 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A15)["total"] - c["feeMonthly"] for c in s08["result"]["cards"])
+check(f"의심 혜택: 0.8에서도 화면 순혜택 = calc 직접 계산({s08['result']['net']:,.0f}원)", abs(d15 - s08["result"]["net"]) < 1)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

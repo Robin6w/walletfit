@@ -51,6 +51,43 @@ function slim(record: BenefitRecord) {
   }
 }
 
+/**
+ * 의심 혜택 표시(2026-11-05, 문제 지도 개선 13 '확인 안 된 혜택은 깎아서 고르기').
+ * 확실한 신호만 본다. 엔진은 조합을 고를 때만 이 혜택 금액에 assumptions.json suspect_discount.factor를 곱한다(화면 값은 calc 그대로).
+ *   multi_value_tier : 같은 구간에 값이 둘 이상(결제 수단별 값이 남아 계산기가 큰 값을 고름, checks.py '3 같은 구간 값 둘')
+ *   cond_text_only   : 원문 인용에 '건당 ○원 이상'이 있는데 건당 최소 결제 칸이 빔(checks.py '3 조건 글만 있음')
+ *   high_rate_no_cap : 30% 이상인데 한도·횟수 제한이 없음(checks.py '3 한도 없는 고율')
+ *   ai_category      : 비어 있던 카테고리를 AI 이름 분류로 채움(레코드 메모 'AI 이름 분류')
+ * 레코드 메모(extraction_notes)와 긴 원문 인용은 slim 전에 지우므로 그 전에 본다.
+ * 혜택 표의 benefit은 스키마상 다른 칸을 못 넣어(checks.py 1층이 깨짐) 카드 항목의 suspect {혜택 id: [이유]}에 둔다.
+ */
+const MIN_TXN_TEXT = /(건당|1회)\s*[\d,]+\s*(만\s*)?원\s*이상|[\d,]+\s*(만\s*)?원\s*이상\s*(결제|이용)\s*시/;
+
+function suspectOf(record: BenefitRecord): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const add = (bid: string, why: string) => {
+    if (!(out[bid] ??= []).includes(why)) out[bid].push(why);
+  };
+  for (const b of record.benefits ?? []) {
+    const vt: BenefitRecord[] = b.reward?.value_by_tier ?? [];
+    const seen = new Map<unknown, unknown>();
+    for (const v of vt) {
+      if (seen.has(v.tier) && seen.get(v.tier) !== v.value) add(b.id, "multi_value_tier");
+      seen.set(v.tier, v.value);
+    }
+    const cond = b.conditions ?? {};
+    if (MIN_TXN_TEXT.test(b.source_quote ?? "") && !cond.min_txn_won) add(b.id, "cond_text_only");
+    if (b.reward?.type === "percent" && vt.some((v) => (v.value ?? 0) >= 0.3)
+      && !(b.caps ?? []).length && !(b.shared_cap_ids ?? []).length && !cond.count_limits) add(b.id, "high_rate_no_cap");
+  }
+  const ids = new Set((record.benefits ?? []).map((b: BenefitRecord) => b.id));
+  for (const note of [record.extraction_notes ?? []].flat()) {
+    const m = /^\[([^\]]+)\]/.exec(String(note));
+    if (m && ids.has(m[1]) && String(note).includes("AI 이름 분류")) add(m[1], "ai_category");
+  }
+  return out;
+}
+
 /** 원문 정제가 없는 새 카드: 카드 정보만 있고 혜택은 비운 레코드 */
 function emptyRecord(entry: CatalogListing): BenefitRecord {
   const card = toWalletCard(entry);
@@ -64,8 +101,10 @@ function emptyRecord(entry: CatalogListing): BenefitRecord {
   };
 }
 
-function readTables(): Map<number, { status: Status; record: BenefitRecord; file: string }> {
-  const found = new Map<number, { status: Status; record: BenefitRecord; file: string }>();
+type Table = { status: Status; record: BenefitRecord; file: string; suspect: Record<string, string[]> };
+
+function readTables(): Map<number, Table> {
+  const found = new Map<number, Table>();
   for (const { dir, status } of SOURCES) {
     const full = path.join(DS, dir);
     if (!existsSync(full)) {
@@ -76,9 +115,10 @@ function readTables(): Map<number, { status: Status; record: BenefitRecord; file
       const record = JSON.parse(readFileSync(path.join(full, name), "utf-8")) as BenefitRecord;
       const sid = Number(record?.card?.source_id ?? name.replace(".json", ""));
       if (!Number.isFinite(sid) || found.has(sid)) continue; // 앞 순서(검수 수준이 높은 쪽)가 이긴다
+      const suspect = suspectOf(record);
       delete record.extraction_notes;
       slim(record);
-      found.set(sid, { status, record, file: `${dir}/${name}` });
+      found.set(sid, { status, record, file: `${dir}/${name}`, suspect });
     }
   }
   return found;
@@ -88,7 +128,7 @@ function main() {
   const catalog = JSON.parse(readFileSync(path.join(ROOT, "data/catalog/cards-catalog.json"), "utf-8")) as CatalogListing[];
   const tables = readTables();
   const counts: Record<Status, number> = { reviewed: 0, gold_ai: 0, extracted: 0, auto: 0 };
-  const cards: { sid: number; status: Status; from: string; record: BenefitRecord }[] = [];
+  const cards: { sid: number; status: Status; from: string; record: BenefitRecord; suspect?: Record<string, string[]> }[] = [];
 
   // 앱 화면(loadCatalog.isDiscontinued)과 같은 기준: 카드고릴라 is_discon 값 + discontinued-cards.json 이름 목록
   const discNamesPath = path.join(ROOT, "data/catalog/discontinued-cards.json");
@@ -100,7 +140,8 @@ function main() {
     if (t) {
       // 카탈로그 쪽 정보(발급 중단 여부, 이미지)는 최신 수집값을 따른다
       t.record.card.discontinued = !!entry.isDiscontinued;
-      cards.push({ sid: entry.sourceId, status: t.status, from: t.file, record: t.record });
+      const hasSuspect = Object.keys(t.suspect).length > 0;
+      cards.push({ sid: entry.sourceId, status: t.status, from: t.file, record: t.record, ...(hasSuspect ? { suspect: t.suspect } : {}) });
       counts[t.status] += 1;
     } else {
       cards.push({ sid: entry.sourceId, status: "auto", from: "cards-catalog.json", record: emptyRecord(entry) });
@@ -137,6 +178,10 @@ function main() {
     readFileSync(path.join(DS, "assumptions.json"), "utf-8"),
   );
   console.log(`카드 ${cards.length}장 → ${path.relative(ROOT, OUT)}`, counts);
+  const why: Record<string, number> = {};
+  let nSus = 0;
+  for (const c of cards) for (const rs of Object.values(c.suspect ?? {})) { nSus += 1; for (const r of rs) why[r] = (why[r] ?? 0) + 1; }
+  console.log(`의심 혜택 ${nSus}개(조합 고를 때만 깎음)`, why);
   if (counts.auto) console.warn(`원문 정제가 없는 카드 ${counts.auto}장은 혜택 없이 넣었어요(정제/extract.py로 채우기)`);
 }
 

@@ -628,6 +628,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         B.ub[b["id"]] = _ub(b)
         _own_caps(M, B, b, sts, tset, terms_total, cs_lookup=lambda t, c: (B.rho.get((b["id"], t, c))), Mbig=B.ub[b["id"]] + 1)
         _choice_scale(M, B, b, A)
+        _suspect_scale(M, B, b, A)
 
     # --- 여러 개 고르는 선택형에서 같은 카테고리 '업종 전체' 혜택이 2개 이상 고를 수 있으면,
     #     같은 지출을 두 번 쓰지 않도록(계산기의 '나눠 가짐'과 같은 효과) 지출 사용량 합 ≤ 배정 지출
@@ -733,6 +734,7 @@ def _build_card(M, B, cats, S, A, BIGQ):
         B.ub[b["id"]] = _ub(b)
         _own_caps(M, B, b, sts, tset, terms_total, cs_lookup=lambda t, c: (B.rho.get((b["id"], t, c))), Mbig=B.ub[b["id"]] + 1)
         _choice_scale(M, B, b, A)
+        _suspect_scale(M, B, b, A)
 
     # --- 공유 한도(카드 구간 기준) ---
     act_ids = {b["id"] for b in specific + general}
@@ -903,6 +905,19 @@ def _choice_scale(M, B, b, A):
     for v in B.bsum[b["id"]]:
         M.obj[v] *= q
     B.bsum[b["id"]] = {v: cc * q for v, cc in B.bsum[b["id"]].items()}
+
+
+def _suspect_scale(M, B, b, A):
+    """의심 혜택(2026-11-05 개선 13, 빌드가 붙인 b['suspect']): 조합을 고를 때만 금액에 suspect_discount.factor를 곱한다.
+    목적식 계수만 바꾸고 한도(bsum)는 그대로 둔다 → 실제로 받는 금액·한도 계산은 calc와 같고, 고르는 값만 작아진다.
+    wf_engine.Evaluator(select=True)도 같은 비율로 깎아, 국소 탐색이 깎지 않은 값으로 되돌아가지 않는다"""
+    if not b.get("suspect"):
+        return
+    f = float((A.get("suspect_discount") or {}).get("factor", 1.0))
+    if f == 1.0:
+        return
+    for v in B.bsum[b["id"]]:
+        M.obj[v] *= f
 
 
 def _own_caps(M, B, b, sts, tset, terms_total, cs_lookup, Mbig=1e7):

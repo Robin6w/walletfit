@@ -5,6 +5,10 @@
   "mileage_value_won": 15.0,
   "fuel_price_won_per_liter": 1700,
   "payment_condition_policy": "best",
+  "suspect_discount": {
+    "_note": "의심 혜택(같은 구간 값 둘·조건 글만 있음·한도 없는 30% 이상·AI 이름 분류 카테고리, 빌드가 표시)은 조합을 고를 때만 금액에 이 비율을 곱한다. 화면 금액은 calc 그대로. 0.8은 사람 확인 전 임시값(2026-11-05), 확인 결과로 바꾼다. 1이면 깎지 않음",
+    "factor": 0.8
+  },
   "eligible_share_by_specificity": {
     "_note": "카테고리 지출 중 대상 가맹점에서 쓰는 비율. brand=특정 브랜드 1~3곳",
     "brand": 0.35,

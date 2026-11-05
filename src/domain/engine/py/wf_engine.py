@@ -62,6 +62,11 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
     data = json.loads(catalog_text)
     STATE["records"] = {int(c["sid"]): c["record"] for c in data["cards"]}
     STATE["status"] = {int(c["sid"]): c["status"] for c in data["cards"]}
+    # 의심 혜택(2026-11-05 개선 13): 빌드가 카드 항목에 남긴 {혜택 id: [이유]}를 혜택에 붙인다. 조합 고를 때만 금액을 깎는다
+    for c in data["cards"]:
+        for b in (c.get("suspect") and c["record"].get("benefits")) or []:
+            if b["id"] in c["suspect"]:
+                b["suspect"] = c["suspect"][b["id"]]
     STATE["A"] = json.loads(assumptions_text)
     if share_text:
         STATE["A"]["merchant_share"] = _share_lookup(json.loads(share_text))
@@ -86,6 +91,7 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
                     b["scope"]["coverage"] = m[b["id"]]["coverage"]
     _SEED.clear()  # 앞선 계산 결과는 다른 데이터·가정값으로 낸 것이라 버린다
     return json.dumps({"cards": len(STATE["records"]), "counts": data.get("counts", {}),
+                       "suspect": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b.get("suspect")),
                        "merchantShare": bool(share_text), "contracts": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b.get("contract")),
                        "coverage": sum(1 for r in STATE["records"].values() for b in r["benefits"] if b["scope"].get("coverage") is not None)})
 
@@ -149,11 +155,19 @@ def _clean_spend(spending):
     return {c: float(v) for c, v in (spending or {}).items() if v and v > 0}
 
 
-class Evaluator:
-    """calc.evaluate 결과 캐시. 같은 (카드, 배분)은 한 번만 계산한다."""
+def suspect_factor(A):
+    """의심 혜택을 조합 고를 때 깎는 비율(assumptions.json suspect_discount.factor, 없으면 1 = 깎지 않음)"""
+    return float((A.get("suspect_discount") or {}).get("factor", 1.0))
 
-    def __init__(self, recs, A):
+
+class Evaluator:
+    """calc.evaluate 결과 캐시. 같은 (카드, 배분)은 한 번만 계산한다.
+    select=True(조합 고르기·배분 다듬기·국소 탐색용): 의심 혜택 금액에 suspect_factor를 곱한 값(milp 목적식과 같은 기준).
+    화면 숫자는 select=False(calc 그대로)나 _card_view로 따로 계산한다"""
+
+    def __init__(self, recs, A, select=True):
         self.recs, self.A, self.memo = recs, A, {}
+        self.f = suspect_factor(A) if select else 1.0
 
     def total(self, sid, alloc):
         sp = {c: v for c, v in alloc.items() if v > 0.5}
@@ -161,7 +175,13 @@ class Evaluator:
             return 0.0
         key = (sid, tuple(sorted((c, int(round(v))) for c, v in sp.items())))
         if key not in self.memo:
-            self.memo[key] = calc.evaluate(self.recs[sid], sp, self.A)["total"]
+            rec = self.recs[sid]
+            r = calc.evaluate(rec, sp, self.A)
+            v = r["total"]
+            if self.f != 1.0:
+                sus = sum(r["by_benefit"].get(b["id"], 0) for b in rec["benefits"] if b.get("suspect"))
+                v -= (1.0 - self.f) * sus
+            self.memo[key] = v
         return self.memo[key]
 
 
@@ -670,7 +690,7 @@ def recommend_json(payload_text):
     for k in range(1, MAX_BAR + 1):
         if k in by_k:
             X = by_k[k]["X"]
-            real = _net_of(Evaluator({s: STATE["records"][s] for s in X}, A), X, fixed)
+            real = _net_of(Evaluator({s: STATE["records"][s] for s in X}, A, select=False), X, fixed)
             used = [s for s in X if sum(X[s].values()) > 0.5 or s in fixed]
             # sids: 그 장수에서 고른 카드(2026-10-28 v2 화면의 '1장만 쓸 때 ○○ 한 장' 표시용)
             bar.append({"k": k, "net": real, "cards": len(used), "same": bool(by_k[k].get("same")), "sids": used})
@@ -704,7 +724,7 @@ def _alt_of(pool, spending, A, k, fee_cap=None, fixed=(), time_limit=10):
         return None
     X0 = _refine(ev0, X0, spending)
     used = [s for s in X0 if sum(X0[s].values()) > 0.5]
-    return {"net": _net_of(ev0, X0), "sids": used, "names": [STATE["records"][s]["card"]["name"] for s in used]}
+    return {"net": _net_of(Evaluator(recs0, A, select=False), X0), "sids": used, "names": [STATE["records"][s]["card"]["name"] for s in used]}
 
 
 def alt_json(payload_text):

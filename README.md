@@ -11,7 +11,7 @@ walletfit은 사용자의 카테고리별 월 지출액을 입력받아, 카드�
 카테고리별 결제 배분을 계산하는 클라이언트 전용 SPA입니다.
 
 > 이 폴더(walletfit-ds)는 앱(walletfit-app)을 복사한 뒤 데이터 작업(DS) 결과를 모두 적용한 버전입니다.
-> 화면은 **v2**(Claude Design 'WalletFit 디자인 개선' 양준서 페이지, 2026-10-29)이고, 10월 초 v1 화면은 `#/v1` 주소로 그대로 열 수 있습니다.
+> 화면은 **v2**(Claude Design 'WalletFit 디자인 개선' 양준서 페이지, 2026-10-29)입니다.
 > 원래 앱 폴더(walletfit-app)는 그대로 두었습니다. 바뀐 점은 [v2 화면](#-v2-화면-2026-10-29)과 [v1에서 바뀐 것](#-v1에서-바뀐-것)에 정리했습니다.
 
 ---
@@ -204,7 +204,7 @@ walletfit-ds/
 │   │   ├── 📁 chat/            # 카드 상담 창(chatModel: 계산 결과로 답 만들기)
 │   │   ├── 📁 model/           # 화면 문장·값(resultView, compareView, benefitView, guards, text, statement …)
 │   │   └── 📁 ui/              # 상단 바, 페이지 틀, 카드 사진(CardImage), 아이콘
-│   ├── 📁 v1/                  # v1 화면(#/v1, AppV1.tsx)
+│   ├── 📁 v1/                  # v2가 쓰는 공용 모듈(catalog·format·state·ui·wallet/model). 옛 #/v1 화면은 제거됨
 │   │   ├── Shell.tsx           # 상단 글라스 바·모바일 탭 바·지갑 만들기 단계 바
 │   │   ├── 📁 pages/           # 홈, 내 지갑, 전체 카드, 혜택별 추천, 명세서
 │   │   ├── 📁 wizard/          # 카드 선택, 지출, 자주 가는 곳, 추천 결과, 계산 근거, 조건 바꾸기

@@ -6,7 +6,6 @@ export type AppTab = "start" | "home" | "gallery" | "statement" | "benefit" | "w
 /**
  * 앱 진입점.
  *  - 기본: v2 화면(Claude Design 'WalletFit 디자인 개선' 양준서 페이지, src/v2)
- *  - #/v1: 10월 초 v1 화면(src/v1/AppV1.tsx). 엔진 고도화 때 예전 화면과 비교하는 용도
  */
 export default function App() {
   return <AppV2 />;

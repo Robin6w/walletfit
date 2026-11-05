@@ -39,8 +39,12 @@ export interface CardViewBenefit {
   cnt?: Record<string, number>;
   /** 이 혜택이 적용되는 실적 구간 id */
   in?: string[];
-  /** 계산에서 뺀 이유 중 사용자에게 보여 줄 것: place = 경기장·공항·리조트 안 결제처럼 장소가 정해진 혜택(2026-11-04) */
-  ex?: "place";
+  /** 추천 계산에서 뺀 이유 중 사용자에게 보여 줄 것(2026-11-05 '쳐내고 알린다'). review·no_calc 상태는 st로 따로 보여 준다.
+   *  place = 경기장·공항·리조트 안 결제처럼 장소가 정해진 혜택 / overseas = 해외 결제 혜택 /
+   *  contract = 보험·렌탈 등 따로 계약해야 받는 혜택(ct에 계약 키) / nocat = 앱에 맞는 지출 카테고리가 없는 혜택 */
+  ex?: "place" | "overseas" | "contract" | "nocat";
+  /** ex가 contract일 때 계약 종류(benefit-conditions.json asks 키: insurance·rental·installment·apt_fee·bank_account·paid_membership) */
+  ct?: string;
 }
 
 export interface CardViewEntry {

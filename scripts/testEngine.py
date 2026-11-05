@@ -346,8 +346,12 @@ check(f"구간표 없는 카드: 644는 신규 발급 통합 한도 5천원까�
 
 # 17. 2026-11-05 개선 13: 의심 혜택은 조합을 고를 때만 금액을 깎는다(assumptions.json suspect_discount.factor)
 sus = [(s, b["id"], b["suspect"]) for s, rec in R.items() for b in rec["benefits"] if b.get("suspect")]
-kinds = {k for _, _, ks in sus for k in ks}
-check(f"의심 혜택 표시 {len(sus)}개({sorted(kinds)})", len(sus) > 100 and kinds <= {"multi_value_tier", "cond_text_only", "high_rate_no_cap", "ai_category"})
+# 11-05 코드 검사(유의사항 조건·같은 문장 다른 판단 등)는 '<규칙>: <설명>' 형식의 이유를 붙인다
+kinds = {k.split(":")[0] for _, _, ks in sus for k in ks}
+check(f"의심 혜택 표시 {len(sus)}개({sorted(kinds)})", len(sus) > 100 and kinds <= {
+    "multi_value_tier", "cond_text_only", "high_rate_no_cap", "ai_category", "표 대조", "숫자 대조", "유의사항 조건", "같은 문장 다른 판단"})
+lk = [b for b in R[1290]["benefits"] if any(k.startswith("유의사항 조건") for k in b.get("suspect") or [])]
+check("코드 검사: 1290 대중교통 '월 3만원 이상' 빠진 혜택이 의심으로 표시됨", len(lk) >= 1)
 F0 = E.STATE["A"]["suspect_discount"]["factor"]
 
 

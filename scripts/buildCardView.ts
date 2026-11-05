@@ -9,11 +9,12 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { CardViewFile, CardViewEntry } from "../src/domain/types/cardView";
+import type { CardViewFile, CardViewEntry, CardViewBenefit } from "../src/domain/types/cardView";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const IN = path.join(ROOT, "data/catalog/cards-benefit.json");
 const OUT = path.join(ROOT, "data/catalog/card-view.json");
+const CONDITIONS = path.join(ROOT, "data/catalog/benefit-conditions.json");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Rec = Record<string, any>;
@@ -21,7 +22,31 @@ type Rec = Record<string, any>;
 const amounts = (byTier: Rec[] | undefined) =>
   (byTier ?? []).filter((x) => typeof x.amount_won === "number").map((x) => ({ tier: x.tier ?? null, won: x.amount_won as number }));
 
-export function cardViewOf(status: string, r: Rec): CardViewEntry {
+/** 계약이 있어야 받는 혜택 {카드 sid: {혜택 id: 계약 키}}(benefit-conditions.json). 엔진이 기본으로 빼는 혜택이다 */
+type ContractMap = Record<string, Record<string, string>>;
+let contractsCache: ContractMap | undefined;
+function loadContracts(): ContractMap {
+  if (!contractsCache) {
+    contractsCache = (JSON.parse(readFileSync(CONDITIONS, "utf-8")) as { benefits?: ContractMap }).benefits ?? {};
+  }
+  return contractsCache;
+}
+
+/**
+ * 추천 계산에 넣지 않는 이유(2026-11-05 '쳐내고 알린다'). 엔진(calc.py)이 0원으로 빼는 순서와 같다:
+ * 장소 한정 → (review·no_calc는 상태 표시가 따로 있어 코드를 붙이지 않음) → 해외 → 계약형 → 맞는 카테고리 없음
+ */
+export function excludeReason(b: Rec, contract: string | undefined): { ex: CardViewBenefit["ex"]; ct?: string } | null {
+  const sc = b.scope ?? {};
+  if (typeof b.status_reason === "string" && b.status_reason.startsWith("장소 한정")) return { ex: "place" };
+  if ((b.status ?? "auto") !== "auto") return null;
+  if (sc.region === "overseas") return { ex: "overseas" };
+  if (contract) return { ex: "contract", ct: contract };
+  if (!sc.app_category && sc.specificity !== "all_merchants") return { ex: "nocat" };
+  return null;
+}
+
+export function cardViewOf(status: string, r: Rec, contracts: Record<string, string> = {}): CardViewEntry {
   const perf = r.performance ?? {};
   return {
     st: status,
@@ -37,6 +62,7 @@ export function cardViewOf(status: string, r: Rec): CardViewEntry {
       const sc = b.scope ?? {};
       const rw = b.reward ?? {};
       const cond = b.conditions ?? {};
+      const why = excludeReason(b, contracts[b.id]);
       return {
         id: b.id,
         t: b.title ?? "",
@@ -49,7 +75,8 @@ export function cardViewOf(status: string, r: Rec): CardViewEntry {
         caps: (b.caps ?? []).map((c: Rec) => ({ period: c.period ?? "month", amounts: amounts(c.by_tier) })),
         ...(b.shared_cap_ids?.length ? { sh: b.shared_cap_ids as string[] } : {}),
         st: b.status ?? "auto",
-        ...(typeof b.status_reason === "string" && b.status_reason.startsWith("장소 한정") ? { ex: "place" as const } : {}),
+        ...(why ? { ex: why.ex } : {}),
+        ...(why?.ct ? { ct: why.ct } : {}),
         q: typeof b.source_quote === "string" ? b.source_quote.slice(0, 240) : "",
         m: (sc.merchants ?? []).slice(0, 8),
         ch: sc.channel ?? "any",
@@ -65,7 +92,7 @@ export function cardViewOf(status: string, r: Rec): CardViewEntry {
 }
 
 export function buildCardView(cards: { sid: number; status: string; record: Rec }[], generatedAt: string): CardViewFile {
-  return { generatedAt, cards: Object.fromEntries(cards.map((c) => [String(c.sid), cardViewOf(c.status, c.record)])) };
+  return { generatedAt, cards: Object.fromEntries(cards.map((c) => [String(c.sid), cardViewOf(c.status, c.record, loadContracts()[String(c.sid)])])) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

@@ -88,6 +88,30 @@ function suspectOf(record: BenefitRecord): Record<string, string[]> {
   return out;
 }
 
+/**
+ * 코드 검사 의심 목록(2026-11-05, 문제 지도 1·4·6·7): `1_혜택정보구조화/코드검사/*_check.json`의 suspect {sid: {혜택 id: [이유]}}.
+ * 표 대조·숫자 대조·유의사항 조건·같은 문장 다른 판단. 확정하기 어려운 것은 `코드검사/보류.json` {sid: [혜택 id]}로 뺀다
+ */
+function codeCheckSuspects(): Map<number, Record<string, string[]>> {
+  const dir = path.join(DS, "코드검사");
+  const out = new Map<number, Record<string, string[]>>();
+  if (!existsSync(dir)) return out;
+  const holdPath = path.join(dir, "보류.json");
+  const hold: Record<string, string[]> = existsSync(holdPath) ? JSON.parse(readFileSync(holdPath, "utf-8")).items ?? {} : {};
+  for (const name of readdirSync(dir).filter((n) => n.endsWith("_check.json")).sort()) {
+    const sus: Record<string, Record<string, string[]>> = JSON.parse(readFileSync(path.join(dir, name), "utf-8")).suspect ?? {};
+    for (const [sid, byB] of Object.entries(sus)) {
+      for (const [bid, whys] of Object.entries(byB)) {
+        if ((hold[sid] ?? []).includes(bid)) continue;
+        const m = out.get(Number(sid)) ?? {};
+        for (const w of whys) if (!(m[bid] ??= []).includes(w)) m[bid].push(w);
+        out.set(Number(sid), m);
+      }
+    }
+  }
+  return out;
+}
+
 /** 원문 정제가 없는 새 카드: 카드 정보만 있고 혜택은 비운 레코드 */
 function emptyRecord(entry: CatalogListing): BenefitRecord {
   const card = toWalletCard(entry);
@@ -105,6 +129,7 @@ type Table = { status: Status; record: BenefitRecord; file: string; suspect: Rec
 
 function readTables(): Map<number, Table> {
   const found = new Map<number, Table>();
+  const extra = codeCheckSuspects();
   for (const { dir, status } of SOURCES) {
     const full = path.join(DS, dir);
     if (!existsSync(full)) {
@@ -116,6 +141,10 @@ function readTables(): Map<number, Table> {
       const sid = Number(record?.card?.source_id ?? name.replace(".json", ""));
       if (!Number.isFinite(sid) || found.has(sid)) continue; // 앞 순서(검수 수준이 높은 쪽)가 이긴다
       const suspect = suspectOf(record);
+      const ids = new Set((record.benefits ?? []).map((b: BenefitRecord) => b.id));
+      for (const [bid, whys] of Object.entries(extra.get(sid) ?? {})) {
+        if (ids.has(bid)) for (const w of whys) if (!(suspect[bid] ??= []).includes(w)) suspect[bid].push(w);
+      }
       delete record.extraction_notes;
       slim(record);
       found.set(sid, { status, record, file: `${dir}/${name}`, suspect });

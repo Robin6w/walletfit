@@ -30,22 +30,48 @@ function Section({ title, sub, children }: { title: string; sub?: string; childr
   );
 }
 
+/** 계약형 혜택이 어떤 계약을 뜻하는지(benefit-conditions.json asks 키) */
+const CONTRACT_WORD: Record<string, string> = {
+  insurance: "보험료를 이 카드로 내는",
+  rental: "정수기·가전 렌탈료를 이 카드로 내는",
+  installment: "장기 할부로 큰 물건을 사는",
+  apt_fee: "아파트 관리비를 이 카드로 자동이체하는",
+  bank_account: "카드사 은행 계좌·금융상품을 쓰는",
+  paid_membership: "유료 멤버십에 가입하는",
+};
+
+/** 추천 계산에서 뺀 이유 한 줄(장소 한정·계약형만 알림). 알릴 게 없으면 null. review·no_calc 상태는 아래 칩이 따로 말한다 */
+function excludeNote(b: CardViewBenefit): string | null {
+  switch (b.ex) {
+    case "place":
+      return "경기장·공항처럼 장소가 정해진 혜택이라 추천 계산에서 뺐어요";
+    case "contract":
+      return `${b.ct && CONTRACT_WORD[b.ct] ? `${CONTRACT_WORD[b.ct]} 경우에만` : "통신사 결합 같은 계약이 있어야"} 받는 혜택이라 기본 계산에서 뺐어요`;
+    default:
+      // overseas·nocat은 사용자에게 알릴 필요가 없어 글을 달지 않는다(2026-11-05 결정). 계산에서는 빠지고 금액만 회색으로 둔다
+      return null;
+  }
+}
+
 function BenefitRow({ b }: { b: CardViewBenefit }) {
   const conds = conditionTexts(b);
+  const note = excludeNote(b);
+  const counted = b.st === "auto" && !b.ex;
   return (
-    <li style={{ listStyle: "none", padding: "12px 14px", borderRadius: 12, background: b.st === "auto" ? "#FFFFFF" : "#FAFAFC", border: "1px solid #E3EAF8", display: "flex", flexDirection: "column", gap: 6 }}>
+    <li style={{ listStyle: "none", padding: "12px 14px", borderRadius: 12, background: counted ? "#FFFFFF" : "#FAFAFC", border: "1px solid #E3EAF8", display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: "4px 12px" }}>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "#0D1B4A", flex: "1 1 240px" }}>{b.t}</span>
-        <strong style={{ fontSize: 15, color: b.st === "auto" ? "#1747D6" : "#5E6D96", whiteSpace: "nowrap" }}>{rewardText(b)}</strong>
+        <strong style={{ fontSize: 15, color: counted ? "#1747D6" : "#5E6D96", whiteSpace: "nowrap" }}>{rewardText(b)}</strong>
       </div>
-      {(conds.length > 0 || b.st !== "auto" || b.m.length > 0) && (
+      {(conds.length > 0 || !counted || b.m.length > 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {b.st === "review" && <span style={{ ...tag, background: "#FFF6E5", border: "1px solid #F5DDB0", color: "#8A5300" }}>사람 확인 중 · 추천 계산에서 뺌</span>}
           {b.st === "no_calc" && (
             <span style={{ ...tag, background: "#F1F1F4", border: "1px solid #E1E1E8", color: "#55556A" }}>
-              {b.ex === "place" ? "경기장·공항처럼 장소가 정해진 혜택이라 추천 계산에서 뺌" : "계산하지 않는 혜택"}
+              {note ?? "계산하지 않는 혜택"}
             </span>
           )}
+          {b.st === "auto" && note && <span style={{ ...tag, background: "#F1F1F4", border: "1px solid #E1E1E8", color: "#55556A" }}>{note}</span>}
           {conds.map((c) => (
             <span key={c} style={tag}>
               {c}
@@ -144,7 +170,7 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
   }, [onClose]);
 
   const groups = view ? groupBenefits(view) : [];
-  const counted = view ? view.b.filter((b) => b.st === "auto").length : 0;
+  const counted = view ? view.b.filter((b) => b.st === "auto" && !b.ex).length : 0;
 
   return createPortal(
     <div

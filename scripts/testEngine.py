@@ -317,7 +317,34 @@ check("고른 곳 중 비중표에 없는 곳이 있으면 똑같이 나눈 값 
 park = [b for rec in R.values() for b in rec["benefits"] if "에버랜드" in (b["scope"].get("merchants") or []) and b["scope"].get("app_category")]
 check(f"놀이공원(에버랜드) 혜택은 카테고리를 채우지 않음({len(park)}개 채워짐)", not park)
 
-# 15. 2026-11-05 개선 13: 의심 혜택은 조합을 고를 때만 금액을 깎는다(assumptions.json suspect_discount.factor)
+# 15. 2026-11-05 4묶음: 계약 대상이 가맹점·제목에만 있던 혜택(보험사·렌탈사·관리비·은행 계좌)도 계약형으로
+cond15 = json.loads(read("data/catalog/benefit-conditions.json"))["benefits"]
+sp15 = {"bills": 100000, "etc": 400000}
+h15 = lambda sid, bid, ct=None: calc.evaluate(R[sid], sp15, E._A(None, None, ct))["by_benefit"].get(bid, 0)  # noqa: E731
+check("계약형: 2365 '손해/생명보험사 자동이체'는 보험이 있다고 안 하면 0, 있으면 계산",
+      cond15["2365"].get("s3b1") == "insurance" and h15(2365, "s3b1") == 0 and h15(2365, "s3b1", ["insurance"]) > 0)
+check("계약형: 렌탈사 이름만 적힌 718 '생활요금 7%' 렌탈 조각과 949 '보험 이용액 1.2%'도 계약형",
+      cond15["718"].get("s4b1_7") == "rental" and cond15["949"].get("s4b8") == "insurance")
+check("계약형 오탐 아님: 2986 주유 10%·3097 OTT 30%·410 생활필수 0.5%·4대 사회보험·전기가스 섞인 공과금은 기본 계산",
+      "s8b2" not in cond15.get("2986", {}) and not {"s3b1", "s3b2"} & set(cond15.get("3097", {}))
+      and not any(k.startswith("s2b1") for k in cond15.get("410", {})) and "s2b10_3" not in cond15.get("2286", {})
+      and "s1b1" not in cond15.get("2533", {}) and "s6b6_2" not in cond15.get("546", {}))
+
+# 16. 2026-11-05 묶음4: 실적 기준을 모름이던 카드(3개월·분기 기준)를 월 기준 구간으로
+p550 = R[550]["performance"]
+lo550 = calc.evaluate(R[550], {"cafe": 50000, "dining": 30000, "etc": 10000}, A13)["total"]
+hi550 = calc.evaluate(R[550], {"cafe": 50000, "dining": 30000, "etc": 70000}, A13)["total"]
+check(f"3개월 실적: 550 '최근 3개월 30만원'은 월 {p550['tiers'][0]['min_won']:,}원 구간(월 9만원 {lo550:,.0f}원, 15만원 {hi550:,.0f}원)",
+      p550["tiers"][0]["min_won"] == 100000 and lo550 == 0 and hi550 > 0)
+q2128 = lambda m: calc.evaluate(R[2128], {"etc": m}, A13)["by_benefit"].get("s1b2", 0)
+check(f"분기 실적: 2128 보너스 마일리지는 분기 100만원(월 34만원 {q2128(340000):,.0f}원)부터, 월 30만원이면 0",
+      q2128(300000) == 0 and q2128(340000) > 0)
+big = {"medical": 200000, "onlineShopping": 300000, "cafe": 100000, "dining": 200000, "mobile": 60000, "etc": 300000}
+check("모르는 채로 남은 카드: 1278 국민행복카드는 글·카드고릴라 금액이 없어 계산하지 않음(0원)", calc.evaluate(R[1278], big, A13)["total"] == 0)
+r644 = calc.evaluate(R[644], {"cafe": 100000, "convenience": 100000, "transport": 100000, "etc": 300000}, A13)
+check(f"구간표 없는 카드: 644는 신규 발급 통합 한도 5천원까지만({r644['total']:,.0f}원)", 0 < r644["total"] <= 5000 + 1e-6)
+
+# 17. 2026-11-05 개선 13: 의심 혜택은 조합을 고를 때만 금액을 깎는다(assumptions.json suspect_discount.factor)
 sus = [(s, b["id"], b["suspect"]) for s, rec in R.items() for b in rec["benefits"] if b.get("suspect")]
 kinds = {k for _, _, ks in sus for k in ks}
 check(f"의심 혜택 표시 {len(sus)}개({sorted(kinds)})", len(sus) > 100 and kinds <= {"multi_value_tier", "cond_text_only", "high_rate_no_cap", "ai_category"})
@@ -343,7 +370,7 @@ def sus_amount(res, A_):
     return t
 
 
-# 15-1. 같은 업종 혜택 두 장(10% 의심 vs 9% 확인): 1.0이면 10%, 0.8이면 9% 카드(0.8 × 10% < 9%)
+# 17-1. 같은 업종 혜택 두 장(10% 의심 vs 9% 확인): 1.0이면 10%, 0.8이면 9% 카드(0.8 × 10% < 9%)
 def card15(sid, rate, suspect):
     b = {"id": "b1", "title": f"외식 {rate:.0%} 할인", "scope": {"region": "domestic", "specificity": "category", "app_category": "dining", "channel": "any", "merchants": []},
          "reward": {"kind": "discount", "type": "percent", "value_by_tier": [{"tier": None, "value": rate}]},
@@ -368,7 +395,7 @@ check("의심 혜택: 카드 바꿔보기 화면 값도 calc 그대로(30,000원
 for k in (990001, 990002):
     R.pop(k), E.STATE["status"].pop(k)
 
-# 15-2. 큰 후보(국소 탐색 포함): 1.0이면 표시를 지운 엔진과 같은 조합, 0.8이면 의심 혜택 금액이 늘지 않고 화면 값 = calc
+# 17-2. 큰 후보(국소 탐색 포함): 1.0이면 표시를 지운 엔진과 같은 조합, 0.8이면 의심 혜택 금액이 늘지 않고 화면 값 = calc
 A15 = E._A(None)
 s10 = with_factor(1.0, rec9)
 saved = {(s, b["id"]): b.pop("suspect") for s, rec in R.items() for b in rec["benefits"] if b.get("suspect")}

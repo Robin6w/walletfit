@@ -5,6 +5,7 @@ import { Link } from "@/v2/app/router";
 import { CategoryIcon } from "@/v2/ui/icons";
 import { BRAND_TABS, canonicalBrand, logoOf, pickedCount, type BrandPicks } from "@/v2/model/brands";
 import { ChoiceQuestions } from "@/v2/make/ChoiceQuestions";
+import { useChrome } from "@/v2/ui/chrome";
 
 /* 디자인 원본 F-D-Brands(A3·B3) 값을 그대로 옮김 */
 
@@ -105,6 +106,8 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
   const tabs = BRAND_TABS.filter((t) => (spending[t.cat] ?? 0) > 0);
   const [cur, setCur] = useState<string>(tabs[0]?.cat ?? "cafe");
   const [finding, setFinding] = useState(false);
+  // 모바일 사이트: 브랜드 칸을 한 줄에 3개씩(스크롤 줄이기, 2026-11-07)
+  const { compact } = useChrome();
   const [q, setQ] = useState("");
   const tab = tabs.find((t) => t.cat === cur) ?? tabs[0];
   const engine = useBrands(brandIds.length ? brandIds : null, ownIds);
@@ -186,7 +189,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
                   <b style={{ fontFamily: "Outfit, sans-serif", color: "#2457F5" }}>{curPick.brands.length}</b>곳 선택
                 </span>
               </div>
-              <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: 12 }}>
+              <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: compact ? "repeat(3, minmax(0, 1fr))" : "repeat(auto-fill, minmax(132px, 1fr))", gap: compact ? 8 : 12 }}>
                 {tileBrands.map((b) => {
                   const on = curPick.brands.includes(b);
                   const logo = logoOf(b);

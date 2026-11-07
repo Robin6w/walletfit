@@ -5,6 +5,7 @@ import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 import { CardImage } from "@/v2/ui/CardImage";
 import { BottomBar } from "@/v2/ui/TopBar";
+import { useChrome } from "@/v2/ui/chrome";
 import { issuerChip, searchCards, splitHighlight } from "@/v2/model/cardSearch";
 
 /* 디자인 원본 F-D-Cards(A1) 값을 그대로 옮김. 카드 그림만 실물 사진 */
@@ -61,6 +62,8 @@ function XIcon({ size = 18 }: { size?: number }) {
 
 /** A1 카드 선택: 가진 카드를 담는다(담은 카드만으로 조합을 계산) */
 export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: number) => void }) {
+  // 모바일 사이트: 카드 그림을 작게 왼쪽에 두고 한 줄로(스크롤 줄이기, 2026-11-07)
+  const { compact } = useChrome();
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "신용" | "체크">("all");
   const [issuer, setIssuer] = useState<string | null>(null);
@@ -79,7 +82,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
     <>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>가지고 있는 카드를 담아 주세요</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>담은 카드만으로 조합을 계산해요. 오른쪽에서 카드마다 계산에 쓰는 혜택을 바로 확인할 수 있어요.</p>
+        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>담은 카드만으로 조합을 계산해요. 카드마다 계산에 쓰는 혜택을 바로 확인할 수 있어요.</p>
       </header>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 24 }}>
@@ -183,16 +186,16 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                   key={c.sourceId}
                   style={{
                     display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: "12px 16px",
-                    padding: "16px 18px",
+                    flexWrap: compact ? "nowrap" : "wrap",
+                    alignItems: compact ? "flex-start" : "center",
+                    gap: compact ? 12 : "12px 16px",
+                    padding: compact ? "14px 14px" : "16px 18px",
                     borderBottom: idx === arr.length - 1 ? undefined : "1px solid #EDF2FC",
                     background: on ? "#F7FAFF" : undefined,
                   }}
                 >
-                  <CardImage sid={c.sourceId} width={112} />
-                  <div style={{ flex: "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <CardImage sid={c.sourceId} width={compact ? 64 : 112} />
+                  <div style={{ flex: compact ? "1 1 auto" : "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                     {disc ? (
                       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px" }}>
                         {nameEl}
@@ -220,8 +223,8 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     onClick={() => onToggle(c.sourceId)}
                     style={
                       on
-                        ? { height: 44, minWidth: 96, padding: "0 14px", borderRadius: 12, border: "1px solid #C9D6F5", background: "#E8EEFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }
-                        : { height: 44, minWidth: 96, padding: "0 14px", borderRadius: 12, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }
+                        ? { height: 44, minWidth: compact ? 64 : 96, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #C9D6F5", background: "#E8EEFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }
+                        : { height: 44, minWidth: compact ? 64 : 96, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }
                     }
                   >
                     {on ? (
@@ -253,6 +256,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
 
         <aside
           aria-labelledby="wallet-h"
+          className="w-side-panel"
           style={{ flex: "1 1 360px", minWidth: 0, maxWidth: "100%", position: "sticky", top: 96, background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, display: "flex", flexDirection: "column", boxShadow: SHADOW, boxSizing: "content-box" }}
         >
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #EDF2FC", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -298,7 +302,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 </li>
               );
             })}
-            {ids.length === 0 && <li style={{ padding: "24px 0", textAlign: "center", fontSize: 14, color: "#5E6D96" }}>왼쪽에서 카드를 담아 주세요</li>}
+            {ids.length === 0 && <li style={{ padding: "24px 0", textAlign: "center", fontSize: 14, color: "#5E6D96" }}>카드를 찾아 담아 주세요</li>}
           </ul>
           <div style={{ padding: "14px 20px 18px", borderTop: "1px solid #EDF2FC" }}>
             <Link to={paths.start("new")} style={{ fontSize: 14, fontWeight: 700, textDecoration: "none" }}>

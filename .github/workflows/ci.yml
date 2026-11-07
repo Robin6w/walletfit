@@ -36,6 +36,10 @@ jobs:
         if: steps.check_package.outputs.exists == 'true'
         run: npm run build --if-present
 
+      - name: Build mobile site
+        if: steps.check_package.outputs.exists == 'true'
+        run: npm run build:mobile --if-present
+
       - name: Check Lint (Optional)
         if: steps.check_package.outputs.exists == 'true'
         run: npm run lint --if-present

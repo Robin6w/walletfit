@@ -48,12 +48,14 @@ export function StepType({ value, onChange }: { value: CardKind[]; onChange: (v:
         <div style={{ display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 14, background: "#E8EEFF", fontSize: 13, fontWeight: 700, color: "#2457F5" }}>새 카드까지 포함해서 내 지갑 만들기</div>
         <h1 style={{ margin: "16px 0 0", fontSize: "clamp(26px, 2.6vw, 32px)", lineHeight: 1.4, fontWeight: 700, letterSpacing: "-0.02em" }}>어떤 종류의 새 카드를 찾고 계세요?</h1>
         <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>고른 종류의 카드 중에서 내 소비에 맞는 카드를 함께 비교해 드려요.</p>
-        <p style={{ margin: "14px 0 0", display: "inline-flex", alignItems: "center", gap: 6, height: 32, boxSizing: "content-box", padding: "0 14px", borderRadius: 16, background: "#FFFFFF", border: "1px solid transparent", fontSize: 14, fontWeight: 500, color: "#3A4A78", boxShadow: SHADOW }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2457F5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <p style={{ margin: "14px 0 0", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 32, boxSizing: "content-box", padding: "4px 14px", borderRadius: 16, lineHeight: 1.5, background: "#FFFFFF", border: "1px solid transparent", fontSize: 14, fontWeight: 500, color: "#3A4A78", boxShadow: SHADOW }}>
+          <svg width="16" height="16" style={{ flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="#2457F5" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="4" />
             <path d="m8 12 3 3 5-6" />
           </svg>
-          <strong style={{ color: "#2457F5", fontWeight: 700 }}>복수 선택 가능</strong> · 둘 다 고르면 신용·체크카드를 함께 비교해요
+          <span>
+            <strong style={{ color: "#2457F5", fontWeight: 700 }}>복수 선택 가능</strong> · 둘 다 고르면 신용·체크카드를 함께 비교해요
+          </span>
         </p>
       </header>
 

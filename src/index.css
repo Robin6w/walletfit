@@ -488,3 +488,46 @@ body {
     animation: none;
   }
 }
+
+/* 추천 결과 히어로 카드 겹침(360×220 판). 좁은 화면에서는 판을 통째로 줄여 오른쪽이 잘리지 않게 한다(2026-11-07) */
+.hero-stack-inner {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 360px;
+  height: 220px;
+  margin-left: -180px;
+  transform-origin: 50% 0;
+}
+@media (max-width: 430px) {
+  .hero-stack {
+    height: 176px !important;
+  }
+  .hero-stack-inner {
+    transform: scale(0.8);
+  }
+}
+
+/* ── 모바일 사이트(src/mobile, .w-mobile) 전용 ──
+   단계 아래 '다음' 바는 화면 아래에 꽉 붙이고 버튼을 한 줄 전체로,
+   PC에서 오른쪽에 붙던 '담은 카드' 칸은 숨긴다(목록 맨 위에 담은 카드가 먼저 나오고 아래 바에 장수가 보인다) */
+.w-mobile [data-bottombar] {
+  bottom: 0 !important;
+  margin: 0 calc(-1 * clamp(16px, 3.5vw, 48px));
+  border-radius: 20px 20px 0 0 !important;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+  gap: 10px 12px !important;
+}
+.w-mobile [data-bottombar] > :last-child {
+  flex: 1 1 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+.w-mobile .w-side-panel {
+  display: none !important;
+}
+/* 모바일 사이트는 본문을 88%로 줄여 한 화면에 더 많이 보이게 한다(사용자 요청 2026-11-07: 스크롤 줄이기).
+   본문 글자·여백이 모두 px 고정값이라 rem 대신 zoom을 쓴다. 위 머리줄·아래 탭·상담 창은 줄이지 않는다 */
+.w-mobile #w-main {
+  zoom: var(--w-mobile-zoom, 0.88);
+}

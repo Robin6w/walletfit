@@ -22,7 +22,9 @@ export function HeroCardStack({ sids, newSids = [], bubble = true }: { sids: num
   const k = Math.min(5, Math.max(1, sids.length));
   const s = STACK[k];
   return (
-    <div aria-hidden="true" style={{ flex: "0 1 360px", minWidth: 0, height: 220, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    // 좁은 화면(430px 이하)에서는 360×220 판을 통째로 줄여 오른쪽이 잘리지 않게 한다(.hero-stack, 2026-11-07)
+    <div aria-hidden="true" className="hero-stack" style={{ flex: "0 1 360px", minWidth: 0, height: 220, position: "relative" }}>
+      <div className="hero-stack-inner">
       {sids.slice(0, 5).map((sid, i) => (
         <CardImage
           key={sid}
@@ -40,6 +42,7 @@ export function HeroCardStack({ sids, newSids = [], bubble = true }: { sids: num
           +
         </span>
       )}
+      </div>
     </div>
   );
 }

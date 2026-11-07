@@ -5,6 +5,7 @@ import { paths, type Flow } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 import { CategoryIcon } from "@/v2/ui/icons";
 import { BottomBar } from "@/v2/ui/TopBar";
+import { useChrome } from "@/v2/ui/chrome";
 
 /* 디자인 원본 F-D-Spend(A2·B2) 값을 그대로 옮김 */
 
@@ -15,9 +16,9 @@ const plusBtn: CSSProperties = { height: 36, padding: "0 10px", borderRadius: 8,
 const label = (c: string) => (c === "etc" ? "그 외 가맹점" : catLabel(c));
 
 /** 금액 칸: 디자인의 숫자 입력(오른쪽 정렬, Outfit 16 bold) + '원' */
-function AmountInput({ id, value, onChange, name }: { id: string; value: number; onChange: (v: number) => void; name: string }) {
+function AmountInput({ id, value, onChange, name, narrow }: { id: string; value: number; onChange: (v: number) => void; name: string; narrow?: boolean }) {
   return (
-    <div className="w-field" style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 12px", height: 44, boxSizing: "content-box", border: "1px solid #D3DDF2", borderRadius: 10, background: "#FFFFFF" }}>
+    <div className="w-field" style={{ display: "flex", alignItems: "center", gap: 6, padding: narrow ? "0 10px" : "0 12px", height: 44, flexShrink: 0, boxSizing: "content-box", border: "1px solid #D3DDF2", borderRadius: 10, background: "#FFFFFF" }}>
       <input
         id={id}
         inputMode="numeric"
@@ -29,7 +30,7 @@ function AmountInput({ id, value, onChange, name }: { id: string; value: number;
           const digits = e.target.value.replace(/[^0-9]/g, "");
           onChange(digits ? Math.min(Number(digits), 99_999_999) : 0);
         }}
-        style={{ width: 96, boxSizing: "content-box", padding: "1px 2px", border: "none", outline: "none", textAlign: "right", fontSize: 16, fontWeight: 700, color: "#0D1B4A", fontVariantNumeric: "tabular-nums", fontFamily: "Outfit, 'IBM Plex Sans KR', sans-serif", background: "transparent" }}
+        style={{ width: narrow ? 76 : 96, boxSizing: "content-box", padding: "1px 2px", border: "none", outline: "none", textAlign: "right", fontSize: 16, fontWeight: 700, color: "#0D1B4A", fontVariantNumeric: "tabular-nums", fontFamily: "Outfit, 'IBM Plex Sans KR', sans-serif", background: "transparent" }}
       />
       <span style={{ fontSize: 14, color: "#5E6D96" }}>원</span>
     </div>
@@ -56,6 +57,7 @@ export function StepSpend({
   /** 다음 단계 주소와 이름(자주 가는 곳 또는 추천 결과) */
   next: { to: string; label: string };
 }) {
+  const { compact } = useChrome();
   const [added, setAdded] = useState<string[]>([]);
   // '모두 지우기'는 한 번 더 확인한다(실수로 누르면 넣은 금액이 모두 사라진다)
   const [confirmClear, setConfirmClear] = useState(false);
@@ -114,19 +116,20 @@ export function StepSpend({
 
       <section
         aria-label="카테고리별 월 지출"
-        style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, padding: "8px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))", columnGap: 40, boxShadow: SHADOW }}
+        style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, padding: compact ? "4px 14px" : "8px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))", columnGap: 40, boxShadow: SHADOW }}
       >
         {shown.map((c) => {
           const id = `d-${c}`;
           const v = spending[c] ?? 0;
           return (
-            <div key={c} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 14px", padding: "16px 0", borderBottom: "1px solid #EDF2FC" }}>
-              <label htmlFor={id} style={{ flex: "1 1 110px", display: "flex", alignItems: "center", gap: 12, fontSize: 16, fontWeight: 700 }}>
-                <CategoryIcon cat={c} size={40} radius={13} />
+            // 모바일 사이트: 이름 · +1만 +5만 · 금액을 한 줄에(스크롤 줄이기, 2026-11-07)
+            <div key={c} style={{ display: "flex", flexWrap: compact ? "nowrap" : "wrap", alignItems: "center", gap: compact ? 8 : "10px 14px", padding: compact ? "10px 0" : "16px 0", borderBottom: "1px solid #EDF2FC" }}>
+              <label htmlFor={id} style={{ flex: compact ? "1 1 auto" : "1 1 110px", minWidth: 0, display: "flex", alignItems: "center", gap: compact ? 8 : 12, fontSize: compact ? 15 : 16, fontWeight: 700, wordBreak: "keep-all" }}>
+                <CategoryIcon cat={c} size={compact ? 32 : 40} radius={compact ? 10 : 13} />
                 {label(c)}
               </label>
-              <AmountInput id={id} value={v} onChange={(x) => onChange(c, x)} name={label(c)} />
-              <div style={{ display: "flex", gap: 6 }}>
+              {!compact && <AmountInput id={id} value={v} onChange={(x) => onChange(c, x)} name={label(c)} />}
+              <div style={{ display: "flex", gap: compact ? 4 : 6, flexShrink: 0 }}>
                 <button type="button" aria-label={`${label(c)} 1만원 더하기`} onClick={() => onChange(c, v + 10000)} style={plusBtn}>
                   +1만
                 </button>
@@ -134,6 +137,7 @@ export function StepSpend({
                   +5만
                 </button>
               </div>
+              {compact && <AmountInput id={id} value={v} onChange={(x) => onChange(c, x)} name={label(c)} narrow />}
             </div>
           );
         })}

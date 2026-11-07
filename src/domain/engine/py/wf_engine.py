@@ -84,6 +84,29 @@ def init_json(catalog_text, assumptions_text, share_text=None, conditions_text=N
             for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):
                 if b["id"] in m:
                     b["scope"]["choice"] = m[b["id"]]
+        # 2026-11-07: 업종별로 나누다 똑같아진 조각은 하나만 남긴다(두 번 계산되던 것)
+        for sid, ids in cd.get("duplicates", {}).items():
+            rec = STATE["records"].get(int(sid))
+            if not rec:
+                continue
+            drop = set(ids)
+            rec["benefits"] = [b for b in rec["benefits"] if b["id"] not in drop]
+            for g in rec.get("choice_groups", []):
+                for o in g.get("options", []):
+                    o["benefit_ids"] = [i for i in o.get("benefit_ids", []) if i not in drop]
+        # 2026-11-07: 혜택끼리 같이 쓰는 횟수('통합 연 2회')를 횟수 × 건당 혜택의 묶음 한도로 붙인다(엔진에 공유 횟수가 없어서)
+        for sid, groups in cd.get("shared_counts", {}).items():
+            rec = STATE["records"].get(int(sid))
+            if not rec:
+                continue
+            for i, g in enumerate(groups):
+                cid = f"shared_count_{i + 1}"
+                rec.setdefault("shared_caps", []).append({"id": cid, "label": f"통합 {'연' if g['period'] == 'year' else '월'} {g['count']}회",
+                                                          "period": g["period"], "basis": "benefit",
+                                                          "by_tier": [{"tier": None, "amount_won": g["count"] * g["unit"]}]})
+                for b in rec["benefits"]:
+                    if b["id"] in g["ids"]:
+                        b["shared_cap_ids"] = list(b.get("shared_cap_ids") or []) + [cid]
     if coverage_text:
         for sid, m in json.loads(coverage_text).get("benefits", {}).items():
             for b in (STATE["records"].get(int(sid)) or {}).get("benefits", []):

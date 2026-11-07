@@ -41,6 +41,10 @@ const RESTRICTED_IDS = new Set([
   546, // 다둥이 행복카드(서울 거주 2자녀 이상)
   2756, // the Purple(기존 the Purple 회원 전용)
   2668, // 탐나는전 체크카드(제주 지역화폐)
+  // 2026-11-07 최종 실험 점검: 원문 발급 대상 문구로 확인한 10대 전용
+  679, // 샘 쏘영 체크카드(만 12~18세)
+  680, // 쏘영 체크카드(만 12~18세)
+  686, // 카카오뱅크 mini카드(mini 보유자, 만 14~18세)
 ]);
 
 export function isRestricted(entry: CatalogListing): boolean {

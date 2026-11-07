@@ -38,6 +38,9 @@ const CONTRACT_WORD: Record<string, string> = {
   apt_fee: "아파트 관리비를 이 카드로 자동이체하는",
   bank_account: "카드사 은행 계좌·금융상품을 쓰는",
   paid_membership: "유료 멤버십에 가입하는",
+  ev: "전기차·수소차를 타는",
+  activity: "걸음 수 같은 활동 목표를 채우는",
+  young_adult: "청년(만 34세 이하)인",
 };
 
 /** 추천 계산에서 뺀 이유 한 줄(장소 한정·계약형만 알림). 알릴 게 없으면 null. review·no_calc 상태는 아래 칩이 따로 말한다 */

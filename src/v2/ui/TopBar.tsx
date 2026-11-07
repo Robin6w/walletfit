@@ -77,10 +77,10 @@ function ChatToggle() {
 
 export function Logo() {
   return (
-    <Link to={paths.home} aria-label="WalletFit 홈" className="flex h-11 shrink-0 items-center gap-2 px-2 text-w-ink no-underline">
+    <Link to={paths.home} aria-label="walletfit 홈" className="flex h-11 shrink-0 items-center gap-2 px-2 text-w-ink no-underline">
       <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="" className="h-[30px] w-[30px] object-contain" />
       <span className="text-[17px] font-bold">
-        Wallet<span className="text-w-primary">Fit</span>
+        wallet<span className="text-w-primary">fit</span>
       </span>
     </Link>
   );

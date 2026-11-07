@@ -140,7 +140,6 @@ export default function Cards() {
   const rank = useEngine<{ ok: boolean; error?: string; rows: RankRow[] }>("rank", sort === "fit" && hasSpend ? { spending: spend, brandShare: picksToBrandShare(spend, picks) } : null);
   const netBy = useMemo(() => new Map(((rank.data ?? rank.lastGood)?.rows ?? []).map((r) => [r.sid, r.net])), [rank.data, rank.lastGood]);
   const issuers = useMemo(() => Array.from(new Set(catalogCards.map((c) => c.issuer).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ko")), []);
-  const issuableCount = useMemo(() => catalogCards.filter((c) => !isDiscontinued(c)).length, []);
 
   const list = useMemo(() => {
     let l = catalogCards;
@@ -180,9 +179,6 @@ export default function Cards() {
         <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "12px 20px" }}>
           <div style={{ flex: "1 1 420px", minWidth: 0 }}>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>전체 카드</h1>
-            <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>
-              카드고릴라 기준 {num(catalogCards.length)}장 · 지금 발급되는 카드 {num(issuableCount)}장
-            </p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <div role="group" aria-label="보기" style={{ display: "flex", flexWrap: "wrap", padding: 3, borderRadius: 12, background: "#F3F7FF" }}>
@@ -212,20 +208,6 @@ export default function Cards() {
           </div>
         </header>
 
-        <section style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: compact ? 12 : "16px 24px", padding: compact ? "16px 18px" : "22px 26px", borderRadius: 20, background: "#2457F5", color: "#FFFFFF", boxShadow: "0 12px 26px -10px rgba(36, 87, 245, 0.6)" }}>
-          <div style={{ flex: "1 1 360px", minWidth: 0 }}>
-            <div style={{ fontSize: compact ? 16 : 18, fontWeight: 700 }}>{myCards.ids.length ? `담은 카드 ${myCards.ids.length}장으로 가장 유리한 조합을 찾아 드려요` : "가진 카드를 담으면 가장 유리한 조합을 찾아 드려요"}</div>
-            {!compact && <div style={{ marginTop: 4, fontSize: 14, color: "#FFFFFF" }}>새 카드 발급도 고려 중이라면 새 카드까지 포함해서 비교할 수 있어요</div>}
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: compact ? 8 : 10, ...(compact ? { width: "100%" } : {}) }}>
-            <Link to={paths.start("own")} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: compact ? 42 : 46, ...(compact ? { flex: "1 1 0", padding: "0 12px" } : {}), padding: "0 20px", boxSizing: "content-box", borderRadius: 23, background: "#FFFFFF", color: "#2457F5", fontSize: 15, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-              보유한 카드로 추천받기
-            </Link>
-            <Link to={paths.start("new")} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: compact ? 42 : 46, ...(compact ? { flex: "1 1 0", padding: "0 12px" } : {}), padding: "0 20px", boxSizing: "content-box", borderRadius: 23, border: "1px solid rgba(255, 255, 255, 0.6)", color: "#FFFFFF", fontSize: 15, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-              새 카드까지 포함해서
-            </Link>
-          </div>
-        </section>
 
         <section aria-label="카드 찾기" style={{ background: "#FFFFFF", border: "1px solid transparent", boxShadow: SHADOW, borderRadius: 16, padding: compact ? 14 : 18, display: "flex", flexDirection: "column", gap: compact ? 10 : 14 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>

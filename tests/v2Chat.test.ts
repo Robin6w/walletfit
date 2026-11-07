@@ -391,8 +391,8 @@ describe("카드 상담 대화 시나리오", () => {
     expect((await ask("반가워")).text).toBe("저도 반가워요! 무엇을 도와드릴까요?");
     expect((await ask("응")).blocks).toEqual([{ kind: "menu" }]);
     expect((await ask("도움 됐어")).mood).toBe("happy");
-    expect((await ask("이거 뭐야?")).text).toMatch(/^WalletFit은 내 지출에 맞는 카드 조합/);
-    expect((await ask("넌 누구야?")).text).toBe("저는 WalletFit의 카드 상담사 핏핏이에요. 무엇을 도와드릴까요?");
+    expect((await ask("이거 뭐야?")).text).toMatch(/^walletfit은 내 지출에 맞는 카드 조합/);
+    expect((await ask("넌 누구야?")).text).toBe("저는 walletfit의 카드 상담사 핏핏이에요. 무엇을 도와드릴까요?");
     expect((await ask("너 AI야?")).text).toBe("네, 저는 AI 카드 상담사예요. 금액은 계산 엔진 결과만 사용해요.");
     expect((await ask("상담원 연결해줘")).text).toMatch(/^저는 AI 상담사 핏핏이에요/);
     // 한글 글자 없이 자음만인 짧은 인사·맞장구는 AI로 보내지 않는다

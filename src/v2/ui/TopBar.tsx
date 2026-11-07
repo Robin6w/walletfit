@@ -5,6 +5,7 @@ import { paths } from "@/v2/app/paths";
 import { chatStore, useChatState } from "@/v2/chat/chatStore";
 import { ChatBubbleIcon } from "@/v2/ui/icons";
 import { useChrome } from "@/v2/ui/chrome";
+import { Wordmark } from "@/v2/ui/Wordmark";
 
 const HEADER = "sticky top-0 z-20 w-full px-[clamp(16px,3.5vw,48px)] pt-4";
 const NAV = "mx-auto flex max-w-[1180px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[30px] bg-white p-[7px] w-shadow w-glass";
@@ -79,9 +80,7 @@ export function Logo() {
   return (
     <Link to={paths.home} aria-label="walletfit 홈" className="flex h-11 shrink-0 items-center gap-2 px-2 text-w-ink no-underline">
       <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="" className="h-[30px] w-[30px] object-contain" />
-      <span className="text-[17px] font-bold">
-        wallet<span className="text-w-primary">fit</span>
-      </span>
+      <Wordmark height={20} />
     </Link>
   );
 }

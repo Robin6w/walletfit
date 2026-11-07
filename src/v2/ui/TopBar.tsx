@@ -4,6 +4,7 @@ import { Link } from "@/v2/app/router";
 import { paths } from "@/v2/app/paths";
 import { chatStore, useChatState } from "@/v2/chat/chatStore";
 import { ChatBubbleIcon } from "@/v2/ui/icons";
+import { useChrome } from "@/v2/ui/chrome";
 
 const HEADER = "sticky top-0 z-20 w-full px-[clamp(16px,3.5vw,48px)] pt-4";
 const NAV = "mx-auto flex max-w-[1180px] flex-wrap items-center gap-x-3 gap-y-2 rounded-[30px] bg-white p-[7px] w-shadow w-glass";
@@ -87,6 +88,8 @@ export function Logo() {
 
 /** 메뉴형 상단 바: 홈·내 지갑·전체 카드·혜택별 추천 + 카드 상담 */
 export function MenuBar({ active }: { active: MenuId }) {
+  const Override = useChrome().MenuBar;
+  if (Override) return <Override active={active} />;
   return (
     <header className={HEADER}>
       <nav aria-label="주 메뉴" className={`${NAV} pl-[10px]`}>
@@ -126,6 +129,11 @@ export interface StepPill {
 
 /** 지갑 만들기 단계형 상단 바 */
 export function WizardBar({ sub, steps }: { sub: string; steps: StepPill[] }) {
+  const Override = useChrome().WizardBar;
+  return Override ? <Override sub={sub} steps={steps} /> : <PcWizardBar sub={sub} steps={steps} />;
+}
+
+function PcWizardBar({ sub, steps }: { sub: string; steps: StepPill[] }) {
   const { open } = useChatState();
   const olRef = useRef<HTMLOListElement>(null);
   const current = steps.findIndex((s) => s.state === "current");
@@ -196,6 +204,7 @@ export function BottomBar({ children, padding = "14px 16px 14px 20px" }: { child
   return (
     <div
       data-glass=""
+      data-bottombar=""
       className="w-shadow w-glass"
       style={{ position: "sticky", bottom: 16, zIndex: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 20px", padding, borderRadius: 28, background: "#FFFFFF", border: "1px solid transparent" }}
     >

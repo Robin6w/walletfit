@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "dev:mobile": "vite --mode mobile",
+    "build:mobile": "tsc -b && vite build --mode mobile",
     "lint": "oxlint",
     "lint:a11y": "oxlint -D jsx-a11y",
     "preview": "vite preview",

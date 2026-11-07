@@ -73,8 +73,15 @@ const REWARD_NOTE = /(캐시백|캐쉬백|적립|포인트)\s*\+?\s*\d{1,3}(?:,\
 /** 0으로 시작하는 숫자는 금액이 아니다(카드번호 끝자리 '체크0458', 카카오뱅크 가맹점 번호 '000000117261537', 2026-11-02) */
 const LEADING_ZERO = /(?<![\d,.])0\d{2,}(?![\d,])/g;
 
+/** 웹 페이지를 PDF로 인쇄할 때 붙는 주소('file:///C:/…/KB_20261008.html')의 숫자는 금액이 아니다(2026-11-07 KB국민) */
+const URL = /\b(?:file|https?):\/\/\S+/g;
+/** 전화번호(KB 안내문 '고객센터(1588-1688)'를 -1,688원으로 읽었다, 2026-11-07). 0이나 1로 시작해 날짜(2026-09-08)와 겹치지 않는다 */
+const PHONE = /(?<![\d-])(?:0\d{1,2}|1[5-9]\d{2})-\d{3,4}(?:-\d{4})?(?![\d-])/g;
+
 export function cleanLine(line: string): string {
   return line
+    .replace(URL, " ")
+    .replace(PHONE, " ")
     .replace(MASKED, " ")
     .replace(LEADING_ZERO, " ")
     .replace(REWARD_NOTE, " ")
@@ -123,7 +130,8 @@ function declaredTotal(lines: string[]): { total: number; count?: number } | nul
     if (m) return { total: num(m[2]), count: Number(m[1]) };
   }
   for (const l of lines) {
-    const m = l.match(/(?:총\s*승인\s*금액|총\s*이용\s*금액|이용\s*금액\s*합계|승인\s*금액\s*합계|합\s*계)\s*:?\s*(\d{1,3}(?:,\d{3})+|\d{3,})/);
+    // KB국민 체크카드 '정상이용금액(+) 3,700원 0원'(본 카드 칸이 먼저, 2026-11-07)
+    const m = l.match(/(?:총\s*승인\s*금액|총\s*이용\s*금액|정상\s*이용\s*금액\s*(?:\(\+\))?|이용\s*금액\s*합계|승인\s*금액\s*합계|합\s*계)\s*:?\s*(\d{1,3}(?:,\d{3})+|\d{3,})/);
     if (m) return { total: num(m[1]) };
   }
   return null;
@@ -152,7 +160,15 @@ export function merchantName(line: string): string {
     .replace(/[,\t|]/g, " ")
     .split(/\s+/)
     // 글자·숫자가 없는 기호 조각('¢' 등, 사진 글자 인식이 '원'을 잘못 읽은 것)도 뺀다
-    .filter((t) => t && !/^(승인|승인취소|무승인|취소|일시불|할부|본인|가족|정상|매출|원)$/.test(t) && !/^[_\-–·.()]+$/.test(t) && /[\p{L}\p{N}]/u.test(t))
+    .filter(
+      (t) =>
+        t &&
+        !/^(승인|승인취소|무승인|취소|일시불|할부|본인|가족|정상|매출|원)$/.test(t) &&
+        // 카드번호 칸(KB국민 '마스터160' = 카드 종류 + 끝 세 자리, 2026-11-07)
+        !/^(마스터|비자|로컬|국내전용|아멕스|은련|유니온페이|제이씨비|JCB|BC|VISA|MASTER)\d{2,4}$/i.test(t) &&
+        !/^[_\-–·.()]+$/.test(t) &&
+        /[\p{L}\p{N}]/u.test(t),
+    )
     .join(" ")
     .replace(/\(\s+/g, "(")
     .trim();
@@ -160,6 +176,24 @@ export function merchantName(line: string): string {
 }
 
 const ITEM_DATE = /(20\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})/;
+
+/** 명세서에 적힌 이용 기간('카드이용기간 2026.09.01 ~ 2026.09.30', NH 앱 '2026.08.31~ 2026.09.30') */
+const RANGE = new RegExp(`${ITEM_DATE.source}일?\\s*[~∼]\\s*${ITEM_DATE.source}`);
+const DAY_MS = 86_400_000;
+
+function dayOf(raw: string): number | null {
+  const m = raw.match(ITEM_DATE);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime() : null;
+}
+
+function periodRanges(lines: string[]): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  for (const l of lines) {
+    const m = l.match(RANGE);
+    if (m) out.push([new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime(), new Date(Number(m[4]), Number(m[5]) - 1, Number(m[6])).getTime()]);
+  }
+  return out;
+}
 
 function itemDate(raw: string): string | null {
   const m = raw.match(ITEM_DATE);
@@ -236,6 +270,7 @@ export function summarizeStatement(
   // 제어 문자는 빈칸으로(신한 PDF의 \u0001 띄어쓰기 등, 2026-11-02)
   // eslint-disable-next-line no-control-regex
   const lines = text.replace(/[\u0000-\u0009\u000b\u000c\u000e-\u001f\u007f]/g, " ").split(/\r?\n/);
+  const ranges = periodRanges(lines);
   const matchers = brandMatchers(extraBrands);
   const parsed = lines.map((raw) => (!raw.trim() || SKIP_LINE.test(raw) ? null : parseTextLocally(withBrandNames(cleanLine(raw)))[0] ?? null));
   // 신한카드처럼 결제 하나가 '가맹점 + 금액' 줄과 '날짜 + 부가 정보' 줄로 나뉜 명세서: 날짜 없는 결제 줄 바로 아래(없으면 위)의
@@ -278,7 +313,15 @@ export function summarizeStatement(
   // (신한 맨 위 '623,270원', 업종 요약 '유통업 455,280원', 안내문 '건당 2,000원', 2026-11-02)
   // 결제가 몇 건 안 되는 명세서도 요약 줄 수만큼은 될 수 있어, 비율이 아니라 '날짜 있는 줄이 3건 이상이고 날짜 없는 줄보다 많거나 같을 때'로 본다
   const dated = rows.filter((r) => ITEM_DATE.test(r.raw));
-  if (dated.length >= 3 && dated.length * 2 >= rows.length) rows = dated;
+  // 이용 기간이 적힌 명세서에서 그 기간 안 날짜의 결제가 있으면, 기간 앞뒤 한 달 안의 날짜 줄만 결제로 본다(2026-11-07 KB국민 체크카드).
+  // 결제가 1건뿐이라 위 규칙(3건 이상)이 안 걸리던 명세서에서 한도표 '2,000만원'·포인트 '473점'·안내문 '월 300원'이 결제로 읽히고,
+  // 포인트 소멸 예정 줄 '2027.01.01 포인트리 438'이 기간을 2027년까지 늘렸다. 앞뒤 한 달은 기간 밖에 찍힌 후불교통 등을 잃지 않게
+  const within = (r: Row, slack: number) => {
+    const d = dayOf(r.raw);
+    return d !== null && ranges.some(([a, b]) => d >= a - slack && d <= b + slack);
+  };
+  if (dated.some((r) => within(r, 0))) rows = dated.filter((r) => within(r, 31 * DAY_MS));
+  else if (dated.length >= 3 && dated.length * 2 >= rows.length) rows = dated;
 
   // 모든 결제 줄에 똑같이 있는 낱말은 가맹점이 아니라 고정 칸(케이뱅크의 상품명 'ONE(K-패스)'·가린 카드번호 등)이라 뺀다(2026-10-31).
   // 결제가 5건 이상이고, 빼고 나서도 가맹점 이름이 두 가지 이상 남을 때만(한 가게만 쓴 명세서에서 가게 이름을 지우지 않게)

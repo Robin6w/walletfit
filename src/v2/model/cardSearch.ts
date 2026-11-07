@@ -1,5 +1,17 @@
 import type { CatalogListing } from "@/domain/types/catalog";
+import type { CardViewEntry } from "@/domain/types/cardView";
+import { KEYWORD_MAP } from "@/features/statement/importerParser";
 import { catalogCards, isDiscontinued, isVerified } from "@/v1/catalog";
+
+/** 그 카테고리 혜택이 있는 카드(전체 카드 '혜택으로 찾기', 혜택별 추천 금액 넣기 전 목록).
+ *  원문 정제 혜택 표에 그 카테고리 혜택(계산 제외 빼고)이 있으면 참.
+ *  혜택 표를 받기 전이거나 없는 카드는 혜택 요약에 그 카테고리 낱말(스타벅스·커피·편의점 등)이 있거나 구간표가 있는 카드 */
+export function hasBenefit(c: CatalogListing, cat: string, view: CardViewEntry | undefined): boolean {
+  if (view) return view.b.some((b) => b.c === cat && b.st !== "no_calc");
+  if (c.categoryTiers?.some((t) => t.category === cat)) return true;
+  const text = (c.benefitSummary ?? "").toLowerCase();
+  return (KEYWORD_MAP[cat] ?? []).some((k) => k.length >= 2 && text.includes(k.toLowerCase()));
+}
 
 /** 카드 찾기(A1 카드 선택, 전체 카드). 영문 카드명은 한글 별명으로도 찾는다 */
 export const NAME_ALIASES: Record<string, string[]> = {

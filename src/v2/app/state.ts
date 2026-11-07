@@ -53,7 +53,7 @@ export interface SavedWalletV2 extends SavedWallet {
   ownedOnlyNet?: number | null;
 }
 
-/** 지갑 만들기에서 마지막으로 계산한 결과(상담·혜택별 추천이 함께 씀). 새로고침하면 사라진다 */
+/** 지갑 만들기에서 마지막으로 계산한 결과(상담이 함께 씀, 혜택별 추천은 2026-11-07부터 쓰지 않음). 새로고침하면 사라진다 */
 export interface LastRun {
   flow: Flow;
   source: "manual" | "statement";

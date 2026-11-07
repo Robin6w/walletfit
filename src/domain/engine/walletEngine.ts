@@ -113,6 +113,10 @@ export interface CategoryRankRow {
   status?: BenefitStatus;
   /** 가장 큰 혜택과 걸린 한도(2026-10-29 추가, 금액이 있는 카드만) */
   detail?: CategoryRankDetail;
+  /** assumePerf로 계산했을 때 그 혜택에 필요한 최소 실적(원, 0이면 조건 없음). 가정하지 않았으면 null(2026-11-07) */
+  perfMin?: number | null;
+  /** 실적 기준(prev_month 전월 / this_month 당월 / none / unknown) */
+  perfBasis?: string;
 }
 
 export interface CategoryRankDetail {

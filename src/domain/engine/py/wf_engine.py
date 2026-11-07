@@ -894,50 +894,99 @@ def _cat_value(rec, r, cat, amount, excl, elig):
     return val
 
 
+def _best_cat(rec, base, A, cat, amount):
+    """한 카드가 그 카테고리에서 받는 가장 큰 월 혜택 (값, 패키지, 패키지를 바꿨나).
+    패키지(하나만 고르는 선택형)가 있으면 그 카테고리 혜택이 가장 큰 패키지로 계산한다."""
+    r = calc.evaluate(rec, base, A)
+    excl = set(rec["performance"].get("excluded_app_categories", []))
+    elig = sum(v for c, v in base.items() if c not in excl) or 1.0
+    val = _cat_value(rec, r, cat, amount, excl, elig)
+    opts = r.get("options") or []
+    switched = False
+    groups = rec.get("choice_groups", [])
+    if groups and all(g.get("choose", 1) == 1 for g in groups):
+        for combo in itertools.product(*[[o["id"] for o in g["options"]] for g in groups]):
+            try:
+                r2 = calc.evaluate(rec, base, A, list(combo))
+            except Exception:
+                continue
+            v2 = _cat_value(rec, r2, cat, amount, excl, elig)
+            if v2 > val + 0.5:
+                val, opts = v2, list(combo)
+                switched = opts != list(r.get("options") or [])
+    return val, opts, switched
+
+
+def _touches(rec, cat):
+    """_cat_value가 셀 수 있는 혜택(그 카테고리 혜택, 그 카테고리를 빼지 않은 모든 가맹점 혜택)이 있는 카드인가"""
+    excl = set(rec["performance"].get("excluded_app_categories", []))
+    for b in rec["benefits"]:
+        sc = b.get("scope") or {}
+        if sc.get("app_category") == cat or (sc.get("specificity") == "all_merchants" and sc.get("app_category") is None and cat not in excl):
+            return True
+    return False
+
+
+def _at_tier(rec, tier):
+    """실적 구간 하나를 지출과 상관없이 고정한 사본(혜택별 추천 '실적 채웠다고 가정', 2026-11-07).
+    별도 구간표(연간·분기 실적)는 가장 낮은 구간으로 고정한다. 혜택 목록은 원본을 그대로 쓴다(계산이 끝나면 임시 값을 지움)."""
+    out = dict(rec)
+    out["performance"] = {**rec["performance"], "tiers": [{**tier, "min_won": 0, "max_won": None}]}
+    out["local_tier_sets"] = [
+        {**ts, "tiers": [{**min(ts["tiers"], key=lambda t: t["min_won"]), "min_won": 0, "max_won": None}]} if ts.get("tiers") else ts
+        for ts in rec.get("local_tier_sets", [])
+    ]
+    return out
+
+
 def category_rank_json(payload_text):
     """혜택별 추천: 한 카테고리 지출을 각 카드로 낼 때 그 카테고리에서 받는 월 혜택.
-    실적은 지출 입력 전체(그 카테고리는 입력한 금액으로 바꿈)를 그 카드로 낸다고 보고 계산한다.
-    패키지(하나만 고르는 선택형)가 있는 카드는 그 카테고리 혜택이 가장 큰 패키지로 계산하고,
-    지출 전체 기준으로 고른 패키지와 다르면 switched=True(2026-10-29 v2)."""
+    실적은 spending(그 카테고리는 입력한 금액으로 바꿈)을 그 카드로 낸다고 보고 계산한다.
+    혜택별 추천 화면은 다른 기능의 지출을 넘기지 않아 실적 = 입력한 금액이다(2026-11-07, 독립 기능).
+    assumePerf: 실적을 채웠다고 가정한다. 카드마다 실적 구간을 낮은 것부터 고정해 보고 그 카테고리 혜택이 처음 생기는 구간으로 계산하며,
+    그 구간의 최소 실적을 perfMin으로 돌려준다(0이면 실적 조건 없음).
+    패키지가 지출 전체 기준으로 고른 패키지와 다르면 switched=True(2026-10-29 v2)."""
     p = json.loads(payload_text)
     cat = p["category"]
     amount = float(p.get("amount") or 0)
+    assume = bool(p.get("assumePerf"))
     base = _clean_spend(p.get("spending"))
     base[cat] = amount
     base = {c: v for c, v in base.items() if v > 0}
     A = _A(p.get("brandShare"), p.get("tickets"), p.get("contracts"), p.get("choices"))
     ids = [int(x) for x in p.get("ids", []) if int(x) in STATE["records"]] or list(STATE["records"])
     rows = []
+    used = {}
     for sid in ids:
         rec = STATE["records"][sid]
+        perf = rec["performance"]
+        perf_min = None
         try:
-            r = calc.evaluate(rec, base, A)
+            if assume and perf.get("basis") != "none" and perf.get("tiers"):
+                val, opts, switched, used[sid] = 0.0, [], False, rec
+                # 그 카테고리 혜택도 모든 가맹점 혜택도 없는 카드는 어느 구간이든 0원이라 구간마다 계산하지 않는다
+                for tier in sorted(perf["tiers"], key=lambda t: t["min_won"]) if _touches(rec, cat) else []:
+                    fixed = _at_tier(rec, tier)
+                    v, o, s = _best_cat(fixed, base, A, cat, amount)
+                    if v > 0.5:
+                        val, opts, switched, used[sid], perf_min = v, o, s, fixed, tier["min_won"]
+                        break
+            else:
+                val, opts, switched = _best_cat(rec, base, A, cat, amount)
+                used[sid] = rec
+                if assume:
+                    perf_min = 0
         except Exception:
             continue
-        excl = set(rec["performance"].get("excluded_app_categories", []))
-        elig = sum(v for c, v in base.items() if c not in excl) or 1.0
-        val = _cat_value(rec, r, cat, amount, excl, elig)
-        opts = r.get("options") or []
-        switched = False
-        groups = rec.get("choice_groups", [])
-        if groups and all(g.get("choose", 1) == 1 for g in groups):
-            for combo in itertools.product(*[[o["id"] for o in g["options"]] for g in groups]):
-                try:
-                    r2 = calc.evaluate(rec, base, A, list(combo))
-                except Exception:
-                    continue
-                v2 = _cat_value(rec, r2, cat, amount, excl, elig)
-                if v2 > val + 0.5:
-                    val, opts = v2, list(combo)
-                    switched = opts != list(r.get("options") or [])
-        rows.append({"sid": sid, "value": val, "name": rec["card"]["name"], "options": opts, "switched": switched})
+        rows.append({"sid": sid, "value": val, "name": rec["card"]["name"], "options": opts, "switched": switched,
+                     "perfMin": perf_min, "perfBasis": perf.get("basis")})
     rows.sort(key=lambda x: -x["value"])
     top = rows[: int(p.get("limit") or 20)]
     for row in top:
         if row["value"] <= 0.5:
             row["note"] = None
             continue
-        rec = STATE["records"][row["sid"]]
+        rec = used[row["sid"]]
         t = {}
         calc.evaluate(rec, base, A, row["options"] if row["options"] else None, trace=t)
         best = None

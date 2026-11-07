@@ -8,7 +8,7 @@ import { Link } from "@/v2/app/router";
 import type { SavedWalletV2 } from "@/v2/app/state";
 import { chatStore } from "@/v2/chat/chatStore";
 import { monotoneBar, type BarItem } from "@/v2/model/guards";
-import { guideRows, heroVM, perfCards, unusedOwned, walletCard, type ViewCtx } from "@/v2/model/resultView";
+import { guideRows, heroVM, perfCards, unusedOwned, walletCard, type UnusedCardVM, type ViewCtx } from "@/v2/model/resultView";
 import { cardNick, countWord, josa } from "@/v2/model/text";
 import { HeroAmount, HeroCardStack, NUM, SHADOW } from "@/v2/result/parts";
 import { CardImage } from "@/v2/ui/CardImage";
@@ -236,35 +236,68 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
       </div>
 
       {unused.length > 0 && (
-        <section aria-labelledby="w-out" style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-          <h2 id="w-out" style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-            이 조합에서 쓰지 않는 카드 {unused.length}장
-          </h2>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>
-            가진 카드 {owned.length}장 중 {unused.length}장은 이번 조합에서 결제에 쓰지 않아요. 해지나 정리를 고민한다면 카드사 실적·약관을 먼저 확인하세요.
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {unused.map((u) => (
-              <span key={u.sid} style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px 8px 8px", borderRadius: 12, background: "#F3F7FF", fontSize: 14, color: "#3A4A78" }}>
-                <CardImage sid={u.sid} width={48} />
-                {u.name} · {u.fee}
-              </span>
-            ))}
-          </div>
-        </section>
+        <UnusedCards
+          items={unused}
+          title={`이 조합에서 쓰지 않는 카드 ${unused.length}장`}
+          text={`가진 카드 ${owned.length}장 중 ${unused.length}장은 이번 조합에서 결제에 쓰지 않아요. 해지나 정리를 고민한다면 카드사 실적·약관을 먼저 확인하세요.`}
+        />
       )}
     </>
   );
 }
 
-/** 내 지갑: 저장한 조합이 있으면 그 조합, 없으면 안내 */
+/** 조합에 쓰지 않는(또는 아직 조합을 만들지 않은) 내 카드 목록 */
+function UnusedCards({ items, title, text, action }: { items: UnusedCardVM[]; title: string; text: string; action?: { label: string; to: string } }) {
+  return (
+    <section aria-labelledby="w-out" style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 id="w-out" style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+        {title}
+      </h2>
+      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>{text}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+        {items.map((u) => (
+          <span key={u.sid} style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px 8px 8px", borderRadius: 12, background: "#F3F7FF", fontSize: 14, color: "#3A4A78" }}>
+            <CardImage sid={u.sid} width={48} />
+            {u.name} · {u.fee}
+          </span>
+        ))}
+      </div>
+      {action && (
+        <Link to={action.to} style={{ ...outlineLink, alignSelf: "flex-start", background: "#2457F5", color: "#FFFFFF", border: "1px solid #2457F5" }}>
+          {action.label}
+        </Link>
+      )}
+    </section>
+  );
+}
+
+/** 내 지갑: 저장한 조합이 있으면 그 조합, 없으면 안내.
+ *  조합을 저장하기 전에 전체 카드에서 담은 카드도 '아직 조합에 사용하지 않은 카드'로 보여 준다(2026-11-07) */
 export default function Wallet() {
   const { wallet, myCards, toggleTodo } = useAppData();
   const ok = wallet && wallet.pack && Array.isArray(wallet.pack.cards) && wallet.pack.cards.length > 0;
+  const pending = ok ? [] : unusedOwned(myCards.ids, { cards: [] });
   return (
     <>
       <MenuBar active="wallet" />
-      <PageMain title="내 지갑">{ok ? <SavedWallet w={wallet} owned={myCards.ids} toggleTodo={toggleTodo} /> : <WalletEmpty />}</PageMain>
+      <PageMain title="내 지갑">
+        {ok ? (
+          <SavedWallet w={wallet} owned={myCards.ids} toggleTodo={toggleTodo} />
+        ) : (
+          <WalletEmpty
+            afterHero={
+              pending.length > 0 && (
+                <UnusedCards
+                  items={pending}
+                  title={`아직 조합에 사용하지 않은 카드 ${pending.length}장`}
+                  text={`담아 둔 카드 ${pending.length}장이에요. '보유한 카드로' 지갑을 만들면 이 카드들로 가장 유리한 조합을 계산해요.`}
+                  action={{ label: "이 카드들로 지갑 만들기", to: paths.start("own") }}
+                />
+              )
+            }
+          />
+        )}
+      </PageMain>
     </>
   );
 }

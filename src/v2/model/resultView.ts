@@ -651,7 +651,7 @@ const AVG = ASSUME.avg_ticket_won;
 /** 시간대 한정 혜택에서 그 시간대 결제 비중 가정값 */
 const ASSUME_TIME = (assumptions as { time_window_share?: { default?: number } }).time_window_share?.default ?? 0.25;
 
-/** 카드고릴라에서 혜택 정보를 모은 날(가장 많은 카드의 수집일): '9월 17일' */
+/** 혜택 정보를 모은 날(가장 많은 카드의 수집일): '9월 17일' */
 export const CATALOG_DATE_TEXT: string = (() => {
   const count = new Map<string, number>();
   for (const c of catalogCards) {
@@ -761,7 +761,7 @@ export function usedValuesVM(pack: EnginePack, ctx: ViewCtx): UsedVM {
   if (flagged("시간대 한정")) assumed.push(`시간대 한정 혜택은 그 시간 결제를 ${pctText(Number(ASSUME_TIME))}로 봄(명세서에 결제 시각이 없어요)`);
   if (payCond) assumed.push("후불교통·자동납부·공식 앱 결제 같은 결제 조건은 지킨다고 봄");
   if (usesPoint) assumed.push("포인트 1점 = 1원");
-  assumed.push(CATALOG_DATE_TEXT ? `혜택 정보는 카드고릴라 원문(${CATALOG_DATE_TEXT} 수집) 기준` : "혜택 정보는 카드고릴라 원문 기준");
+  assumed.push(CATALOG_DATE_TEXT ? `혜택 정보는 카드 상세 원문(${CATALOG_DATE_TEXT} 수집) 기준` : "혜택 정보는 카드 상세 원문 기준");
   return { user: `${user.join(" · ")}.`, assumed: `가정: ${assumed.join(" · ")}.` };
 }
 
@@ -883,7 +883,7 @@ export interface UnusedCardVM {
 }
 
 /** 이 조합에서 쓰지 않는 가진 카드 */
-export function unusedOwned(ownedIds: number[], pack: EnginePack): UnusedCardVM[] {
+export function unusedOwned(ownedIds: number[], pack: Pick<EnginePack, "cards">): UnusedCardVM[] {
   const used = new Set(pack.cards.map((c) => c.sid));
   return ownedIds
     .filter((s) => !used.has(s))

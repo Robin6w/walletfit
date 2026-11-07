@@ -233,11 +233,6 @@ export function ProofPanel({ card, onClose }: { card: EngineCard; onClose: () =>
 
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #EDF2FC", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 14 }}>
           <div style={{ display: "flex", gap: 16 }}>
-            {card.url && (
-              <a href={card.url} target="_blank" rel="noreferrer" style={{ fontWeight: 700, textDecoration: "none" }}>
-                카드고릴라 원문 전체 ↗
-              </a>
-            )}
             <button
               type="button"
               onClick={() => {

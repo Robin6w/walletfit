@@ -115,7 +115,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 </button>
               )}
             </div>
-            <div style={{ fontSize: 13, color: "#5E6D96" }}>영문 카드명은 한글 별명으로도 찾아요 · 예: 탭탭오, 미스터라이프, 로카</div>
+            <div style={{ fontSize: 14, color: "#5E6D96" }}>영문 카드명은 한글 별명으로도 찾아요 · 예: 탭탭오, 미스터라이프, 로카</div>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
               <div role="group" aria-label="카드 종류" style={{ display: "flex", padding: 3, borderRadius: 12, background: "#F3F7FF" }}>
                 {(["all", "신용", "체크"] as const).map((k) => (
@@ -134,7 +134,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 ))}
               </div>
               <span aria-hidden="true" style={{ width: 1, height: 24, background: "#E3EAF8", margin: "0 4px" }} />
-              <span style={{ fontSize: 13, color: "#5E6D96" }}>카드사</span>
+              <span style={{ fontSize: 14, color: "#5E6D96" }}>카드사</span>
               {issuers.map((i) => (
                 <button
                   key={i}
@@ -160,7 +160,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
               {q.trim() && <strong style={{ color: "#0D1B4A" }}>'{q.trim()}'</strong>} 검색 결과 {num(results.length)}장{" "}
               {discCount > 0 && <span style={{ color: "#5E6D96" }}>· 발급 중단 {num(discCount)}장 포함</span>}
             </div>
-            <div style={{ fontSize: 13, color: "#5E6D96" }}>이미 가진 카드라면 발급이 끝났어도 담을 수 있어요</div>
+            <div style={{ fontSize: 14, color: "#5E6D96" }}>이미 가진 카드라면 발급이 끝났어도 담을 수 있어요</div>
           </div>
 
           <ul
@@ -210,7 +210,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     {compact ? (
                       <div>
                         {nameEl}
-                        <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.4, color: "#5E6D96" }}>
+                        <div style={{ marginTop: 2, fontSize: 14, lineHeight: 1.4, color: "#5E6D96" }}>
                           {disc && <b style={{ color: "#3A4A78" }}>발급 중단 · </b>}
                           {c.issuer} · {feeLabel(c)}
                         </div>
@@ -229,7 +229,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     )}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {summaryChips(c).slice(0, compact ? 1 : undefined).map((chip, ci) => (
-                        <span key={`${ci}-${chip}`} style={chipStyle}>
+                        <span key={`${ci}-${chip}`} style={compact ? { ...chipStyle, fontSize: 14 } : chipStyle}>
                           {chip}
                         </span>
                       ))}

@@ -461,23 +461,9 @@ export default function Compare() {
                 <b style={{ color: "#0D1B4A" }}>계산 기준</b> · {basisText(ctx)}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px", fontSize: 13 }}>
-                {inputs.map((x) => {
-                  const url = x.entry?.sourceUrl ?? x.view?.url;
-                  if (!url) return null;
-                  return (
-                    <a key={x.sid} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, minHeight: 32, fontWeight: 600 }}>
-                      <svg width={14} height={14} {...svgProps}>
-                        <path d="M14 4h6v6" />
-                        <path d="M20 4 11 13" />
-                        <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-                      </svg>
-                      {nameOf(x)} 원문
-                    </a>
-                  );
-                })}
                 {(CATALOG_DATE_TEXT || META_DATE) && (
                   <span style={{ display: "inline-flex", alignItems: "center", minHeight: 32, color: "#56658E" }}>
-                    카드고릴라 · {CATALOG_DATE_TEXT ? `혜택 ${CATALOG_DATE_TEXT}` : ""}
+                    카드 정보 · {CATALOG_DATE_TEXT ? `혜택 ${CATALOG_DATE_TEXT}` : ""}
                     {CATALOG_DATE_TEXT && META_DATE && META_DATE !== CATALOG_DATE_TEXT ? `, 출시일 ${META_DATE}` : !CATALOG_DATE_TEXT ? META_DATE : ""} 수집
                   </span>
                 )}

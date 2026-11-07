@@ -144,7 +144,7 @@ export interface ChatContext {
   tickets?: Tickets;
   ownedIds: number[];
   page: ChatPage;
-  /** 카드 비교·혜택별 추천 계산에 쓰는 지출(지출 입력 그대로) */
+  /** 카드 비교 계산에 쓰는 지출(지출 입력 그대로). 혜택별 추천은 2026-11-07부터 지출 입력을 쓰지 않는다 */
   pageSpending: Record<string, number>;
   pageBrandShare: BrandShare;
   cardMeta: Record<string, CardMeta>;
@@ -578,7 +578,7 @@ export async function answerChoice(id: string, ctx: ChatContext, call: EngineCal
       return withChoices(say(faqNet(ctx)), pack ? pick("check:summary") : pick("faq:how"));
     case "faq:diff":
       return withChoices(
-        say("카드사 원문 혜택 표로 계산하지만, 가맹점 구분이나 이벤트, 약관 변경 때문에 실제 혜택과 다를 수 있어요. 일부 카드는 카드고릴라 혜택 요약만으로 계산해서 실적 조건이나 통합 한도가 빠져 있을 수 있어요. 발급 전에는 꼭 카드사 약관을 확인해 주세요."),
+        say("카드사 원문 혜택 표로 계산하지만, 가맹점 구분이나 이벤트, 약관 변경 때문에 실제 혜택과 다를 수 있어요. 일부 카드는 카드 혜택 요약만으로 계산해서 실적 조건이나 통합 한도가 빠져 있을 수 있어요. 발급 전에는 꼭 카드사 약관을 확인해 주세요."),
         pick("faq:how"),
       );
   }
@@ -628,7 +628,7 @@ export function recordLines(ctx: ChatContext): string[] {
       if (idle.length) lines.push(`  이번 지출로 받지 못한 혜택: ${idle.map((b) => `${b.title}${b.category ? `(${catLabel(b.category)})` : ""}${b.skip ? ` - ${b.skip}` : ""}`).join("; ")}`);
       // 가정 앞의 내부 혜택 ID('sbux50: ')는 떼고 넘긴다
       if (c.flags.length) lines.push(`  계산 가정: ${c.flags.slice(0, 5).map((f) => f.replace(/^[A-Za-z0-9_]+:\s*/, "")).join("; ")}`);
-      if (c.status === "auto") lines.push("  주의: 카드고릴라 혜택 요약을 해석한 카드(원문 대조 전). 실적 조건·통합 한도가 빠져 실제보다 크게 나올 수 있음");
+      if (c.status === "auto") lines.push("  주의: 카드 혜택 요약을 해석한 카드(원문 대조 전). 실적 조건·통합 한도가 빠져 실제보다 크게 나올 수 있음");
       const q = c.benefits.find((x) => x.final > 0.5)?.quote;
       if (q) lines.push(`  원문: "${q.slice(0, 160)}"`);
     }

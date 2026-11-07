@@ -38,7 +38,7 @@ const ChatDock = lazy(() => import("@/v2/chat/ChatDock"));
 const CHROME: Chrome = { MenuBar: MobileTopBar, WizardBar: MobileWizardBar, compact: true };
 
 /** 계산 엔진을 쓰는 화면(PC와 같음) */
-const ENGINE_SCREENS: ReadonlySet<string> = new Set(["make", "cards", "compare", "benefit"]);
+const ENGINE_SCREENS: ReadonlySet<string> = new Set(["make", "compare", "benefit"]);
 
 function saveDataOn(): boolean {
   try {

@@ -144,7 +144,7 @@ export interface ChatContext {
   tickets?: Tickets;
   ownedIds: number[];
   page: ChatPage;
-  /** 카드 비교·혜택별 추천 계산에 쓰는 지출(지출 입력 그대로) */
+  /** 카드 비교 계산에 쓰는 지출(지출 입력 그대로). 혜택별 추천은 2026-11-07부터 지출 입력을 쓰지 않는다 */
   pageSpending: Record<string, number>;
   pageBrandShare: BrandShare;
   cardMeta: Record<string, CardMeta>;

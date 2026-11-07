@@ -99,13 +99,18 @@ interface Props {
   view: CardViewEntry | undefined;
   /** 받기 전이면 true(혜택 칸에 '불러오는 중') */
   loading: boolean;
-  mine: boolean;
+  /** 내 카드(지갑 만들기에서 고른 카드)면 '내 카드' 표시. 전체 카드 화면은 넘기지 않는다(2026-11-07) */
+  mine?: boolean;
   discontinued: boolean;
-  inCompare: boolean;
+  inCompare?: boolean;
   /** 내 지출 전부를 이 카드로 냈을 때 연회비를 뺀 월 혜택(지출을 넣었을 때만) */
   net?: number;
-  onToggleMine: () => void;
-  onToggleCompare: () => void;
+  /** 없으면 '내 카드에 담기' 버튼을 숨긴다. 전체 카드 화면은 지갑과 따로 노는 둘러보기라 넘기지 않는다(2026-11-07) */
+  onToggleMine?: () => void;
+  /** 없으면 '비교함에 담기' 버튼을 숨긴다(전체 카드 화면, 2026-11-07) */
+  onToggleCompare?: () => void;
+  /** true면 맨 아래 '카드고릴라 원문' 링크를 숨긴다(전체 카드 화면, 2026-11-07) */
+  hideSource?: boolean;
   onClose: () => void;
   /** 결과 화면에서 열 때 맨 위에 보여 줄 '이 조합에서 이 카드가 하는 일'(2026-11-03). 있으면 전체 혜택 목록은 접어 둔다 */
   plan?: ReactNode;
@@ -155,7 +160,7 @@ function ChoiceGroup({ label, options }: { label: string; options: string[] }) {
   );
 }
 
-export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCompare, net, onToggleMine, onToggleCompare, onClose, plan }: Props) {
+export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCompare, net, onToggleMine, onToggleCompare, hideSource, onClose, plan }: Props) {
   const panel = useRef<HTMLDivElement>(null);
   const { compact } = useChrome();
   useEffect(() => {
@@ -303,19 +308,25 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
           </Section>
         )}
 
+        {(onToggleMine || onToggleCompare || !hideSource) && (
         <footer style={{ display: "flex", flexWrap: "wrap", gap: 10, paddingTop: 20, borderTop: "1px solid #E3EAF8" }}>
-          {!(discontinued && !mine) && (
+          {onToggleMine && !(discontinued && !mine) && (
             <button type="button" onClick={onToggleMine} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "none", background: mine ? "#E8EEFF" : "#2457F5", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: mine ? "#1747D6" : "#FFFFFF", cursor: "pointer" }}>
               {mine ? "내 카드에서 빼기" : "내 카드에 담기"}
             </button>
           )}
-          <button type="button" onClick={onToggleCompare} aria-pressed={inCompare} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}>
-            {inCompare ? "비교함에서 빼기" : "비교함에 담기"}
-          </button>
-          <a href={entry.sourceUrl} target="_blank" rel="noreferrer" style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", fontSize: 15, fontWeight: 700, color: "#3A4A78", textDecoration: "none" }}>
-            카드고릴라 원문 ↗
-          </a>
+          {onToggleCompare && (
+            <button type="button" onClick={onToggleCompare} aria-pressed={!!inCompare} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}>
+              {inCompare ? "비교함에서 빼기" : "비교함에 담기"}
+            </button>
+          )}
+          {!hideSource && (
+            <a href={entry.sourceUrl} target="_blank" rel="noreferrer" style={{ flex: "1 1 160px", display: "flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", fontSize: 15, fontWeight: 700, color: "#3A4A78", textDecoration: "none" }}>
+              카드고릴라 원문 ↗
+            </a>
+          )}
         </footer>
+        )}
       </div>
     </div>,
     document.body,

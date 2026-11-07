@@ -415,5 +415,25 @@ check(f"의심 혜택: 0.8이면 고른 조합의 의심 혜택 금액이 늘지
 d15 = sum(calc.evaluate(R[c["sid"]], {k: v for k, v in c["alloc"].items() if v > 0}, A15)["total"] - c["feeMonthly"] for c in s08["result"]["cards"])
 check(f"의심 혜택: 0.8에서도 화면 순혜택 = calc 직접 계산({s08['result']['net']:,.0f}원)", abs(d15 - s08["result"]["net"]) < 1)
 
+# 혜택별 추천(2026-11-07 독립 기능): 화면은 spending을 비워 보내므로 실적 = 입력한 금액. assumePerf면 카드마다 그 카테고리 혜택이 처음 생기는 실적 구간으로 계산
+def cat_rank(assume, **kw):
+    return json.loads(E.category_rank_json(json.dumps({"category": "convenience", "amount": 100000, "spending": {}, "choices": {}, "assumePerf": assume, "limit": 30, **kw})))
+plain, assumed = cat_rank(False), cat_rank(True)
+check("혜택별 추천: 다른 지출 없이 입력한 금액만 계산", plain["spending"] == {"convenience": 100000} and assumed["spending"] == {"convenience": 100000})
+check("혜택별 추천: 실적 가정을 끄면 perfMin 없음, 켜면 모든 줄에 perfMin",
+      all(r["perfMin"] is None for r in plain["rows"]) and all(r["perfMin"] is not None for r in assumed["rows"]))
+need = next((r for r in assumed["rows"] if r["perfMin"] and r["perfMin"] > 100000), None)
+if need:
+    rec_n = E.STATE["records"][need["sid"]]
+    tiers_n = sorted(rec_n["performance"]["tiers"], key=lambda t: t["min_won"])
+    at = next(t for t in tiers_n if t["min_won"] == need["perfMin"])
+    v_at = E._best_cat(E._at_tier(rec_n, at), {"convenience": 100000}, E._A(None), "convenience", 100000)[0]
+    lower = [E._best_cat(E._at_tier(rec_n, t), {"convenience": 100000}, E._A(None), "convenience", 100000)[0] for t in tiers_n if t["min_won"] < need["perfMin"]]
+    v_plain = next((r["value"] for r in plain["rows"] if r["sid"] == need["sid"]), 0)
+    check(f"혜택별 추천: 실적 가정 {need['name']}는 실적 {need['perfMin']:,}원 구간 값({need['value']:,.0f}원), 더 낮은 구간은 0원, 가정 끄면 그보다 작음({v_plain:,.0f}원)",
+          abs(v_at - need["value"]) < 1 and all(v <= 0.5 for v in lower) and v_plain < need["value"])
+else:
+    check("혜택별 추천: 실적 조건이 10만원보다 높은 카드가 1위권에 있음", False)
+
 print(f"\n{ok}/{ok + fail} 통과")
 sys.exit(1 if fail else 0)

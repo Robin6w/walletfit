@@ -161,9 +161,9 @@ export function sumNote(xs: CmpCardInput[], total: number): string {
   const head = `한 카드로 월 ${korAmount(total)}원을 모두 결제했을 때 받는 ${word}이에요`;
   const auto = xs.filter((x) => x.view && !VERIFIED(x.view));
   if (!auto.length) return `${head} · 카드사 원문 규칙으로 계산한 추정값`;
-  if (auto.length === xs.length) return `${head} · 카드고릴라 혜택 요약을 해석해 계산한 추정값`;
+  if (auto.length === xs.length) return `${head} · 카드 혜택 요약을 해석해 계산한 추정값`;
   const names = joinDot(auto.map(nickOfInput));
-  return `${head} · ${josa(names, "은/는")} 카드고릴라 혜택 요약으로, 나머지는 카드사 원문 규칙으로 계산한 추정값`;
+  return `${head} · ${josa(names, "은/는")} 카드 혜택 요약으로, 나머지는 카드사 원문 규칙으로 계산한 추정값`;
 }
 
 /* ---------------- 표 ---------------- */
@@ -714,7 +714,7 @@ export function insightsVM(xs: CmpCardInput[], tight: TightInfo | null): Insight
         id: `auto-${x.sid}`,
         tone: "warn",
         title: `${josa(nickOfInput(x), "은/는")} 혜택 요약만 읽은 카드예요`,
-        text: "카드고릴라 혜택 요약을 해석해 계산해서 전월실적 조건과 통합 한도가 빠져 있어요. 실제로 받는 금액은 더 작을 수 있어요.",
+        text: "카드 혜택 요약을 해석해 계산해서 전월실적 조건과 통합 한도가 빠져 있어요. 실제로 받는 금액은 더 작을 수 있어요.",
       });
     }
   }

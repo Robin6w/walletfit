@@ -1,10 +1,12 @@
+import type { ReactNode } from "react";
 import { catalogCards } from "@/v1/catalog";
 import { num } from "@/v1/format";
 import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 
-/* 디자인 원본 F-D-Wallet-Empty를 그대로 옮김(저장한 지갑이 없을 때). 그림은 특정 카드가 아닌 안내 그림이라 디자인 그대로 */
-export function WalletEmpty() {
+/* 디자인 원본 F-D-Wallet-Empty를 그대로 옮김(저장한 지갑이 없을 때). 그림은 특정 카드가 아닌 안내 그림이라 디자인 그대로.
+ * afterHero: 안내 카드 바로 아래에 둘 내용(담아 둔 카드 목록, 2026-11-07) */
+export function WalletEmpty({ afterHero }: { afterHero?: ReactNode } = {}) {
   return (
     <>
       <header
@@ -169,6 +171,7 @@ export function WalletEmpty() {
           </span>
         </div>
       </section>
+      {afterHero}
       <section
         aria-labelledby="we-prev"
         style={{ display: "flex", flexDirection: "column", gap: "14px" }}

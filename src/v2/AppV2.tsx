@@ -45,9 +45,8 @@ function Screen({ route }: { route: Route }) {
   return <NotFound />;
 }
 
-/** 계산 엔진을 쓰는 화면: 지갑 만들기, 카드 비교, 혜택별 추천.
- *  전체 카드는 '내 지출에 유리한 순' 정렬을 없애 엔진을 쓰지 않는다(2026-11-07) */
-const ENGINE_SCREENS: ReadonlySet<string> = new Set(["make", "compare", "benefit"]);
+/** 계산 엔진을 쓰는 화면: 지갑 만들기, 전체 카드(내 지출 순 정렬), 카드 비교, 혜택별 추천 */
+const ENGINE_SCREENS: ReadonlySet<string> = new Set(["make", "cards", "compare", "benefit"]);
 
 function saveDataOn(): boolean {
   try {

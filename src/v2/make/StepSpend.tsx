@@ -11,7 +11,7 @@ import { useChrome } from "@/v2/ui/chrome";
 
 const EXTRA = categories.map((c) => c.id).filter((id) => !MAIN_CATEGORIES.includes(id));
 const SHADOW = "0 1px 2px rgba(13, 40, 120, 0.05), 0 10px 28px rgba(13, 40, 120, 0.08)";
-const plusBtn: CSSProperties = { height: 36, padding: "0 10px", borderRadius: 8, border: "1px solid #E3EAF8", background: "#F3F7FF", fontFamily: "inherit", fontSize: 13, color: "#3A4A78", cursor: "pointer" };
+const plusBtn: CSSProperties = { height: 36, padding: "0 10px", borderRadius: 8, border: "1px solid #E3EAF8", background: "#F3F7FF", fontFamily: "inherit", fontSize: 14, color: "#3A4A78", cursor: "pointer" };
 
 const label = (c: string) => (c === "etc" ? "그 외 가맹점" : catLabel(c));
 
@@ -176,7 +176,7 @@ export function StepSpend({
             {next.label}
           </Link>
         ) : (
-          <span aria-disabled="true" style={{ padding: "14px 26px", borderRadius: 24, background: "#DFE6F5", fontSize: 15, fontWeight: 700, color: "#5E6D96" }}>
+          <span aria-disabled="true" style={{ padding: "14px 26px", borderRadius: 24, background: "#DFE6F5", fontSize: 15, fontWeight: 700, color: "#3A4A78" }}>
             {next.label}
           </span>
         )}

@@ -22,6 +22,10 @@ describe("혜택별 추천", () => {
     expect(h.lead).toBe("편의점 25만원을 이 카드로 낼 때 받는 할인이에요. 실적도 이 25만원만으로 계산했어요.");
   });
 
+  it("내 카드 중에서 찾으면 1위 문구가 '내 카드 중'", () => {
+    expect(heroVM(ROWS, "convenience", 250000, false, "mine")!.badge).toBe("1위 · 내 카드 중 편의점 혜택이 가장 커요");
+  });
+
   it("실적 채웠다고 가정: 필요한 실적을 설명과 1위 문장에 적는다", () => {
     const top = { ...ROWS[0], perfMin: 400000, perfBasis: "prev_month" };
     expect(perfText(top)).toBe("전월실적 40만원 이상");

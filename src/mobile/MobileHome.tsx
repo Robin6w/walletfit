@@ -13,7 +13,7 @@ function StartCard({ to, eyebrow, title, primary, art }: { to: string; eyebrow: 
       to={to}
       className={`relative flex min-h-[188px] flex-col overflow-hidden rounded-[24px] p-[22px] no-underline active:scale-[0.99] ${primary ? "bg-w-primary text-white shadow-[0_14px_32px_-12px_rgba(36,87,245,0.55)]" : "bg-white text-w-ink w-shadow"}`}
     >
-      <span className={`relative z-[1] text-[13px] font-semibold ${primary ? "text-[#E3EAFF]" : "text-w-ink-3"}`}>{eyebrow}</span>
+      <span className={`relative z-[1] text-[14px] font-semibold ${primary ? "text-[#E3EAFF]" : "text-w-ink-3"}`}>{eyebrow}</span>
       <span className="relative z-[1] mt-1.5 text-[22px] font-bold leading-[1.35] tracking-[-0.03em]">{title}</span>
       <span className={`relative z-[1] mt-auto inline-flex items-center gap-2 pt-4 text-[15px] font-bold ${primary ? "" : "text-w-primary"}`}>
         <span className={`flex h-9 w-9 items-center justify-center rounded-full ${primary ? "bg-white/[0.18]" : "bg-w-tint"}`}>
@@ -35,7 +35,7 @@ function Row({ to, icon, title, desc }: { to: string; icon: ReactNode; title: st
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-w-tint text-w-primary">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-bold">{title}</span>
-          <span className="block truncate text-[13px] text-w-ink-3">{desc}</span>
+          <span className="block truncate text-[14px] text-w-ink-3">{desc}</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-w-mute" aria-hidden="true" />
       </Link>

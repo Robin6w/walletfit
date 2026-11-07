@@ -102,8 +102,11 @@ export function rowsVM(rows: CategoryRankRow[], cat: string): BenefitRowVM[] {
   }));
 }
 
+/** 어느 카드 중에서 찾았나(내 카드 중 / 전체 카드 중, 2026-11-07) */
+export type BenefitScope = "mine" | "all";
+
 /** assumePerf: '실적 채웠다고 가정'을 켰는지 */
-export function heroVM(rows: CategoryRankRow[], cat: string, amount: number, assumePerf: boolean): BenefitHeroVM | null {
+export function heroVM(rows: CategoryRankRow[], cat: string, amount: number, assumePerf: boolean, scope: BenefitScope = "all"): BenefitHeroVM | null {
   const r = rows[0];
   if (!r || r.value < 0.5) return null;
   const base = rowsVM(rows, cat)[0];
@@ -113,7 +116,7 @@ export function heroVM(rows: CategoryRankRow[], cat: string, amount: number, ass
   const perf = perfText(r);
   return {
     ...base,
-    badge: `1위 · 전체 카드 중 ${catLabel(cat)} 혜택이 가장 커요`,
+    badge: `1위 · ${scope === "mine" ? "내 카드" : "전체 카드"} 중 ${catLabel(cat)} 혜택이 가장 커요`,
     amountNum: exact ? num(r.value) : num(Math.round(r.value / 100) * 100),
     approx: !exact,
     lead:

@@ -191,7 +191,7 @@ export function groupBenefits(entry: CardViewEntry): BenefitGroup[] {
 /** 혜택 표 출처 설명 */
 export function sourceText(entry: CardViewEntry | undefined): string {
   if (!entry) return "혜택 정보 없음";
-  if (entry.st === "auto") return "카드고릴라 혜택 요약 한 줄로 만든 표예요. 원문 전체를 읽지 않아 빠진 혜택이 있을 수 있어요.";
+  if (entry.st === "auto") return "카드 혜택 요약 한 줄로 만든 표예요. 원문 전체를 읽지 않아 빠진 혜택이 있을 수 있어요.";
   return "카드사 원문 전체를 읽어 정리한 표예요.";
 }
 

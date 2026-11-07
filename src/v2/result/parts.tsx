@@ -150,7 +150,14 @@ export function RoleCardArticle({ vm, onIssueInfo }: { vm: RoleCardVM; onIssueIn
             {isNew ? "신규 발급" : "가진 카드"}
           </span>
           <h3 style={{ margin: "8px 0 0", fontSize: 20, fontWeight: 700 }}>{vm.short}</h3>
-          <div style={{ marginTop: 2, fontSize: 14, color: "#5E6D96" }}>{vm.meta}</div>
+          {/* 신재윤 PC 디자인: 카드사 · 연회비 · 실적 조건을 한 줄씩 */}
+          <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>
+            {vm.meta.split(" · ").map((part) => (
+              <span key={part} style={{ display: "block" }}>
+                {part}
+              </span>
+            ))}
+          </div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div style={{ fontSize: 13, color: "#5E6D96" }}>월 혜택</div>

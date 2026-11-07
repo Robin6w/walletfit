@@ -105,7 +105,6 @@ interface Props {
 export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, next }: Props) {
   const tabs = BRAND_TABS.filter((t) => (spending[t.cat] ?? 0) > 0);
   const [cur, setCur] = useState<string>(tabs[0]?.cat ?? "cafe");
-  const [finding, setFinding] = useState(false);
   // 모바일 사이트: 브랜드 칸을 한 줄에 3개씩(스크롤 줄이기, 2026-11-07)
   const { compact } = useChrome();
   const [q, setQ] = useState("");
@@ -126,12 +125,15 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
   };
 
   const curPick = tab ? pickOf(tab.cat) : { brands: [] as string[] };
-  const tileBrands = tab ? [...tab.brands, ...curPick.brands.filter((b) => !tab.brands.includes(b))] : [];
+  // 신재윤 PC 디자인: 목록 칸에는 정해 둔 브랜드만 두고, 검색해서 더한 곳은 '직접 추가한 곳' 줄에 따로 보인다
+  const presetBrands = tab ? tab.brands : [];
+  const addedBrands = tab ? curPick.brands.filter((b) => !tab.brands.includes(b)) : [];
   const engineRows = tab ? (engine.data?.categories?.[tab.cat] ?? engine.lastGood?.categories?.[tab.cat] ?? []) : [];
-  const query = q.trim().toLowerCase().replace(/\s+/g, "");
-  const candidates = Array.from(new Set(engineRows.map((r) => canonicalBrand(r.name))))
-    .filter((n) => !tileBrands.includes(n))
-    .filter((n) => !query || n.toLowerCase().replace(/\s+/g, "").includes(query));
+  const normQ = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+  const query = normQ(q.trim());
+  const engineNames = Array.from(new Set(engineRows.map((r) => canonicalBrand(r.name)))).filter((n) => !presetBrands.includes(n));
+  // 검색 결과: 정해 둔 브랜드 + 담은 카드 혜택에 나오는 다른 가게
+  const hits = query ? [...presetBrands, ...engineNames].filter((n) => normQ(n).includes(query)) : [];
 
   const allChips = BRAND_TABS.flatMap((t) => (picks[t.cat]?.brands ?? []).map((b) => ({ cat: t.cat, brand: b })));
   const total = pickedCount(picks);
@@ -143,7 +145,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
         <header>
           <span style={{ display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 14, background: "#E8EEFF", color: "#2457F5", fontSize: 13, fontWeight: 700 }}>마지막 질문 · 선택</span>
           <h1 style={{ margin: "14px 0 0", fontSize: 32, lineHeight: 1.3, fontWeight: 700, letterSpacing: "-0.03em" }}>평소 자주 가는 곳을 골라 주세요</h1>
-          <p style={{ margin: "8px 0 0", fontSize: 16, lineHeight: 1.7, color: "#3A4A78" }}>스타벅스·쿠팡처럼 특정 브랜드에서만 되는 할인이 있어요. 가는 곳만 눌러 주시면 그 할인까지 계산해요.</p>
+          <p style={{ margin: "8px 0 0", fontSize: 16, lineHeight: 1.7, color: "#3A4A78" }}>스타벅스, 쿠팡 등 자주 이용하는 브랜드를 선택해 주세요. 해당 브랜드의 할인 혜택까지 반영해 계산해 드려요.</p>
         </header>
 
         {tabs.length === 0 || !tab ? (
@@ -165,7 +167,6 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
                     aria-controls="brand-panel"
                     onClick={() => {
                       setCur(t.cat);
-                      setFinding(false);
                       setQ("");
                     }}
                     style={tabStyle(on)}
@@ -183,14 +184,98 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
                 <CategoryIcon cat={tab.cat} size={48} radius={15} glyph={26} />
                 <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{tab.label}</h2>
-                  <span style={{ display: "block", marginTop: 2, fontSize: 14, color: "#5E6D96" }}>지출 입력에서 월 {korWon(spending[tab.cat] ?? 0)}</span>
+                  <span style={{ display: "block", marginTop: 2, fontSize: 14, color: "#5E6D96" }}>월 평균 {korWon(spending[tab.cat] ?? 0)} 소비 중</span>
                 </div>
                 <span style={{ fontSize: 14, color: "#5E6D96" }}>
                   <b style={{ fontFamily: "Outfit, sans-serif", color: "#2457F5" }}>{curPick.brands.length}</b>곳 선택
                 </span>
               </div>
-              <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: compact ? "repeat(3, minmax(0, 1fr))" : "repeat(auto-fill, minmax(132px, 1fr))", gap: compact ? 8 : 12 }}>
-                {tileBrands.map((b) => {
+              {/* 신재윤 PC 디자인: 가게 이름 검색창은 늘 보이고, 검색 결과는 창 아래 목록으로 뜬다 */}
+              <div style={{ position: "relative", marginTop: 18 }}>
+                <label htmlFor="brand-q" style={{ display: "flex", alignItems: "center", gap: 10, height: 46, padding: "0 8px 0 16px", boxSizing: "border-box", borderRadius: 23, background: "#F3F7FF", border: "1.5px solid transparent" }}>
+                  <input
+                    id="brand-q"
+                    type="text"
+                    autoComplete="off"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder={`${tab.label}에서 가게 이름으로 찾기`}
+                    style={{ flex: 1, minWidth: 0, height: 40, border: "none", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: 15, fontWeight: 500, color: "#0D1B4A" }}
+                  />
+                  {q && (
+                    <button type="button" aria-label="검색어 지우기" onClick={() => setQ("")} style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 15, border: "none", background: "#E1E8F7", color: "#5E6D96", fontFamily: "inherit", fontSize: 16, lineHeight: 1, cursor: "pointer" }}>
+                      ×
+                    </button>
+                  )}
+                </label>
+                {query && (
+                  <div style={{ position: "absolute", left: 0, right: 0, top: 54, zIndex: 5, maxHeight: 300, overflow: "auto", boxSizing: "border-box", padding: 8, borderRadius: 18, background: "#FFFFFF", boxShadow: "0 2px 4px rgba(13, 40, 120, 0.06), 0 18px 40px rgba(13, 40, 120, 0.16)" }}>
+                    {hits.length > 0 ? (
+                      <>
+                        <div style={{ padding: "6px 10px 8px", fontSize: 12, fontWeight: 600, color: "#5E6D96" }}>카드 혜택이 있는 곳 · {hits.length}곳</div>
+                        {hits.slice(0, 12).map((n) => {
+                          const inList = presetBrands.includes(n);
+                          const picked = curPick.brands.includes(n);
+                          const logo = logoOf(n);
+                          const at = n.toLowerCase().indexOf(q.trim().toLowerCase());
+                          const len = q.trim().length;
+                          return (
+                            <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px", borderRadius: 12 }}>
+                              <span style={{ ...markStyle(false, !!logo), width: 40, height: 40, fontSize: 15 }}>{logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : n.replace(/[^가-힣A-Za-z0-9]/g, "").slice(0, 1)}</span>
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: "#0D1B4A" }}>
+                                {at >= 0 ? (
+                                  <>
+                                    {n.slice(0, at)}
+                                    <span style={{ color: "#2457F5" }}>{n.slice(at, at + len)}</span>
+                                    {n.slice(at + len)}
+                                  </>
+                                ) : (
+                                  n
+                                )}
+                                <span style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#5E6D96" }}>{inList ? "이미 목록에 있어요" : picked ? "직접 추가했어요" : "카드 할인 대상"}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => toggle(tab.cat, n)}
+                                style={{ flexShrink: 0, height: 36, padding: "0 14px", borderRadius: 18, border: "1px solid #C9D6F5", background: picked ? "#E8EEFF" : "#FFFFFF", color: "#2457F5", fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                              >
+                                {inList ? (picked ? "선택됨" : "목록에서 선택") : picked ? "추가됨" : "+ 추가"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      <div style={{ padding: "16px 10px", fontSize: 14, lineHeight: 1.6, color: "#5E6D96", textAlign: "center" }}>
+                        {engine.isComputing ? (
+                          "카드 혜택에 나오는 가게를 찾고 있어요"
+                        ) : (
+                          <>
+                            <b style={{ color: "#0D1B4A" }}>'{q.trim()}'</b>은(는) 카드 혜택이 있는 곳 목록에 없어요.
+                            <br />
+                            혜택이 없는 곳은 일반 할인으로 계산돼요.
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {addedBrands.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 }}>
+                  <span style={{ marginRight: 2, fontSize: 13, fontWeight: 600, color: "#5E6D96" }}>직접 추가한 곳</span>
+                  {addedBrands.map((b) => (
+                    <span key={b} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 30, padding: "0 4px 0 12px", boxSizing: "border-box", borderRadius: 15, background: "#E8EEFF", border: "1px solid #C9D6F5", fontSize: 13, fontWeight: 600, color: "#2457F5" }}>
+                      {b}
+                      <button type="button" aria-label={`${b} 빼기`} onClick={() => toggle(tab.cat, b)} style={{ width: 22, height: 22, borderRadius: 11, border: "none", background: "transparent", color: "#2457F5", fontFamily: "inherit", fontSize: 15, lineHeight: 1, cursor: "pointer" }}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: compact ? "repeat(3, minmax(0, 1fr))" : "repeat(auto-fill, minmax(132px, 1fr))", gap: compact ? 8 : 12 }}>
+                {presetBrands.map((b) => {
                   const on = curPick.brands.includes(b);
                   const logo = logoOf(b);
                   return (
@@ -201,51 +286,7 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  aria-expanded={finding}
-                  aria-controls="brand-finder"
-                  onClick={() => setFinding((v) => !v)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "18px 10px 14px", borderRadius: 18, border: "2px dashed #C5D4F5", background: "transparent", fontFamily: "inherit", color: "#2457F5", cursor: "pointer" }}
-                >
-                  <span style={{ width: 52, height: 52, borderRadius: 26, background: "#E8EEFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700 }}>+</span>
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>다른 곳 찾기</span>
-                </button>
               </div>
-
-              {finding && (
-                <div id="brand-finder" style={{ marginTop: 14, padding: 14, borderRadius: 14, background: "#F3F7FF", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <label htmlFor="brand-q" style={{ fontSize: 14, fontWeight: 700, color: "#3A4A78" }}>
-                    {tab.label}에서 자주 가는 곳 찾기
-                  </label>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input
-                      id="brand-q"
-                      type="search"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="가게 이름으로 찾기"
-                      style={{ flex: 1, minWidth: 0, height: 44, boxSizing: "border-box", padding: "0 14px", border: "1px solid #D3DDF2", borderRadius: 12, background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, color: "#0D1B4A" }}
-                    />
-                  </div>
-                  {candidates.length > 0 ? (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {candidates.slice(0, 18).map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          onClick={() => toggle(tab.cat, n)}
-                          style={{ height: 34, padding: "0 12px", borderRadius: 17, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, color: "#3A4A78", cursor: "pointer" }}
-                        >
-                          + {n}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: 13, color: "#5E6D96" }}>{engine.isComputing ? "카드 혜택에 나오는 가게를 찾고 있어요" : query ? "그 이름이 나오는 카드 할인이 없어요. 할인이 없는 가게는 고르지 않아도 돼요." : "담은 카드의 할인에 나오는 다른 가게가 없어요."}</span>
-                  )}
-                </div>
-              )}
 
               <button
                 type="button"

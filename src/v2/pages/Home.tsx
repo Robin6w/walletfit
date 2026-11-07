@@ -32,9 +32,7 @@ export default function Home() {
               <span className="text-w-primary">카드 혜택을 찾아보세요</span>
             </h1>
             <p className="mt-[18px] text-center text-[17px] leading-[1.7] text-w-ink-2">
-              내 소비에 가장 유리한 카드 조합을 찾아 드려요.
-              <br />
-              어느 카드로 어디서 결제할지까지 한번에!
+              나에게 딱 맞는 카드조합부터 어디서 결제할지까지 한번에!
             </p>
           </div>
         </section>

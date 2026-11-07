@@ -30,7 +30,7 @@ export default function Guide() {
 
   {/* 1. 하는 일 */}
   <section style={{ marginTop: compact ? "28px" : "56px" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}><h2 style={{ margin: "0", fontSize: "28px", lineHeight: "1.35", letterSpacing: "-0.02em", fontWeight: "700" }}>WalletFit이 해 드리는 일</h2></div>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}><h2 style={{ margin: "0", fontSize: "28px", lineHeight: "1.35", letterSpacing: "-0.02em", fontWeight: "700" }}>walletfit이 해 드리는 일</h2></div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px" }}>
       <article style={{ background: "#fff", borderRadius: "24px", boxShadow: "0 1px 2px rgba(13, 40, 120, 0.05), 0 10px 28px rgba(13, 40, 120, 0.08)", padding: "24px", display: "flex", flexDirection: "column", gap: "14px" }}>
         <div aria-hidden="true" className="guide-art" style={{ height: "120px", borderRadius: "18px", background: "#F3F7FF", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", position: "relative", overflow: "hidden" }}>

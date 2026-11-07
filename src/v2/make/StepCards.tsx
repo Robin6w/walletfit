@@ -82,7 +82,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
     <>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>가지고 있는 카드를 담아 주세요</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>담은 카드만으로 조합을 계산해요. 카드마다 계산에 쓰는 혜택을 바로 확인할 수 있어요.</p>
+        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>담은 카드만으로 조합을 계산해요. 담은 카드는 오른쪽에 모여요.</p>
       </header>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 24 }}>
@@ -279,13 +279,6 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
           style={{ flex: "1 1 360px", minWidth: 0, maxWidth: "100%", position: "sticky", top: 96, background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, display: "flex", flexDirection: "column", boxShadow: SHADOW, boxSizing: "content-box" }}
         >
           <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #EDF2FC", display: "flex", flexDirection: "column", gap: 14 }}>
-            {ids.length > 0 && (
-              <div aria-hidden="true" style={{ display: "flex", paddingLeft: 2, overflow: "hidden" }}>
-                {ids.map((sid, i) => (
-                  <CardImage key={sid} sid={sid} width={104} style={i ? { marginLeft: -62 } : undefined} />
-                ))}
-              </div>
-            )}
             <div>
               <h2 id="wallet-h" style={{ margin: 0, fontSize: 19, fontWeight: 700 }}>
                 담은 카드 {ids.length}장
@@ -300,21 +293,15 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
             {ids.map((sid, i) => {
               const c = catalogBySourceId.get(sid);
               return (
-                <li key={sid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i === ids.length - 1 ? undefined : "1px solid #EDF2FC" }}>
-                  <CardImage sid={sid} width={80} />
-                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>{c?.name ?? sid}</div>
-                      <div style={{ fontSize: 13, color: "#5E6D96", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {c?.issuer} · {c?.category} · {c?.annualFee ? `연회비 ${num(c.annualFee)}원` : "연회비 없음"}
-                      </div>
-                    </div>
-                  </div>
+                <li key={sid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: i === ids.length - 1 ? undefined : "1px solid #EDF2FC" }}>
+                  <CardImage sid={sid} width={64} />
+                  {/* 신재윤 PC 디자인: 담은 카드 줄은 카드 그림과 이름만 */}
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 }}>{c?.name ?? sid}</span>
                   <button
                     type="button"
                     aria-label={`${c?.name ?? sid} 빼기`}
                     onClick={() => onToggle(sid)}
-                    style={{ width: 44, height: 44, margin: "0 -10px 0 0", border: "none", borderRadius: 22, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    style={{ width: 44, height: 44, margin: "-10px -10px -10px 0", border: "none", borderRadius: 22, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                   >
                     <XIcon size={16} />
                   </button>

@@ -45,7 +45,7 @@ function Row({ to, icon, title, desc }: { to: string; icon: ReactNode; title: st
 
 export default function MobileHome() {
   useEffect(() => {
-    document.title = "WalletFit";
+    document.title = "walletfit";
   }, []);
   return (
     <>

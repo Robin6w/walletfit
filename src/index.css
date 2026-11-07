@@ -28,7 +28,8 @@
   --color-caution: #a35200;
   --color-caution-bg: #fff4e5;
   --color-logo: #2883fc;
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  /* 글씨체: 디자인 캔버스 신재윤 페이지 값(본문 IBM Plex Sans KR, 숫자 Outfit). 못 불러오면 Pretendard로 */
+  --font-sans: "IBM Plex Sans KR", "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 
   /* v2 디자인 토큰 (Claude Design 'WalletFit 디자인 개선' 양준서 페이지) */
   --color-w-bg: #f3f7ff;

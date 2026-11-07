@@ -229,7 +229,7 @@ function ChatPanel({ msgs, pending, shown }: { msgs: ChatMsg[]; pending: string 
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>카드 상담사 핏핏</h2>
-            <div style={{ fontSize: 12, color: "#5E6D96" }}>WalletFit AI 챗봇</div>
+            <div style={{ fontSize: 12, color: "#5E6D96" }}>walletfit AI 챗봇</div>
           </div>
           <button type="button" aria-label="상담 다시 시작" title="상담 다시 시작" onClick={() => setConfirmReset(true)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: 22, border: "none", background: "transparent", color: "#3A4A78", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <svg width={20} height={20} {...svg}>

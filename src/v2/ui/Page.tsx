@@ -27,7 +27,7 @@ export function PageMain({
   const pad = compact ? "14px 20px 20px" : padding;
   const space = compact ? Math.min(gap, 14) : gap;
   useEffect(() => {
-    document.title = title ? `${title} · WalletFit` : "WalletFit";
+    document.title = title ? `${title} · walletfit` : "walletfit";
   }, [title]);
   return (
     <main id="w-main" style={{ boxSizing: "border-box", padding: pad, minWidth: 0 }}>

@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { korWon } from "@/v1/format";
 import { CardImage } from "@/v2/ui/CardImage";
+import { useChrome } from "@/v2/ui/chrome";
 import { CategoryIcon } from "@/v2/ui/icons";
 import type { BenefitRowVM, GuideRowVM, RoleCardVM, TileVM } from "@/v2/model/resultView";
 
@@ -19,6 +20,9 @@ const STACK: Record<number, { w: number; pos: [number, number, number][] }> = {
 };
 
 export function HeroCardStack({ sids, newSids = [], bubble = true }: { sids: number[]; newSids?: number[]; bubble?: boolean }) {
+  // 모바일 사이트: 꾸밈용 카드 겹침 그림은 빼서 세로 길이를 줄인다(아래 카드 목록에 같은 카드가 나온다, 2026-11-07)
+  const { compact } = useChrome();
+  if (compact) return null;
   const k = Math.min(5, Math.max(1, sids.length));
   const s = STACK[k];
   return (

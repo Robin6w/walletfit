@@ -163,12 +163,19 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
             <div style={{ fontSize: 13, color: "#5E6D96" }}>이미 가진 카드라면 발급이 끝났어도 담을 수 있어요</div>
           </div>
 
-          <ul style={{ margin: 0, padding: 0, listStyle: "none", background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, overflow: "hidden", boxShadow: SHADOW }}>
+          <ul
+            style={
+              compact
+                ? // 모바일: 한 줄에 두 장씩 작은 칸(세로 길이 줄이기, 2026-11-07)
+                  { margin: 0, padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }
+                : { margin: 0, padding: 0, listStyle: "none", background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, overflow: "hidden", boxShadow: SHADOW }
+            }
+          >
             {results.slice(0, limit).map((c, idx, arr) => {
               const on = owned.has(c.sourceId);
               const disc = isDiscontinued(c);
               const nameEl = (
-                <span style={{ fontSize: 16, fontWeight: 700 }}>
+                <span style={{ fontSize: compact ? 14 : 16, fontWeight: 700, lineHeight: compact ? 1.3 : undefined, wordBreak: compact ? "keep-all" : undefined }}>
                   {splitHighlight(c.name, q).map((p, i) =>
                     p.hit ? (
                       <mark key={i} style={{ background: "#DCE8FF", color: "inherit", borderRadius: 3 }}>
@@ -184,19 +191,31 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
               return (
                 <li
                   key={c.sourceId}
-                  style={{
-                    display: "flex",
-                    flexWrap: compact ? "nowrap" : "wrap",
-                    alignItems: compact ? "flex-start" : "center",
-                    gap: compact ? 12 : "12px 16px",
-                    padding: compact ? "14px 14px" : "16px 18px",
-                    borderBottom: idx === arr.length - 1 ? undefined : "1px solid #EDF2FC",
-                    background: on ? "#F7FAFF" : undefined,
-                  }}
+                  style={
+                    compact
+                      ? { minWidth: 0, display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 14, background: on ? "#F2F6FF" : "#FFFFFF", border: on ? "1px solid #C9D6F5" : "1px solid transparent", boxShadow: SHADOW }
+                      : {
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          gap: "12px 16px",
+                          padding: "16px 18px",
+                          borderBottom: idx === arr.length - 1 ? undefined : "1px solid #EDF2FC",
+                          background: on ? "#F7FAFF" : undefined,
+                        }
+                  }
                 >
-                  <CardImage sid={c.sourceId} width={compact ? 64 : 112} />
-                  <div style={{ flex: compact ? "1 1 auto" : "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                    {disc ? (
+                  <CardImage sid={c.sourceId} width={compact ? 88 : 112} />
+                  <div style={{ flex: compact ? "1 1 auto" : "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: compact ? 4 : 6 }}>
+                    {compact ? (
+                      <div>
+                        {nameEl}
+                        <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.4, color: "#5E6D96" }}>
+                          {disc && <b style={{ color: "#3A4A78" }}>발급 중단 · </b>}
+                          {c.issuer} · {feeLabel(c)}
+                        </div>
+                      </div>
+                    ) : disc ? (
                       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px" }}>
                         {nameEl}
                         <span style={{ padding: "2px 8px", borderRadius: 6, background: "#EDF2FC", fontSize: 12, fontWeight: 700, color: "#3A4A78" }}>신규 발급 중단</span>
@@ -209,7 +228,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                       </div>
                     )}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {summaryChips(c).map((chip, ci) => (
+                      {summaryChips(c).slice(0, compact ? 1 : undefined).map((chip, ci) => (
                         <span key={`${ci}-${chip}`} style={chipStyle}>
                           {chip}
                         </span>
@@ -223,8 +242,8 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     onClick={() => onToggle(c.sourceId)}
                     style={
                       on
-                        ? { height: 44, minWidth: compact ? 64 : 96, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #C9D6F5", background: "#E8EEFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }
-                        : { height: 44, minWidth: compact ? 64 : 96, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }
+                        ? { height: compact ? 36 : 44, minWidth: compact ? 0 : 96, width: compact ? "100%" : undefined, marginTop: compact ? "auto" : undefined, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #C9D6F5", background: "#E8EEFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }
+                        : { height: compact ? 36 : 44, minWidth: compact ? 0 : 96, width: compact ? "100%" : undefined, marginTop: compact ? "auto" : undefined, flexShrink: 0, padding: compact ? "0 10px" : "0 14px", borderRadius: 12, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }
                     }
                   >
                     {on ? (
@@ -241,7 +260,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 </li>
               );
             })}
-            {results.length === 0 && <li style={{ padding: "40px 18px", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>찾는 카드가 없어요. 카드사 이름으로도 찾아보세요.</li>}
+            {results.length === 0 && <li style={{ gridColumn: "1 / -1", padding: "40px 18px", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>찾는 카드가 없어요. 카드사 이름으로도 찾아보세요.</li>}
           </ul>
           {results.length > limit && (
             <button

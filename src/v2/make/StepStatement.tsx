@@ -3,6 +3,7 @@ import { isStatementImage, readStatementFileAsText, StatementPasswordError, vali
 import { Link } from "@/v2/app/router";
 import { mergeStatements, recategorize, summarizeStatement, type StatementSummary } from "@/v2/model/statement";
 import { StatementItems } from "@/v2/make/StatementItems";
+import { useChrome } from "@/v2/ui/chrome";
 
 /*
  * 디자인 원본 F-D-Statement(A2′·B2′) 값을 그대로 옮김. 지원 형식은 PDF(비밀번호 포함)·CSV·TXT(2026-10-28 결정).
@@ -101,6 +102,8 @@ export function StepStatement({
   brandCats: Record<string, string>;
   onApply: (summary: StatementSummary, fileName: string) => void;
 }) {
+  // 모바일 사이트: 휴대폰에는 끌어다 놓기가 없어서 '골라 주세요'로 안내한다(2026-11-07)
+  const { compact } = useChrome();
   const input = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   /** 사용자가 바꾼 가맹점 카테고리. 명세서를 더 올리거나 빼도 유지한다 */
@@ -258,7 +261,7 @@ export function StepStatement({
               <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
             </svg>
           </div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{entries.length ? "다른 카드 명세서도 여기에 놓으세요" : "명세서 파일을 여기에 놓으세요"}</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{compact ? (entries.length ? "다른 카드 명세서도 골라 주세요" : "명세서 파일을 골라 주세요") : entries.length ? "다른 카드 명세서도 여기에 놓으세요" : "명세서 파일을 여기에 놓으세요"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10, marginTop: 4 }}>
             <input
               ref={input}

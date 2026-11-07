@@ -50,7 +50,7 @@ export default function MobileHome() {
   return (
     <>
       <MobileTopBar />
-      <main id="w-main" className="flex flex-col gap-4 px-4 pb-8 pt-5">
+      <main id="w-main" className="flex flex-col gap-4 px-5 pb-8 pt-5">
         <header className="px-1">
           <h1 className="m-0 text-[26px] font-bold leading-[1.3] tracking-[-0.035em] text-[#121a3e]">
             내 소비에 가장 유리한

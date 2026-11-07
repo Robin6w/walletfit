@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { useChrome } from "@/v2/ui/chrome";
 
 /**
  * 화면 본문. 디자인 원본의 main·안쪽 칸 값을 그대로 받는다.
@@ -20,11 +21,16 @@ export function PageMain({
   row?: boolean;
   title?: string;
 }) {
+  // 모바일 사이트: 위아래 여백과 덩어리 사이 간격을 줄인다(세로 길이 줄이기, 2026-11-07).
+  // 옆 여백 20px은 본문 80% 축소 뒤 화면에서 16px(아래 '다음' 바가 index.css에서 같은 값으로 맞춘다)
+  const { compact } = useChrome();
+  const pad = compact ? "14px 20px 20px" : padding;
+  const space = compact ? Math.min(gap, 14) : gap;
   useEffect(() => {
     document.title = title ? `${title} · WalletFit` : "WalletFit";
   }, [title]);
   return (
-    <main id="w-main" style={{ boxSizing: "border-box", padding, minWidth: 0 }}>
+    <main id="w-main" style={{ boxSizing: "border-box", padding: pad, minWidth: 0 }}>
       <div
         style={{
           maxWidth: width,
@@ -32,7 +38,7 @@ export function PageMain({
           width: "100%",
           display: "flex",
           ...(row ? { flexWrap: "wrap", alignItems: "flex-start" } : { flexDirection: "column" }),
-          gap,
+          gap: space,
         }}
       >
         {children}

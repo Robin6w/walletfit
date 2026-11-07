@@ -17,6 +17,7 @@ import { CardImage } from "@/v2/ui/CardImage";
 import { PageGlyph } from "@/v2/ui/icons";
 import { PageMain } from "@/v2/ui/Page";
 import { MenuBar } from "@/v2/ui/TopBar";
+import { useChrome } from "@/v2/ui/chrome";
 
 /**
  * 혜택별 추천(디자인 F-D-Benefit, 2026-10-29 v2).
@@ -38,6 +39,8 @@ const NUMF = "Outfit, 'IBM Plex Sans KR', sans-serif";
 
 export default function Benefit() {
   const route = useRoute();
+  // 모바일 사이트: 카드 그림을 작게(스크롤 줄이기, 2026-11-07)
+  const { compact } = useChrome();
   const { myCards, wallet, lastRun } = useAppData();
   const { spending } = useMonthlySpend(categories);
   const [picks] = useBrandPicks();
@@ -149,7 +152,7 @@ export default function Benefit() {
           <div aria-busy={q.isComputing} style={{ display: "flex", flexDirection: "column", gap: 28, opacity: q.isComputing ? 0.55 : 1, transition: "opacity 0.15s" }}>
             {hero ? (
               <section aria-labelledby="b-top" style={{ background: "#FFFFFF", boxShadow: SHADOW, borderRadius: 24, border: "2px solid #2457F5", padding: "28px clamp(18px, 2.6vw, 32px)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "20px 28px" }}>
-                <CardImage sid={hero.sid} width={176} />
+                <CardImage sid={hero.sid} width={compact ? 112 : 176} />
                 <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 14, background: "#2457F5", fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>{hero.badge}</span>
                   <h2 id="b-top" style={{ margin: "4px 0 0", fontSize: 24, fontWeight: 700 }}>
@@ -185,7 +188,7 @@ export default function Benefit() {
                   {list.map((r, i) => (
                     <li key={r.sid} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 18px", padding: "18px 20px", borderBottom: i < list.length - 1 ? "1px solid #EDF2FC" : undefined }}>
                       <span style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 16, background: "#F3F7FF", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Outfit, sans-serif", fontSize: 15, fontWeight: 700, color: "#3A4A78" }}>{r.rank}</span>
-                      <CardImage sid={r.sid} width={80} />
+                      <CardImage sid={r.sid} width={compact ? 64 : 80} />
                       <div style={{ flex: "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                         <div>
                           <span style={{ fontSize: 16, fontWeight: 700 }}>{r.name}</span>

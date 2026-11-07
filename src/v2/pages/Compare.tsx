@@ -36,6 +36,7 @@ import { CardImage } from "@/v2/ui/CardImage";
 import { PageIconBox } from "@/v2/ui/icons";
 import { PageMain } from "@/v2/ui/Page";
 import { MenuBar } from "@/v2/ui/TopBar";
+import { useChrome } from "@/v2/ui/chrome";
 import cardMetaFile from "@data/catalog/card-meta.json";
 
 /**
@@ -144,13 +145,16 @@ function parseIds(raw: string | null): number[] {
 
 export default function Compare() {
   const route = useRoute();
+  // 모바일 사이트: 비교 카드를 한 줄에 나란히 작게, 금액 칸도 촘촘하게(스크롤 줄이기, 2026-11-07)
+  const { compact } = useChrome();
   const stored = useCompare();
   const fromUrl = parseIds(route.query.get("ids"));
   const ids = (fromUrl.length ? fromUrl : stored.filter((s) => catalogBySourceId.has(s))).slice(0, COMPARE_MAX);
   const { myCards, wallet } = useAppData();
   const { spending } = useMonthlySpend(categories);
   const [picks] = useBrandPicks();
-  const [diffOnly, setDiffOnly] = useState(false);
+  // 모바일 사이트는 표가 길어서 '다른 점만 보기'를 켠 채로 시작한다
+  const [diffOnly, setDiffOnly] = useState(compact);
 
   const spend = useMemo(() => Object.fromEntries(Object.entries(spending).filter(([, v]) => v > 0)), [spending]);
   const total = Object.values(spend).reduce((s, v) => s + v, 0);
@@ -237,14 +241,14 @@ export default function Compare() {
                 type="button"
                 onClick={() => setDiffOnly((v) => !v)}
                 aria-pressed={diffOnly}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, height: 46, padding: "0 16px", boxSizing: "border-box", borderRadius: 23, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: "#0D1B4A", cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, height: compact ? 40 : 46, padding: compact ? "0 12px" : "0 16px", boxSizing: "border-box", borderRadius: 23, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: compact ? 14 : 15, fontWeight: 600, color: "#0D1B4A", cursor: "pointer", whiteSpace: "nowrap" }}
               >
                 <span aria-hidden="true" style={{ position: "relative", flexShrink: 0, width: 40, height: 24, borderRadius: 12, transition: "background 0.15s", background: diffOnly ? "#2457F5" : "#C3CEE6" }}>
                   <span style={{ position: "absolute", top: 3, width: 18, height: 18, borderRadius: 9, background: "#FFFFFF", boxShadow: "0 1px 2px rgba(13, 40, 120, 0.25)", transition: "left 0.15s", left: diffOnly ? 19 : 3 }} />
                 </span>
                 다른 점만 보기
               </button>
-              <Link to={paths.cards} style={pillLink}>
+              <Link to={paths.cards} style={compact ? { ...pillLink, height: 40, padding: "0 12px", fontSize: 14 } : pillLink}>
                 <Plus />
                 {n < COMPARE_MAX ? `카드 더 담기 · 최대 ${COMPARE_MAX}장` : "다른 카드로 바꾸기"}
               </Link>
@@ -256,13 +260,17 @@ export default function Compare() {
           <EmptyCompare ids={ids} />
         ) : (
           <>
-            <section aria-label="비교하는 카드" style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(min(${n > 2 ? 320 : 420}px, 100%), 1fr))`, gap: 16 }}>
+            <section
+              aria-label="비교하는 카드"
+              style={{ display: "grid", gridTemplateColumns: compact ? `repeat(${n}, minmax(0, 1fr))` : `repeat(auto-fit, minmax(min(${n > 2 ? 320 : 420}px, 100%), 1fr))`, gap: compact ? 8 : 16 }}
+            >
               {heads.map((h) => (
-                <article key={h.sid} style={{ ...cardBox, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px 20px" }}>
-                    <CardImage sid={h.sid} width={168} />
-                    <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                <article key={h.sid} style={{ ...cardBox, padding: compact ? 12 : 24, borderRadius: compact ? 16 : 20, display: "flex", flexDirection: "column", gap: compact ? 8 : 16 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: compact ? "flex-start" : "center", gap: compact ? 8 : "16px 20px" }}>
+                    <CardImage sid={h.sid} width={compact ? (n > 2 ? 84 : 120) : 168} />
+                    <div style={{ flex: compact ? "1 1 100%" : "1 1 200px", minWidth: 0 }}>
                       <span
+                        hidden={compact && !h.badge.mine}
                         style={
                           h.badge.mine
                             ? { display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 13, background: "#E8EEFF", fontSize: 12, fontWeight: 700, color: "#1747D6" }
@@ -271,11 +279,11 @@ export default function Compare() {
                       >
                         {h.badge.text}
                       </span>
-                      <h2 style={{ margin: "8px 0 0", fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}>{h.name}</h2>
-                      <div style={{ marginTop: 2, fontSize: 14, color: "#5E6D96" }}>{h.meta}</div>
+                      <h2 style={{ margin: compact ? "6px 0 0" : "8px 0 0", fontSize: compact ? 14 : 22, lineHeight: compact ? 1.35 : undefined, fontWeight: 700, letterSpacing: "-0.01em", wordBreak: "keep-all" }}>{h.name}</h2>
+                      <div style={{ marginTop: 2, fontSize: compact ? 12 : 14, lineHeight: compact ? 1.45 : undefined, color: "#5E6D96" }}>{h.meta}</div>
                     </div>
                   </div>
-                  {h.chips.length > 0 && (
+                  {!compact && h.chips.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {h.chips.map((c) => (
                         <span key={c} style={chipStyle}>
@@ -286,22 +294,28 @@ export default function Compare() {
                   )}
                   <div style={{ marginTop: "auto", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 14px" }}>
                     {h.inWallet ? (
-                      <Link to={paths.wallet} style={pillLink}>
-                        내 지갑에서 보기
+                      <Link to={paths.wallet} style={compact ? { ...pillLink, width: "100%", justifyContent: "center", height: 36, padding: "0 8px", fontSize: 13 } : pillLink}>
+                        {compact ? "내 지갑" : "내 지갑에서 보기"}
                       </Link>
                     ) : (
-                      <button type="button" onClick={() => myCards.toggle(h.sid)} aria-pressed={h.owned} style={addStyle(h.owned)}>
-                        {h.owned ? <Check size={17} /> : <Plus />}
-                        {h.owned ? "내 카드에 담았어요" : "내 카드에 담기"}
+                      <button
+                        type="button"
+                        onClick={() => myCards.toggle(h.sid)}
+                        aria-pressed={h.owned}
+                        aria-label={compact ? `${h.name} ${h.owned ? "내 카드에서 빼기" : "내 카드에 담기"}` : undefined}
+                        style={compact ? { ...addStyle(h.owned), width: "100%", justifyContent: "center", height: 36, padding: "0 8px", fontSize: 13 } : addStyle(h.owned)}
+                      >
+                        {h.owned ? <Check size={compact ? 14 : 17} /> : <Plus />}
+                        {compact ? (h.owned ? "담음" : "담기") : h.owned ? "내 카드에 담았어요" : "내 카드에 담기"}
                       </button>
                     )}
-                    <span style={sideNote}>{h.inWallet ? h.roleText : h.owned ? "'보유한 카드로 추천받기'에서 함께 계산해요" : "담으면 '보유한 카드로 추천받기'에서 함께 계산해요"}</span>
+                    {!compact && <span style={sideNote}>{h.inWallet ? h.roleText : h.owned ? "'보유한 카드로 추천받기'에서 함께 계산해요" : "담으면 '보유한 카드로 추천받기'에서 함께 계산해요"}</span>}
                   </div>
                 </article>
               ))}
             </section>
 
-            <section aria-labelledby="c-sum" style={{ ...cardBox, borderRadius: 24, padding: "28px clamp(18px, 2.6vw, 32px)", display: "flex", flexDirection: "column", gap: 20 }}>
+            <section aria-labelledby="c-sum" style={{ ...cardBox, borderRadius: 24, padding: compact ? "20px 14px" : "28px clamp(18px, 2.6vw, 32px)", display: "flex", flexDirection: "column", gap: compact ? 14 : 20 }}>
               <div>
                 <h2 id="c-sum" style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}>
                   내 지출로 계산하면
@@ -326,7 +340,7 @@ export default function Compare() {
                 <>
                   <div aria-busy={rank.isComputing} style={{ display: "flex", flexWrap: "wrap", gap: 14, opacity: computed ? 1 : 0.5 }}>
                     {(computed ? sums : inputs.map((x) => ({ sid: x.sid, name: nameOf(x), total: 0, net: 0, pct: 0, winner: false, more: null, feeLine: { lead: "", value: "" } }))).map((s) => (
-                      <div key={s.sid} style={{ flex: "1 1 280px", minWidth: 0, padding: 20, borderRadius: 16, background: "#F3F7FF", display: "flex", flexDirection: "column", gap: 10, boxSizing: "content-box" }}>
+                      <div key={s.sid} style={{ flex: "1 1 280px", minWidth: 0, padding: compact ? "12px 14px" : 20, borderRadius: 16, background: "#F3F7FF", display: "flex", flexDirection: "column", gap: compact ? 6 : 10, boxSizing: "content-box" }}>
                         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                           <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 700 }}>
                             <CardImage sid={s.sid} width={48} shadow={false} />
@@ -341,7 +355,7 @@ export default function Compare() {
                         </div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                           <span style={{ fontSize: 15, fontWeight: 600, color: "#3A4A78" }}>월</span>
-                          <span style={{ fontFamily: "Outfit, sans-serif", fontSize: 48, fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.01em", color: s.winner ? "#1747D6" : "#0D1B4A" }}>{computed ? s.total.toLocaleString("ko-KR") : "—"}</span>
+                          <span style={{ fontFamily: "Outfit, sans-serif", fontSize: compact ? 32 : 48, fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.01em", color: s.winner ? "#1747D6" : "#0D1B4A" }}>{computed ? s.total.toLocaleString("ko-KR") : "—"}</span>
                           <span style={{ fontSize: 20, fontWeight: 700 }}>원</span>
                         </div>
                         <div aria-hidden="true" style={{ height: 8, borderRadius: 999, background: "#E3EAF8" }}>
@@ -420,9 +434,9 @@ export default function Compare() {
                     항목
                   </div>
                   {heads.map((h) => (
-                    <div key={h.sid} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                      <CardImage sid={h.sid} width={52} shadow={false} />
-                      <span style={{ fontSize: 15, fontWeight: 700 }}>{h.name}</span>
+                    <div key={h.sid} style={{ display: "flex", flexDirection: compact ? "column" : "row", alignItems: compact ? "flex-start" : "center", gap: compact ? 4 : 10, minWidth: 0 }}>
+                      <CardImage sid={h.sid} width={compact ? 40 : 52} shadow={false} />
+                      <span style={{ fontSize: compact ? 12 : 15, lineHeight: 1.35, fontWeight: 700, wordBreak: "keep-all" }}>{h.name}</span>
                     </div>
                   ))}
                 </div>

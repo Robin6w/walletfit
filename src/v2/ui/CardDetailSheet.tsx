@@ -6,6 +6,7 @@ import { catLabel } from "@/v1/catalog";
 import { approxWon, num } from "@/v1/format";
 import { conditionTexts, feeDetailText, groupBenefits, perfText, rewardText, sourceText, tierText, wonShort } from "@/v2/model/cardView";
 import { CardImage } from "@/v2/ui/CardImage";
+import { useChrome } from "@/v2/ui/chrome";
 
 /**
  * 카드 상세 창(2026-10-30). 원문 정제 혜택 표(card-view.json)로 혜택·실적 조건·묶음 한도를 보여 준다.
@@ -156,6 +157,7 @@ function ChoiceGroup({ label, options }: { label: string; options: string[] }) {
 
 export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCompare, net, onToggleMine, onToggleCompare, onClose, plan }: Props) {
   const panel = useRef<HTMLDivElement>(null);
+  const { compact } = useChrome();
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
@@ -178,7 +180,8 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
   return createPortal(
     <div
       onClick={(e) => e.target === e.currentTarget && onClose()}
-      style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(13, 27, 74, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      // 모바일 사이트: 아래에서 올라오는 시트(화면 폭 가득, 위 모서리만 둥글게, 2026-11-07)
+      style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(13, 27, 74, 0.45)", display: "flex", alignItems: compact ? "flex-end" : "center", justifyContent: "center", padding: compact ? 0 : 16 }}
     >
       <div
         ref={panel}
@@ -186,14 +189,14 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
         aria-modal="true"
         aria-labelledby="card-detail-h"
         tabIndex={-1}
-        style={{ position: "relative", width: "min(760px, 100%)", maxHeight: "min(88vh, 100%)", overflowY: "auto", background: "#FFFFFF", borderRadius: 24, boxShadow: SHADOW, padding: "28px clamp(18px, 3vw, 32px)", display: "flex", flexDirection: "column", gap: 20, outline: "none" }}
+        style={{ position: "relative", width: compact ? "100%" : "min(760px, 100%)", maxHeight: compact ? "92dvh" : "min(88vh, 100%)", overflowY: "auto", background: "#FFFFFF", borderRadius: compact ? "24px 24px 0 0" : 24, boxShadow: SHADOW, padding: compact ? "20px 16px calc(16px + env(safe-area-inset-bottom))" : "28px clamp(18px, 3vw, 32px)", display: "flex", flexDirection: "column", gap: compact ? 16 : 20, outline: "none" }}
       >
         <button type="button" onClick={onClose} aria-label="닫기" style={{ position: "absolute", top: 14, right: 14, width: 40, height: 40, borderRadius: 20, border: "none", background: "#F3F7FF", fontSize: 18, color: "#3A4A78", cursor: "pointer" }}>
           ✕
         </button>
 
         <header style={{ display: "flex", flexWrap: "wrap", gap: "16px 24px", alignItems: "center" }}>
-          <CardImage sid={entry.sourceId} width={150} />
+          <CardImage sid={entry.sourceId} width={compact ? 96 : 150} />
           <div style={{ flex: "1 1 260px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#2457F5" }}>{entry.issuer}</div>
             <h2 id="card-detail-h" style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0D1B4A", paddingRight: 40 }}>

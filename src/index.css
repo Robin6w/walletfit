@@ -513,7 +513,7 @@ body {
    PC에서 오른쪽에 붙던 '담은 카드' 칸은 숨긴다(목록 맨 위에 담은 카드가 먼저 나오고 아래 바에 장수가 보인다) */
 .w-mobile [data-bottombar] {
   bottom: 0 !important;
-  margin: 0 calc(-1 * clamp(16px, 3.5vw, 48px));
+  margin: 0 -20px; /* PageMain 모바일 옆 여백(20px)만큼 */
   border-radius: 20px 20px 0 0 !important;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
   gap: 10px 12px !important;
@@ -526,8 +526,38 @@ body {
 .w-mobile .w-side-panel {
   display: none !important;
 }
-/* 모바일 사이트는 본문을 88%로 줄여 한 화면에 더 많이 보이게 한다(사용자 요청 2026-11-07: 스크롤 줄이기).
+/* 모바일 사이트는 본문을 80%로 줄여(11-07 처음 88% → 같은 날 80%) 한 화면에 더 많이 보이게 한다(사용자 요청 2026-11-07: 스크롤 줄이기).
    본문 글자·여백이 모두 px 고정값이라 rem 대신 zoom을 쓴다. 위 머리줄·아래 탭·상담 창은 줄이지 않는다 */
+.w-mobile {
+  --w-mobile-zoom: 0.8;
+}
 .w-mobile #w-main {
-  zoom: var(--w-mobile-zoom, 0.88);
+  zoom: var(--w-mobile-zoom);
+}
+
+/* 모바일 사이트: 가로로 미는 칩 줄은 스크롤 막대를 숨긴다 */
+.w-hscroll {
+  scrollbar-width: none;
+}
+.w-hscroll::-webkit-scrollbar {
+  display: none;
+}
+/* 모바일 사이트: 화면 아래에 붙는 바(비교함 등)는 아래 탭 위에 띄운다. 본문이 zoom으로 줄어 있어 그만큼 나눠 준다 */
+.w-mobile [data-stickybar] {
+  bottom: calc((64px + env(safe-area-inset-bottom) + 10px) / var(--w-mobile-zoom, 0.8)) !important;
+}
+/* 모바일 사이트: 카드 비교 표를 촘촘하게. 머리줄(카드 이름)은 위 머리줄 바로 아래에 붙인다 */
+.w-mobile .cmp-row {
+  gap: 8px 10px;
+  padding: 10px 12px !important;
+}
+.w-mobile .cmp-head {
+  top: calc(57px / var(--w-mobile-zoom, 0.8)) !important;
+}
+.w-mobile .cmp-row span {
+  font-size: 13px !important;
+}
+/* 모바일 사이트: 이용 가이드의 설명 그림은 숨긴다(세로 길이 줄이기) */
+.w-mobile .guide-art {
+  display: none !important;
 }

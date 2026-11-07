@@ -3,6 +3,7 @@ import { ChevronLeft, CircleHelp, House, LayoutGrid, MessageCircle, Star, Wallet
 import { Link } from "@/v2/app/router";
 import { paths } from "@/v2/app/paths";
 import { chatStore, useChatState } from "@/v2/chat/chatStore";
+import { josa } from "@/v2/model/text";
 import { Logo, type MenuId, type StepPill } from "@/v2/ui/TopBar";
 import { TAB_H } from "@/mobile/tabs";
 
@@ -48,11 +49,15 @@ export function MobileWizardBar({ sub, steps }: { sub: string; steps: StepPill[]
   const { open } = useChatState();
   const cur = Math.max(0, steps.findIndex((s) => s.state === "current"));
   const prev = [...steps.slice(0, cur)].reverse().find((s) => s.to);
-  const back = prev?.to ?? paths.home;
+  // 명세서 화면은 지출 입력에서 들어오므로 뒤로 가면 지출 입력으로(단계 줄에서는 지출 입력 자리를 대신한다)
+  const here = steps[cur]?.to;
+  const fromStatement = here?.endsWith("/statement") ? here.replace(/\/statement$/, "/spend") : null;
+  const back = fromStatement ?? prev?.to ?? paths.home;
+  const backLabel = fromStatement ? "직접 입력으로 돌아가기" : prev ? `${josa(prev.label, "으로/로")} 돌아가기` : "홈으로";
   return (
     <header className={TOP}>
       <nav aria-label="지갑 만들기" className="flex h-14 items-center gap-2 px-2">
-        <Link to={back} aria-label={prev ? `${prev.label}(으)로 돌아가기` : "홈으로"} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-w-ink no-underline">
+        <Link to={back} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-w-ink no-underline">
           <ChevronLeft className="h-6 w-6" aria-hidden="true" />
         </Link>
         <div className="min-w-0 flex-1 text-center leading-[1.2]">

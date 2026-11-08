@@ -99,7 +99,7 @@ export default function MobileHome() {
             둘러보기
           </h2>
           <ul className="m-0 list-none divide-y divide-[rgba(13,27,74,0.06)] overflow-hidden rounded-[20px] bg-white p-0 w-shadow">
-            <Row to={paths.cards} icon={<LayoutGrid className="h-5 w-5" aria-hidden="true" />} title="전체 카드" desc="카드 1,500여 장을 찾아보고 비교해요" />
+            <Row to={paths.cards} icon={<LayoutGrid className="h-5 w-5" aria-hidden="true" />} title="전체 카드" desc="발급 중인 카드 1,180장을 찾아보고 비교해요" />
             <Row to={paths.benefit} icon={<Star className="h-5 w-5" aria-hidden="true" />} title="혜택별 추천" desc="편의점·카페처럼 한 곳에 가장 좋은 카드" />
             <Row to={paths.guide} icon={<CircleHelp className="h-5 w-5" aria-hidden="true" />} title="이용 가이드" desc="처음이라면 4단계로 살펴보세요" />
           </ul>

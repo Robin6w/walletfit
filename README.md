@@ -240,7 +240,6 @@ walletfit-ds/
 ## 🧹 정리가 필요한 파일
 - `src/features/wallet/WalletWizardPage.tsx`, `WalletCombinationResult.tsx`, `WalletQuickEditView.tsx`, `src/features/home/HomePage.tsx`, `src/shared/layout/Sidebar.tsx` 등 이전 화면은 v1 화면으로 바뀌어 앱에서는 쓰지 않습니다. 테스트가 일부를 참조해서 남겨 두었습니다.
 - `src/shared/types/lucide-react.d.ts`는 지웠습니다. lucide-react 1.33이 타입을 같이 배포해서, 이 파일이 오히려 `npm run build`를 막고 있었습니다.
-- `cleanup-move-stale-files.ps1`은 옮길 대상이 없어 실행해도 아무 일도 하지 않습니다.
 
 ---
 

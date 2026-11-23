@@ -90,6 +90,16 @@ export const BRAND_LOGOS: Record<string, string> = {
   투썸플레이스: "/brands/twosome.png",
   파리바게뜨: "/brands/paris-baguette.png",
   폴바셋: "/brands/paul-bassett.png",
+  // 2026-11-23: 외식 탭 로고(신재윤 디자인 페이지)
+  아웃백: "/brands/outback.png",
+  VIPS: "/brands/vips.png",
+  맥도날드: "/brands/mcdonalds.png",
+  롯데리아: "/brands/lotteria.png",
+  버거킹: "/brands/burgerking.png",
+  맘스터치: "/brands/momstouch.png",
+  도미노피자: "/brands/dominos.png",
+  교촌치킨: "/brands/kyochon.png",
+  애슐리: "/brands/ashley.png",
 };
 
 export function logoOf(brand: string): string | null {

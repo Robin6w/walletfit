@@ -1,5 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { isStaleChunkError, reloadOnceForStaleChunk } from "@/shared/staleChunk";
 
 export interface FallbackProps {
   error: Error;
@@ -121,6 +122,8 @@ export interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  /** 배포 직후 옛 탭: 새 버전을 받으려고 새로고침하는 중 */
+  reloading?: boolean;
 }
 
 /**
@@ -137,6 +140,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // 배포 직후 옛 탭이 사라진 화면 조각을 불러오다 실패한 경우: 오류 화면 대신 한 번 새로고침
+    if (isStaleChunkError(error) && reloadOnceForStaleChunk()) {
+      this.setState({ reloading: true });
+      return;
+    }
     this.props.onError?.(error, errorInfo);
     console.error("[ErrorBoundary] Uncaught component error:", error, errorInfo);
   }
@@ -147,7 +155,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   override render(): ReactNode {
-    const { hasError, error } = this.state;
+    const { hasError, error, reloading } = this.state;
     const {
       children,
       fallback,
@@ -155,6 +163,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       fallbackMessage,
       compact = false,
     } = this.props;
+
+    if (hasError && reloading) {
+      return (
+        <output style={{ display: "block", padding: 24, textAlign: "center", fontSize: 15, color: "#3A4A78" }}>
+          새 버전을 불러오는 중이에요…
+        </output>
+      );
+    }
 
     if (hasError && error) {
       if (typeof fallback === "function") {

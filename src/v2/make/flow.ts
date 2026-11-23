@@ -15,7 +15,7 @@ import type { StepPill } from "@/v2/ui/TopBar";
 /**
  * 지갑 만들기 흐름이 같이 쓰는 값(2026-10-28 v2).
  *  - 지출(walletfit:monthly-spend), 자주 가는 곳, 명세서, 새 카드 종류는 localStorage
- *  - 조건 바꾸기(계산 방식·최대 카드 수·연회비 상한·카드사 제외·가진 카드 종류)는 탭을 닫으면 처음 값(sessionStorage)
+ *  - 조건 바꾸기(최대 카드 수·연회비 상한·카드사 제외·가진 카드 종류)는 탭을 닫으면 처음 값(sessionStorage)
  */
 
 export interface Conditions {
@@ -36,6 +36,8 @@ const COND_KEY = "walletfit:v2:conditions";
 const DEFAULT_COND: Conditions = { mode: "maxBenefit", maxCards: 3, feeCap: null, excludedIssuers: [], kinds: ["credit", "check"], pinned: [] };
 let cond: Conditions = { ...DEFAULT_COND, ...readSession<Partial<Conditions>>(COND_KEY, {}) };
 if (!Array.isArray(cond.pinned)) cond = { ...cond, pinned: [] };
+// 2026-11-23: 계산 방식 고르기를 없앰. 예전에 '효율적'을 골라 둔 탭도 혜택 최대화로 계산한다
+cond = { ...cond, mode: "maxBenefit" };
 const condListeners = new Set<() => void>();
 
 export const conditionsStore = {

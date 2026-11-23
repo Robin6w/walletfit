@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { toBrandShare } from "@/domain/engine/walletEngine";
 import { catalogBySourceId } from "@/v1/catalog";
 import { approxWon, korWon } from "@/v1/format";
@@ -36,7 +36,8 @@ function savedDate(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number[]; toggleTodo: (id: string) => void }) {
+function SavedWallet({ w, owned, toggleTodo, onDelete }: { w: SavedWalletV2; owned: number[]; toggleTodo: (id: string) => void; onDelete: () => void }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const pack = w.pack;
   const flow: Flow = w.flow ?? (w.scope === "all" ? "new" : "own");
   const brandShare = w.brandShare ?? toBrandShare(w.spending, w.brandSpend ?? {});
@@ -69,8 +70,33 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
           <Link to={resultTo} style={outlineLink}>
             카드 바꿔보기
           </Link>
+          <button type="button" onClick={() => setConfirmDelete(true)} aria-expanded={confirmDelete} aria-controls="w-delete" style={{ ...outlineLink, fontFamily: "inherit", cursor: "pointer", color: "#B42318" }}>
+            지갑 삭제
+          </button>
         </div>
       </header>
+
+      {/* 2026-11-23: 저장한 조합 지우기. 담아 둔 카드(전체 카드에서 담은 목록)는 그대로 둔다 */}
+      {confirmDelete && (
+        <section id="w-delete" role="alertdialog" aria-labelledby="w-delete-t" aria-describedby="w-delete-d" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px 20px", padding: "18px 22px", borderRadius: 18, background: "#FEF3F2", border: "1px solid #FBD5D1" }}>
+          <div style={{ flex: "1 1 360px", minWidth: 0 }}>
+            <h2 id="w-delete-t" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+              저장한 지갑을 지울까요?
+            </h2>
+            <p id="w-delete-d" style={{ margin: "2px 0 0", fontSize: 14, lineHeight: 1.6, color: "#0D1B4A" }}>
+              카드 조합·결제 순서·할 일 체크가 모두 지워지고 되돌릴 수 없어요. 담아 둔 카드 목록은 그대로 남아요.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <button type="button" onClick={() => setConfirmDelete(false)} style={{ ...outlineLink, fontFamily: "inherit", cursor: "pointer" }}>
+              취소
+            </button>
+            <button type="button" onClick={onDelete} style={{ ...outlineLink, fontFamily: "inherit", cursor: "pointer", background: "#B42318", color: "#FFFFFF", border: "1px solid #B42318" }}>
+              지갑 삭제
+            </button>
+          </div>
+        </section>
+      )}
 
       {w.margin === 0 && (
         <section aria-labelledby="wi-warn" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px 20px", padding: "18px 22px", borderRadius: 18, background: "#FFF6EE", border: "1px solid #F3D6BF" }}>
@@ -274,7 +300,7 @@ function UnusedCards({ items, title, text, action }: { items: UnusedCardVM[]; ti
 /** 내 지갑: 저장한 조합이 있으면 그 조합, 없으면 안내.
  *  조합을 저장하기 전에 전체 카드에서 담은 카드도 '아직 조합에 사용하지 않은 카드'로 보여 준다(2026-11-07) */
 export default function Wallet() {
-  const { wallet, myCards, toggleTodo } = useAppData();
+  const { wallet, setWallet, myCards, toggleTodo } = useAppData();
   const ok = wallet && wallet.pack && Array.isArray(wallet.pack.cards) && wallet.pack.cards.length > 0;
   const pending = ok ? [] : unusedOwned(myCards.ids, { cards: [] });
   return (
@@ -282,7 +308,7 @@ export default function Wallet() {
       <MenuBar active="wallet" />
       <PageMain title="내 지갑">
         {ok ? (
-          <SavedWallet w={wallet} owned={myCards.ids} toggleTodo={toggleTodo} />
+          <SavedWallet w={wallet} owned={myCards.ids} toggleTodo={toggleTodo} onDelete={() => setWallet(null)} />
         ) : (
           <WalletEmpty
             afterHero={

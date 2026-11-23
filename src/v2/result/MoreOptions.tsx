@@ -46,20 +46,6 @@ const chip = (on: boolean): CSSProperties => ({
   cursor: "pointer",
   whiteSpace: "nowrap",
 });
-const segBtn = (on: boolean): CSSProperties => ({
-  height: 40,
-  padding: "0 16px",
-  borderRadius: 9,
-  border: "none",
-  background: on ? "#FFFFFF" : "transparent",
-  boxShadow: on ? "0 1px 3px rgba(13, 40, 120, 0.12)" : undefined,
-  fontFamily: "inherit",
-  fontSize: 14,
-  fontWeight: on ? 700 : 400,
-  color: on ? "#0D1B4A" : "#3A4A78",
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-});
 const roundBtn: CSSProperties = {
   width: 40,
   height: 40,
@@ -284,30 +270,7 @@ export function ConditionsBar(p: ConditionsBarProps) {
               gap: "22px 28px",
             }}
           >
-            <Field
-              title="계산 방식"
-              note={
-                c.mode === "maxBenefit"
-                  ? "최대 카드 수 안에서 순혜택이 가장 큰 조합을 골라요."
-                  : `1등 카드 순혜택의 30%도 못 버는 카드는 빼요.${p.efficientCeiling ? ` 이 지출에서는 ${p.efficientCeiling}장까지가 이득이에요.` : ""}`
-              }
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  padding: 3,
-                  borderRadius: 12,
-                  background: "#F3F7FF",
-                }}
-              >
-                <button type="button" aria-pressed={c.mode === "maxBenefit"} onClick={() => p.setConditions({ mode: "maxBenefit" })} style={segBtn(c.mode === "maxBenefit")}>
-                  혜택 최대화
-                </button>
-                <button type="button" aria-pressed={c.mode === "efficient"} onClick={() => p.setConditions({ mode: "efficient" })} style={segBtn(c.mode === "efficient")}>
-                  효율적
-                </button>
-              </div>
-            </Field>
+            {/* 2026-11-23: '계산 방식(혜택 최대화/효율적)' 고르기 삭제(사용자 결정). 항상 혜택 최대화 */}
             <Field title="최대 카드 수">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <button

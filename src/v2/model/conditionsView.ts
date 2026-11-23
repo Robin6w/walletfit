@@ -32,7 +32,7 @@ export function feeCapText(feeCap: number | null): string {
 }
 
 export function conditionsSummary(c: ConditionsSummaryInput): string[] {
-  const out = [c.mode === "maxBenefit" ? "혜택 최대화" : "효율적", `최대 ${c.maxCards}장`, kindsText(c.kinds), c.noMargin ? "실적 여유 없음" : `실적 여유 ${korWon(c.margin)}`, feeCapText(c.feeCap)];
+  const out = [`최대 ${c.maxCards}장`, kindsText(c.kinds), c.noMargin ? "실적 여유 없음" : `실적 여유 ${korWon(c.margin)}`, feeCapText(c.feeCap)];
   if (c.excludedIssuers > 0) out.push(`카드사 ${c.excludedIssuers}곳 제외`);
   if (c.pinned > 0) out.push(`꼭 넣을 카드 ${c.pinned}장`);
   return out;

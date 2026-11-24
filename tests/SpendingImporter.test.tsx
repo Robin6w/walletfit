@@ -59,7 +59,7 @@ describe("SpendingImporter", () => {
       const input = screen.getByLabelText("명세서 파일 선택");
       fireEvent.change(input, { target: { files: [invalidFile] } });
 
-      expect(screen.getByText("지원하지 않는 파일 형식입니다. PDF, TXT, CSV 파일만 지원합니다.")).toBeInTheDocument();
+      expect(screen.getByText("지원하지 않는 파일 형식입니다. PDF, TXT, CSV, XLS 파일만 지원합니다.")).toBeInTheDocument();
       expect(screen.queryByText(/파일 준비됨/)).not.toBeInTheDocument();
     });
 
@@ -73,7 +73,7 @@ describe("SpendingImporter", () => {
       fireEvent.change(input, { target: { files: [validFile] } });
 
       expect(screen.queryByText("파일 크기는 최대 10MB 이하만 업로드 가능합니다.")).not.toBeInTheDocument();
-      expect(screen.queryByText("지원하지 않는 파일 형식입니다. PDF, TXT, CSV 파일만 지원합니다.")).not.toBeInTheDocument();
+      expect(screen.queryByText("지원하지 않는 파일 형식입니다. PDF, TXT, CSV, XLS 파일만 지원합니다.")).not.toBeInTheDocument();
 
       await waitFor(() => {
         expect(screen.getByText("파일 준비됨: statement.csv")).toBeInTheDocument();

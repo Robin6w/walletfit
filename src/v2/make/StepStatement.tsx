@@ -164,7 +164,7 @@ export function StepStatement({
       const entry: Entry = { id, name: file.name, meta: fileMeta(file), sample: false, file, status: "reading", error: "", pw: "", summary: null, image: isStatementImage(file) };
       if (!v.isValid) {
         entry.status = "error";
-        entry.error = v.error?.startsWith("지원하지 않는") ? "명세서 PDF·CSV·TXT 파일이나 카드 앱 이용내역 캡처(PNG·JPG)만 읽을 수 있어요." : "파일이 10MB보다 커요. 한 달치 명세서만 올려 주세요.";
+        entry.error = v.error?.startsWith("지원하지 않는") ? "명세서 PDF·엑셀(XLS)·CSV·TXT 파일이나 카드 앱 이용내역 캡처(PNG·JPG)만 읽을 수 있어요." : "파일이 10MB보다 커요. 한 달치 명세서만 올려 주세요.";
       }
       setEntries((list) => [...list, entry]);
       if (v.isValid) void open(id, file);
@@ -281,7 +281,7 @@ export function StepStatement({
               ref={input}
               type="file"
               multiple
-              accept=".pdf,.csv,.txt,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,text/plain,image/png,image/jpeg,image/webp"
+              accept=".pdf,.csv,.txt,.xls,.xlsx,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,text/plain,application/vnd.ms-excel,image/png,image/jpeg,image/webp"
               className="sr-only"
               tabIndex={-1}
               aria-hidden="true"

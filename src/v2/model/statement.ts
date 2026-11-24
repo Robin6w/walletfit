@@ -1,4 +1,4 @@
-import { parseTextLocally } from "@/features/statement/importerParser";
+import { parseTextLocally, TABLE_STATEMENT_MARK } from "@/features/statement/importerParser";
 import type { Tickets } from "@/domain/types/engine";
 import { BRAND_TABS, aliasesOf, canonicalBrand } from "@/v2/model/brands";
 import { CATALOG_BRAND_NAMES, catalogCategory, fuzzyCategory, statementCategory, withBrandNames, withoutLookalikes } from "@/v2/model/merchantDict";
@@ -30,6 +30,8 @@ export interface StatementItem {
   edited?: boolean;
   /** 'YYYY-MM' (날짜를 못 찾으면 없음). 여러 명세서를 합칠 때 달 수를 센다 */
   month?: string;
+  /** 명세서 기준 달 'YYYY-MM'(이용 기간이 한 달인 KB국민·삼성 신용카드 명세서, 2026-11-24). 있으면 month 대신 달 수를 센다 */
+  cycle?: string;
   /** 어느 명세서에서 읽었는지(파일 이름). 여러 명세서를 합쳤을 때만 */
   source?: string;
   /** 여러 번 결제를 한 줄로 묶은 것(신한 후불교통 '08월경기버스8건' → 8). 건당 조건 계산에서 금액을 나눈다 */
@@ -53,7 +55,8 @@ export interface StatementSummary {
 }
 
 /** 요약·머리글 줄(금액이 있어도 결제 한 건이 아님) */
-const SKIP_LINE = /(합\s*계|총\s*(액|이용|결제|청구|승인)|결제\s*예정|청구\s*(금액|합계)|(이용|조회)\s*기간|카드\s*번호|전월\s*(이월|잔액)|최소\s*결제|이자|수수료\s*합)/;
+// '이자'는 '무이자'·'이자면제'가 아닌 것만(KB국민 결제 줄 'CJ온스타일무이자 65,460 1/3 21,820'을 버렸다, 2026-11-24)
+const SKIP_LINE = /(합\s*계|총\s*(액|이용|결제|청구|승인)|결제\s*예정|청구\s*(금액|합계)|(이용|조회)\s*기간|카드\s*번호|전월\s*(이월|잔액)|최소\s*결제|(?<!무)이자(?!면제)|수수료\s*합)/;
 // '일'은 숫자에 바로 붙은 것만(띄어 쓴 '일시불'의 '일'을 먹지 않게, 2026-11-02)
 const FULL_DATE = /(20\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})일?/g;
 const SHORT_DATE = /(^|[^\d])(\d{1,2})[./](\d{1,2})(?=[^\d]|$)/g;
@@ -62,8 +65,15 @@ const YEAR_MONTH = /(20\d{2})\s*년\s*(\d{1,2})\s*월/;
 
 const YEAR_MONTH_G = /(20\d{2})\s*년(\s*\d{1,2}\s*월)?/g;
 
-/** 가린 숫자(카드번호 '1234-56**-****-7890', 계좌 '11051*****71', 신한 '본인410*')는 금액이 아니다(2026-11-02) */
-const MASKED = /\S*\d\S*\*\S*|\S*\*\S*\d\S*/g;
+/**
+ * 가린 숫자(카드번호 '1234-56**-****-7890', 계좌 '11051*****71', 신한 '본인410*')는 금액이 아니다(2026-11-02).
+ * 가린 부분만 지운다: 예전에는 낱말 전체를 지워 KB국민 'LGUPLUS통신요금자동이체(82**17**)'의 가맹점 이름까지 사라졌다(2026-11-24)
+ */
+const MASKED = /\(?[0-9A-Za-z*-]*(?:\d[0-9A-Za-z*-]*\*|\*[0-9A-Za-z*-]*\d)[0-9A-Za-z*-]*\)?/g;
+/** 만원 단위 금액은 한도 안내다(KB국민 '카드이용한도 1,000 만원', 삼성 '이용한도 600만원', 2026-11-24) */
+const MANWON = /\d[\d,]*\s*만\s*원/g;
+/** 쉼표 없는 8자리 이상 숫자는 고객·계좌·승인 번호다(삼성 고객번호 '30054593992'를 300억 원으로 읽었다, 2026-11-24) */
+const LONG_NUMBER = /(?<![\d,.])\d{8,}(?![\d,.])/g;
 /**
  * 결제에 붙은 혜택 표시(신한 '캐시백 592원', '적립 30P')는 결제 금액이 아니다. 양수만 지운다:
  * 케이뱅크 '★웰페어클럽 캐시백 -336'처럼 음수는 따로 들어온 혜택 입금 줄이라 남긴다(REWARD로 소비에서 뺀다)
@@ -83,6 +93,11 @@ export function cleanLine(line: string): string {
     .replace(URL, " ")
     .replace(PHONE, " ")
     .replace(MASKED, " ")
+    .replace(MANWON, " ")
+    .replace(LONG_NUMBER, " ")
+    // 삼성카드 이용자 칸 '본 인'·'가 족'(글자 사이를 띄움)
+    .replace(/(^|\s)본\s+인(?=\s|$)/g, "$1본인")
+    .replace(/(^|\s)가\s+족(?=\s|$)/g, "$1가족")
     .replace(LEADING_ZERO, " ")
     .replace(REWARD_NOTE, " ")
     .replace(FULL_DATE, " ")
@@ -125,14 +140,27 @@ function datesIn(text: string): Date[] {
  */
 function declaredTotal(lines: string[]): { total: number; count?: number } | null {
   const num = (s: string) => Number(s.replace(/,/g, ""));
+  const AMT = "(\\d{1,3}(?:,\\d{3})+|\\d{3,})";
   for (const l of lines) {
     const m = l.match(/(?:총|정상)\s*(\d+)\s*건[^\d\n]*?(\d{1,3}(?:,\d{3})+|\d{3,})\s*원/);
     if (m) return { total: num(m[2]), count: Number(m[1]) };
   }
+  // KB국민 신용카드 '합 계 15 건 869,279 152,693 102'(건수 다음이 이번 달 결제 원금, 2026-11-24)
   for (const l of lines) {
+    const m = l.match(new RegExp(`합\\s*계\\s*(\\d+)\\s*건\\s*${AMT}`));
+    if (m) return { total: num(m[2]), count: Number(m[1]) };
+  }
+  // 전체 합계를 먼저 찾고 '합계'는 마지막에: 삼성카드는 '일시불 합계 278,230'·'할부 합계 23,030' 다음에 '이용금액합계 301,260'이 있다(2026-11-24)
+  const named = [
     // KB국민 체크카드 '정상이용금액(+) 3,700원 0원'(본 카드 칸이 먼저, 2026-11-07)
-    const m = l.match(/(?:총\s*승인\s*금액|총\s*이용\s*금액|정상\s*이용\s*금액\s*(?:\(\+\))?|이용\s*금액\s*합계|승인\s*금액\s*합계|합\s*계)\s*:?\s*(\d{1,3}(?:,\d{3})+|\d{3,})/);
-    if (m) return { total: num(m[1]) };
+    /(?:총\s*승인\s*금액|총\s*이용\s*금액|정상\s*이용\s*금액\s*(?:\(\+\))?|이용\s*금액\s*합계|승인\s*금액\s*합계)/,
+    /합\s*계/,
+  ];
+  for (const label of named) {
+    for (const l of lines) {
+      const m = l.match(new RegExp(`${label.source}\\s*:?\\s*${AMT}`));
+      if (m) return { total: num(m[1]) };
+    }
   }
   return null;
 }
@@ -164,8 +192,10 @@ export function merchantName(line: string): string {
       (t) =>
         t &&
         !/^(승인|승인취소|무승인|취소|일시불|할부|본인|가족|정상|매출|원)$/.test(t) &&
-        // 카드번호 칸(KB국민 '마스터160' = 카드 종류 + 끝 세 자리, 2026-11-07)
-        !/^(마스터|비자|로컬|국내전용|아멕스|은련|유니온페이|제이씨비|JCB|BC|VISA|MASTER)\d{2,4}$/i.test(t) &&
+        // 카드번호 칸(KB국민 '마스터160' = 카드 종류 + 끝 세 자리, 2026-11-07. KB국민 신용 '국내072', 2026-11-24)
+        !/^(마스터|비자|로컬|국내전용|국내|해외|아멕스|은련|유니온페이|제이씨비|JCB|BC|VISA|MASTER)(\d{2,4})?$/i.test(t) &&
+        // KB국민 '스타샵' 가맹점 표시 'P'(2026-11-24)
+        t !== "P" &&
         !/^[_\-–·.()]+$/.test(t) &&
         /[\p{L}\p{N}]/u.test(t),
     )
@@ -174,14 +204,16 @@ export function merchantName(line: string): string {
     .replace(/\s+\)/g, ")")
     // 낱말 끝의 밑줄('김포공항_', 칸이 잘린 자리). 가운데 밑줄('ChatGPT_NICE')은 둔다
     .replace(/_+(?=\s|$)/g, "")
+    // 이름 끝에 따로 떨어진 한두 자리 숫자는 적립 포인트 칸이다(KB국민 'GSSHOP(…)-지에스리테 41', 2026-11-24)
+    .replace(/(\s\d{1,2})+$/, "")
     .trim();
   return name;
 }
 
 const ITEM_DATE = /(20\d{2})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})/;
 
-/** 명세서에 적힌 이용 기간('카드이용기간 2026.09.01 ~ 2026.09.30', NH 앱 '2026.08.31~ 2026.09.30') */
-const RANGE = new RegExp(`${ITEM_DATE.source}일?\\s*[~∼]\\s*${ITEM_DATE.source}`);
+/** 명세서에 적힌 이용 기간('카드이용기간 2026.09.01 ~ 2026.09.30', NH 앱 '2026.08.31~ 2026.09.30', 삼성 '2026년 08월 01일-2026년 08월 31일') */
+const RANGE = new RegExp(`${ITEM_DATE.source}일?\\s*[~∼-]\\s*${ITEM_DATE.source}`);
 const DAY_MS = 86_400_000;
 
 function dayOf(raw: string): number | null {
@@ -257,6 +289,96 @@ interface Row {
   amount: number;
   /** 금액 앞에 부호 없이 '승인취소' 등만 적힌 줄 */
   unsignedCancel: boolean;
+  /** 할부 줄(이번 달 회차분). 산 날이 이용 기간보다 몇 달 앞이어도 결제로 본다 */
+  inst?: boolean;
+}
+
+/**
+ * 카드사별 신용카드 명세서 양식(2026-11-24). 결제 줄에 금액 칸이 여러 개라(이용금액·이번 달 결제 원금·수수료·남은 금액·포인트)
+ * 마지막 숫자를 쓰는 기본 규칙으로는 틀린다
+ *  - kb: KB국민 '26.08.10 국내072 일시불 가맹점 54,790 51,790'
+ *  - samsung: 삼성카드 '08-04 본 인 566 가맹점 189,242 189,242'(날짜에 연도가 없다)
+ *  - table: 카드사 엑셀(xls) 명세서를 바꾼 글자(롯데·현대, htmlTableToStatementText). 줄마다 이번 달 결제 원금이 하나뿐이고 할부는 '5/2'가 붙는다
+ */
+type Profile = "kb" | "samsung" | "table" | null;
+
+function statementProfile(text: string): Profile {
+  if (text.startsWith(TABLE_STATEMENT_MARK)) return "table";
+  if (/삼성카드/.test(text) && /^\s*\d{2}-\d{2}\s+본\s*인\s/m.test(text)) return "samsung";
+  if (/KB국민|kbcard/i.test(text) && /^\s*\d{2}\.\d{2}\.\d{2}\s+\S+\s+(일시불|할부)\s/m.test(text)) return "kb";
+  return null;
+}
+
+/** KB국민 '26.08.05'(두 자리 연도) */
+const SHORT_YEAR_DATE = /^(\s*)(2\d)\.(0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])(?=\s)/;
+/** 삼성 '08-04'(연도 없음) */
+const MONTH_DAY = /^(\s*)(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])(?=\s)/;
+
+/**
+ * 결제 줄 날짜를 'YYYY.MM.DD'로 맞추고, 결제가 아닌 줄을 지운다.
+ *  - KB국민 '26.08.05' → '2026.08.05'
+ *  - 삼성 '08-04' → 이용 기간 끝의 연도로 '2026.08.04'(기간 끝보다 늦은 달이면 전년)
+ *  - 삼성 해외 이용 상세('08-04 08-07 가맹점 …')는 위 이용 내역과 같은 결제라 뺀다. 할부 줄 뒤 '이자면제 -723'은 혜택이라 뺀다
+ */
+function normalizeLines(lines: string[], profile: Profile): string[] {
+  const ranges = periodRanges(lines);
+  const end = ranges.length ? new Date(ranges[0][1]) : null;
+  return lines.map((l) => {
+    let out = l.replace(SHORT_YEAR_DATE, (_m, sp: string, y: string, mo: string, d: string) => `${sp}20${y}.${mo}.${d}`);
+    if (profile === "samsung") {
+      if (/^\s*\d{2}-\d{2}\s+\d{2}-\d{2}\s/.test(out)) return "";
+      if (end) {
+        out = out.replace(MONTH_DAY, (_m, sp: string, mo: string, d: string) => {
+          const year = Number(mo) > end.getMonth() + 1 ? end.getFullYear() - 1 : end.getFullYear();
+          return `${sp}${year}.${mo}.${d}`;
+        });
+      }
+      out = out.replace(/\s(이자면제|무이자|할인)\s*-\s*[\d,]+/g, "");
+    }
+    return out;
+  });
+}
+
+const INSTALLMENT = /^(\d{1,2})\/(\d{1,2})$/;
+
+/**
+ * KB국민·삼성 결제 줄의 '이번 달 결제 원금'(명세서 합계가 이 칸의 합이라 검산이 맞는다).
+ * 줄 끝 숫자 칸만 본다: 할부 회차('2/3'·'3/1')가 있으면 그 다음 금액(이번 달 할부금), 없으면 두 번째 금액(이용금액 다음, 카드 할인 뒤 금액).
+ * 적립 포인트처럼 100 미만인 쉼표 없는 숫자는 금액이 아니다. 음수(취소)는 기본 규칙에 맡긴다
+ */
+function billedAmount(raw: string): { amount: number; inst: boolean } | null {
+  const toks = raw.trim().split(/\s+/);
+  const tail: string[] = [];
+  for (let i = toks.length - 1; i >= 0; i--) {
+    if (/^-?[\d,]+$/.test(toks[i]) || INSTALLMENT.test(toks[i])) tail.unshift(toks[i]);
+    else break;
+  }
+  const amt = (t: string) => (/^[\d,]+$/.test(t) && (t.includes(",") || Number(t) >= 100) ? Number(t.replace(/,/g, "")) : null);
+  const k = tail.findIndex((t) => INSTALLMENT.test(t));
+  if (k >= 0) {
+    for (const t of tail.slice(k + 1)) {
+      const v = amt(t);
+      if (v !== null) return { amount: v, inst: true };
+    }
+    return null;
+  }
+  const nums = tail.map(amt).filter((v): v is number => v !== null);
+  if (!nums.length) return null;
+  return { amount: nums.length >= 2 ? nums[1] : nums[0], inst: false };
+}
+
+/** 명세서 이용 기간 → 달 수와 기준 달(가운데 날의 달). 신용카드 명세서는 결제일 기준이라 8/7~9/6이 한 달치다 */
+function cycleOf([a, b]: [number, number]): { months: number; month: string; label: string } {
+  const months = Math.max(1, Math.round(((b - a) / DAY_MS + 1) / 30.44));
+  const ym = (t: number) => {
+    const d = new Date(t);
+    return [d.getFullYear(), d.getMonth() + 1] as const;
+  };
+  const [y, m] = ym((a + b) / 2);
+  const [y1, m1] = ym(a);
+  const [y2, m2] = ym(b);
+  const label = months === 1 ? `${y}년 ${m}월` : y1 === y2 ? `${y1}년 ${m1}월~${m2}월` : `${y1}년 ${m1}월~${y2}년 ${m2}월`;
+  return { months, month: `${y}-${String(m).padStart(2, "0")}`, label };
 }
 
 /**
@@ -272,7 +394,9 @@ export function summarizeStatement(
 ): StatementSummary {
   // 제어 문자는 빈칸으로(신한 PDF의 \u0001 띄어쓰기 등, 2026-11-02)
   // eslint-disable-next-line no-control-regex
-  const lines = text.replace(/[\u0000-\u0009\u000b\u000c\u000e-\u001f\u007f]/g, " ").split(/\r?\n/);
+  const cleaned = text.replace(/[\u0000-\u0009\u000b\u000c\u000e-\u001f\u007f]/g, " ");
+  const profile = statementProfile(cleaned);
+  const lines = normalizeLines(cleaned.split(/\r?\n/), profile);
   const ranges = periodRanges(lines);
   const matchers = brandMatchers(extraBrands);
   const parsed = lines.map((raw) => (!raw.trim() || SKIP_LINE.test(raw) ? null : parseTextLocally(withBrandNames(cleanLine(raw)))[0] ?? null));
@@ -287,6 +411,8 @@ export function summarizeStatement(
     ITEM_DATE.test(lines[i]) &&
     !SKIP_LINE.test(lines[i]) &&
     !/[~∼]/.test(lines[i]) &&
+    // 결제일·작성기준일 같은 안내 날짜는 결제 날짜가 아니다(삼성 '결제일 : 2026년10월13일'이 위 요약 '할부 30,000'에 붙었다, 2026-11-24)
+    !/(결제일|출금일|기준일|발송|발행일|조회일)/.test(lines[i]) &&
     (lines[i].match(FULL_DATE) ?? []).length < 2 &&
     cleanLine(lines[i]).split(" ").filter(Boolean).length <= 5;
   parsed.forEach((item, i) => {
@@ -311,7 +437,15 @@ export function summarizeStatement(
       const after = loose(i + 1) ? lines[i + 1].trim() : "";
       joined = `${raw} ${before}${after}`;
     }
-    rows.push({ raw, text: joined, amount: item.amount, unsignedCancel: CANCEL.test(raw) && !SIGNED_AMOUNT.test(cleanLine(raw)) });
+    // KB국민·삼성: 마지막 숫자가 아니라 '이번 달 결제 원금' 칸(2026-11-24)
+    const billed = profile && ITEM_DATE.test(raw) ? billedAmount(raw) : null;
+    rows.push({
+      raw,
+      text: joined,
+      amount: billed?.amount ?? item.amount,
+      unsignedCancel: CANCEL.test(raw) && !SIGNED_AMOUNT.test(cleanLine(raw)),
+      ...(billed?.inst ? { inst: true } : {}),
+    });
   });
   // 결제 대부분에 날짜가 있는 명세서에서 날짜 없이 금액만 있는 줄은 결제가 아니라 요약·안내다
   // (신한 맨 위 '623,270원', 업종 요약 '유통업 455,280원', 안내문 '건당 2,000원', 2026-11-02)
@@ -324,7 +458,8 @@ export function summarizeStatement(
     const d = dayOf(r.raw);
     return d !== null && ranges.some(([a, b]) => d >= a - slack && d <= b + slack);
   };
-  if (dated.some((r) => within(r, 0))) rows = dated.filter((r) => within(r, 31 * DAY_MS));
+  // 할부 회차 줄은 산 날이 몇 달 앞이어도 이번 달 결제다(KB국민 '26.07.27 할부 … 2/3', 2026-11-24)
+  if (dated.some((r) => within(r, 0))) rows = dated.filter((r) => r.inst || within(r, 31 * DAY_MS));
   else if (dated.length >= 3 && dated.length * 2 >= rows.length) rows = dated;
 
   // 모든 결제 줄에 똑같이 있는 낱말은 가맹점이 아니라 고정 칸(케이뱅크의 상품명 'ONE(K-패스)'·가린 카드번호 등)이라 뺀다(2026-10-31).
@@ -382,13 +517,18 @@ export function summarizeStatement(
   }
   const itemText = itemLines.join("\n");
   const months = monthsIn(itemText);
-  const div = monthCount(months, datesIn(itemText));
+  // KB국민·삼성 신용카드 명세서: 달 수와 기간은 결제 날짜가 아니라 이용 기간으로 센다(2026-11-24). 할부 회차 줄의 산 날(7/27)이
+  // 기간(8/7~9/6) 밖이라 날짜로 세면 석 달이 되어 지출이 3분의 1로 줄었다. 결제마다 기준 달(cycle)을 붙여 여러 명세서를 합칠 때도 쓴다
+  const cycle = profile && ranges.length ? cycleOf(ranges[0]) : null;
+  if (cycle?.months === 1) for (const it of items) it.cycle = cycle.month;
+  const div = cycle ? cycle.months : monthCount(months, datesIn(itemText));
   const declared = declaredTotal(lines.length ? text.split(/\r?\n/) : []);
   const counted = items.filter((it) => !it.cancelled && !it.reward);
   const check = declared
     ? { declared: declared.total, declaredCount: declared.count, read: counted.reduce((s, it) => s + it.amount, 0), readCount: counted.length }
     : undefined;
-  return { ...totalsOf(items, div), period: periodLabel(months, months.length ? itemText : text), months: div, itemCount: rows.length, refundCount, items, ...(check ? { check } : {}) };
+  const period = cycle ? cycle.label : periodLabel(months, months.length ? itemText : text);
+  return { ...totalsOf(items, div), period, months: div, itemCount: rows.length, refundCount, items, ...(check ? { check } : {}) };
 }
 
 /** 결제 목록 → 카테고리별 월 지출·브랜드 금액(취소된 결제 제외, months달 평균, 100원 단위) */
@@ -422,12 +562,15 @@ function totalsOf(items: StatementItem[], months: number): Pick<StatementSummary
  */
 export function mergeStatements(parts: { source: string; summary: StatementSummary }[]): StatementSummary {
   const items = parts.flatMap((p) => p.summary.items.map((it) => (parts.length > 1 ? { ...it, source: p.source } : it)));
-  const months = Array.from(new Set(items.filter((it) => !it.cancelled && it.month).map((it) => it.month!))).sort();
+  // 기준 달(cycle)이 있으면 그 달로 센다: KB국민 9월 + 10월 명세서 = 두 달, KB국민 10월 + 삼성 10월 = 한 달(2026-11-24)
+  const months = Array.from(new Set(items.filter((it) => !it.cancelled && (it.cycle || it.month)).map((it) => (it.cycle ?? it.month)!))).sort();
   // 날짜 없는 명세서(TXT 등)만 있으면 각 명세서가 센 달 수 중 큰 값. 첫~마지막 결제가 31일 이하면 한 달(monthCount)
   const dates = items
     .filter((it) => !it.cancelled && it.month && it.date)
     .map((it) => new Date(Number(it.month!.slice(0, 4)), Number(it.month!.slice(5, 7)) - 1, Number(it.date!.split(".")[1])));
-  const div = months.length ? monthCount(months, dates) : Math.max(1, ...parts.map((p) => p.summary.months));
+  const live = items.filter((it) => !it.cancelled);
+  const allCycled = live.length > 0 && live.every((it) => it.cycle);
+  const div = allCycled ? months.length : months.length ? monthCount(months, dates) : Math.max(1, ...parts.map((p) => p.summary.months));
   return {
     ...(parts.length === 1 && parts[0].summary.check ? { check: parts[0].summary.check } : {}),
     ...totalsOf(items, div),

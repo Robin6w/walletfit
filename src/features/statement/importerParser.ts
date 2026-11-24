@@ -235,10 +235,12 @@ export const ALLOWED_STATEMENT_MIME_TYPES = [
   "application/pdf",
   "text/plain",
   "text/csv",
-  "application/vnd.ms-excel", // 일부 브라우저/OS가 .csv에 부여하는 MIME
+  "application/vnd.ms-excel", // 일부 브라우저/OS가 .csv에 부여하는 MIME. 카드사 엑셀(xls) 명세서도 이 MIME
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx(읽지 못하면 CSV로 저장하라고 안내)
 ] as const;
 
-export const ALLOWED_STATEMENT_EXTENSIONS = [".pdf", ".txt", ".csv"] as const;
+// xls·xlsx(2026-11-24): 롯데·현대카드 홈페이지의 '엑셀 다운로드'는 웹 표(HTML)를 xls 이름으로 준다(readSpreadsheetStatement)
+export const ALLOWED_STATEMENT_EXTENSIONS = [".pdf", ".txt", ".csv", ".xls", ".xlsx"] as const;
 
 /** 카드 앱 이용내역 캡처(2026-11-02, v2 명세서 화면만). 글자 인식(OCR)으로 읽는다 */
 export const ALLOWED_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
@@ -257,7 +259,7 @@ export interface FileValidationResult {
 /**
  * 카드 명세서 파일 크기 및 포맷 검증
  * - 최대 10MB 제한
- * - 지원 포맷 (PDF, TXT, CSV) 화이트리스트 검증. images를 켜면 캡처 이미지(PNG·JPG·WEBP)도 받는다(v2 명세서 화면)
+ * - 지원 포맷 (PDF, TXT, CSV, XLS·XLSX) 화이트리스트 검증. images를 켜면 캡처 이미지(PNG·JPG·WEBP)도 받는다(v2 명세서 화면)
  */
 export function validateStatementFile(file: File, opts: { images?: boolean } = {}): FileValidationResult {
   if (file.size > MAX_STATEMENT_FILE_SIZE) {
@@ -278,7 +280,7 @@ export function validateStatementFile(file: File, opts: { images?: boolean } = {
   if (!isMimeAllowed && !isExtAllowed && !(opts.images && isStatementImage(file))) {
     return {
       isValid: false,
-      error: "지원하지 않는 파일 형식입니다. PDF, TXT, CSV 파일만 지원합니다.",
+      error: "지원하지 않는 파일 형식입니다. PDF, TXT, CSV, XLS 파일만 지원합니다.",
     };
   }
 
@@ -336,9 +338,7 @@ export async function extractTextFromPdf(file: File, password?: string): Promise
 
   const pageTexts: string[] = [];
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pageTexts.push(pdfItemsToLines(content.items as PdfTextItem[]));
+    pageTexts.push(await pdfPageToLines(await pdf.getPage(pageNumber), pdfjsLib.OPS));
   }
 
   return pageTexts.join("\n");
@@ -351,6 +351,179 @@ export interface PdfTextItem {
   transform?: number[];
   width?: number;
   height?: number;
+  /** pdf.js 안의 글꼴 id(g_d0_f3 등) */
+  fontName?: string;
+  /** PDF에 적힌 글꼴 이름(ESGIPZ+SCGodicL_b3 등). pdfPageToLines가 채운다 */
+  font?: string;
+  /** 쪼갠 한글 글꼴을 그리기 목록의 원래 바이트로 되돌린 글자. pdfPageToLines가 채운다 */
+  decoded?: string;
+}
+
+/** pdf.js 페이지(필요한 것만) */
+interface PdfPageLike {
+  getTextContent(params?: { disableNormalization?: boolean }): Promise<{ items: unknown[] }>;
+  getOperatorList(): Promise<{ fnArray: number[]; argsArray: unknown[] }>;
+  commonObjs: { has(id: string): boolean; get(id: string): unknown };
+}
+
+/** pdf.js 그리기 명령 번호(pdfjsLib.OPS에서 필요한 것만) */
+export interface PdfOps {
+  setFont: number;
+  showText: number;
+  showSpacedText: number;
+}
+
+/** 그리기 목록의 글자 하나: 글꼴 id, pdf.js가 붙인 글자, PDF 안의 원래 바이트 */
+interface DrawnGlyph {
+  uni: string;
+  code: number;
+}
+
+/**
+ * PDF 한 쪽 → 줄 단위 글자(2026-11-24). 글꼴 이름을 붙여 pdfItemsToLines에 넘긴다.
+ * 글꼴 이름은 페이지를 그릴 준비(operator list)를 해야 채워진다. 삼성카드 명세서처럼 한글 글꼴을 쪼갠 쪽은
+ * pdf.js의 글자 바꿈('ﬁ'→'fi', 'µ'→'μ')을 끈 글자를 다시 받고, 그리기 목록에 남은 원래 바이트(originalCharCode)를
+ * 글꼴별로 차례대로 맞춰 붙인다. pdf.js가 붙인 글자만으로는 0xA8·0xAC가 같은 '¨'로, 0xCA가 빈칸으로 나와 구분이 안 된다
+ */
+export async function pdfPageToLines(page: PdfPageLike, ops?: PdfOps): Promise<string> {
+  let items = (await page.getTextContent()).items as PdfTextItem[];
+  try {
+    const opList = await page.getOperatorList();
+    const name = (list: PdfTextItem[]) => {
+      for (const it of list) {
+        if (!it.fontName || !page.commonObjs.has(it.fontName)) continue;
+        const f = page.commonObjs.get(it.fontName) as { name?: string } | null;
+        if (f?.name) it.font = f.name;
+      }
+    };
+    name(items);
+    if (ops && items.some((it) => splitFontLead(it.font) !== null)) {
+      items = (await page.getTextContent({ disableNormalization: true })).items as PdfTextItem[];
+      name(items);
+      attachCodes(items, drawnGlyphs(opList, ops));
+    }
+  } catch {
+    // 글꼴 이름을 못 얻어도 글자는 그대로 읽는다
+  }
+  return pdfItemsToLines(items);
+}
+
+/** 그리기 목록 → 글꼴 id별 글자 차례 */
+function drawnGlyphs(opList: { fnArray: number[]; argsArray: unknown[] }, ops: PdfOps): Map<string, DrawnGlyph[]> {
+  const byFont = new Map<string, DrawnGlyph[]>();
+  let font = "";
+  opList.fnArray.forEach((fn, i) => {
+    const args = opList.argsArray[i] as unknown[] | null;
+    if (fn === ops.setFont && args) font = String(args[0]);
+    else if ((fn === ops.showText || fn === ops.showSpacedText) && args && Array.isArray(args[0])) {
+      const list = byFont.get(font) ?? [];
+      for (const g of args[0] as unknown[]) {
+        if (g && typeof g === "object" && "originalCharCode" in g) {
+          const glyph = g as { unicode?: string; originalCharCode?: number };
+          list.push({ uni: glyph.unicode ?? "", code: Number(glyph.originalCharCode) });
+        }
+      }
+      byFont.set(font, list);
+    }
+  });
+  return byFont;
+}
+
+/**
+ * 쪼갠 한글 글꼴의 텍스트 조각을 원래 바이트로 되돌린다. 글꼴별 그리기 차례와 조각 글자를 앞에서부터 맞춘다.
+ *  - 글자: 다음 그리기 글자 중 같은 글자의 바이트를 쓴다. 그 사이에 빈칸으로 그려진 한글(0xCA '너'·'않' 등)이 있으면 pdf.js가
+ *    조각에서 뺀 것이라 자리를 알 수 없어 건너뛴다(같은 글꼴의 다음 글자 앞에 넣었더니 '계약' → '계않약'처럼 엉뚱한 곳에 끼었다)
+ *  - 빈칸: 빈칸만 든 조각이 한글 한 글자만큼 넓고 다음 그리기 글자도 빈칸일 때만 짝짓는다(그 글자가 0xA1 이상이면 빈칸으로 그려진 한글).
+ *    좁은 빈칸은 pdf.js가 넣은 띄어쓰기라 그대로 둔다('네이버플러스 멤버십'이 '네이버플러스십멤버'가 됐다)
+ */
+function attachCodes(items: PdfTextItem[], byFont: Map<string, DrawnGlyph[]>): void {
+  const pos = new Map<string, number>();
+  for (const it of items) {
+    const lead = splitFontLead(it.font);
+    if (!it.fontName || !it.str || lead === null) continue;
+    const list = byFont.get(it.fontName);
+    if (!list) continue;
+    let p = pos.get(it.fontName) ?? 0;
+    let out = "";
+    const size = it.height || (it.transform ? Math.hypot(it.transform[0], it.transform[1]) : 0) || 10;
+    const wideBlank = !it.str.trim() && (it.width ?? 0) >= size * 0.6;
+    for (const ch of it.str) {
+      if (!ch.trim()) {
+        if (wideBlank && p < list.length && !list[p].uni.trim()) {
+          out += list[p].code >= 0xa1 ? eucKr(lead, list[p].code, ch) : ch;
+          p++;
+        } else out += ch;
+        continue;
+      }
+      let j = -1;
+      for (let k = p; k < Math.min(list.length, p + 4); k++) {
+        if (list[k].uni === ch) {
+          j = k;
+          break;
+        }
+        if (list[k].uni.trim()) break;
+      }
+      if (j < 0) {
+        out += decodeSplitFont(ch, it.font);
+        continue;
+      }
+      out += list[j].code >= 0xa1 ? eucKr(lead, list[j].code, ch) : ch;
+      p = j + 1;
+    }
+    pos.set(it.fontName, p);
+    it.decoded = out;
+  }
+}
+
+/** 앞 바이트 + 뒤 바이트 → EUC-KR 한 글자(못 읽으면 fallback) */
+function eucKr(lead: number, trail: number, fallback: string): string {
+  try {
+    EUC_KR = EUC_KR ?? new TextDecoder("euc-kr");
+    const out = EUC_KR.decode(new Uint8Array([lead, trail]));
+    return out.includes("�") ? fallback : out;
+  } catch {
+    return fallback;
+  }
+}
+
+let MAC_ROMAN: Map<string, number> | null = null;
+let EUC_KR: TextDecoder | null = null;
+
+/** 쪼갠 한글 글꼴의 앞 바이트: 글꼴 이름 끝 'SCGodicL_b3' → 0xB3, 'SBGBA' → 0xBA(EUC-KR 한글 앞 바이트 A1~FE만) */
+function splitFontLead(font?: string): number | null {
+  const m = font?.replace(/^[A-Z]{6}\+/, "").match(/(?:_|SBG)([a-fA-F][0-9a-fA-F])N?$/);
+  if (!m) return null;
+  const lead = parseInt(m[1], 16);
+  return lead >= 0xa1 && lead <= 0xfe ? lead : null;
+}
+
+/**
+ * 삼성카드 명세서 PDF(2026-11-24)는 한글 글꼴을 EUC-KR 앞 바이트별로 쪼개 두고(SCGodicL_b3·SCGodicL_bf…),
+ * 글자에는 뒤 바이트만 맥(MacRoman) 문자로 넣는다. 그대로 읽으면 '2026년 9월'이 '2026‚ 9˘'가 된다.
+ * 글꼴 이름의 앞 바이트와 글자의 뒤 바이트를 붙여 EUC-KR로 되돌린다(SCGodicM_b3의 '‚'(0xE2) → 0xB3E2 '년').
+ * 그리기 목록의 원래 바이트를 못 얻었을 때(pdfPageToLines의 attachCodes가 못 맞춘 글자) 맥 문자표로 뒤 바이트를 짐작한다
+ */
+export function decodeSplitFont(str: string, font?: string): string {
+  const lead = splitFontLead(font);
+  if (lead === null) return str;
+  try {
+    if (!MAC_ROMAN) {
+      const mac = new TextDecoder("macintosh");
+      MAC_ROMAN = new Map();
+      for (let b = 0x80; b <= 0xff; b++) MAC_ROMAN.set(mac.decode(new Uint8Array([b])), b);
+      EUC_KR = new TextDecoder("euc-kr");
+    }
+  } catch {
+    return str;
+  }
+  return [...str]
+    .map((ch) => {
+      const trail = MAC_ROMAN!.get(ch);
+      if (trail === undefined || trail < 0xa1) return ch;
+      const out = EUC_KR!.decode(new Uint8Array([lead, trail]));
+      return out.includes("�") ? ch : out;
+    })
+    .join("");
 }
 
 /**
@@ -362,12 +535,15 @@ export interface PdfTextItem {
 export function pdfItemsToLines(items: PdfTextItem[]): string {
   const pieces = items
     .filter((it) => it.str && it.transform)
+    // 옆으로 세운 글자(삼성카드 오른쪽 '다음 페이지에 이어집니다' 등)는 한 글자씩 줄이 되어 결제 줄을 어지럽혀 뺀다(2026-11-24)
+    .filter((it) => Math.abs(it.transform![1]) <= Math.abs(it.transform![0]))
     .map((it) => {
       const [a, b, , , x, y] = it.transform!;
       const size = it.height || Math.hypot(a, b) || 10;
       // 신한카드 PDF는 낱말 사이를 제어 문자(\u0001)로 띄운다(2026-11-02). 빈칸으로 본다
       // eslint-disable-next-line no-control-regex
-      return { str: it.str!.replace(/[\u0000-\u001f\u007f]/g, " "), x, y, end: x + (it.width ?? 0), size };
+      const str = (it.decoded ?? decodeSplitFont(it.str!, it.font)).replace(/[\u0000-\u001f\u007f]/g, " ");
+      return { str, x, y, end: x + (it.width ?? 0), size };
     });
 
   const rows: Array<{ y: number; size: number; cells: typeof pieces }> = [];
@@ -381,7 +557,15 @@ export function pdfItemsToLines(items: PdfTextItem[]): string {
   return rows
     .sort((r1, r2) => r2.y - r1.y)
     .map((row) => {
-      const cells = row.cells.sort((c1, c2) => c1.x - c2.x);
+      const sorted = row.cells.sort((c1, c2) => c1.x - c2.x);
+      // 같은 글자를 살짝 비켜 두 번 찍어 굵게 보이게 한 PDF(삼성카드 '합계 762,557762,557', 2026-11-24): 앞 조각과 글자가 같고
+      // 앞 조각 너비의 절반보다 가까이 겹치면 한 번만 쓴다
+      const cells: typeof sorted = [];
+      for (const c of sorted) {
+        const prev = cells[cells.length - 1];
+        if (prev && c.str.trim() && prev.str === c.str && c.x - prev.x < Math.max(prev.end - prev.x, c.size * 0.2) * 0.5) continue;
+        cells.push(c);
+      }
       let line = "";
       let prevEnd = -Infinity;
       for (const c of cells) {
@@ -479,8 +663,9 @@ export async function extractTextFromImage(file: File, onProgress?: (ratio: numb
 }
 
 /**
- * 업로드된 명세서 파일(PDF/TXT/CSV/캡처 이미지)에서 텍스트를 읽어 옵니다.
- * PDF는 extractTextFromPdf로, 이미지는 extractTextFromImage(OCR)로, 그 외 텍스트 기반 파일은 File.text()로 직접 읽습니다.
+ * 업로드된 명세서 파일(PDF/TXT/CSV/XLS/캡처 이미지)에서 텍스트를 읽어 옵니다.
+ * PDF는 extractTextFromPdf로, 이미지는 extractTextFromImage(OCR)로, 엑셀은 readSpreadsheetStatement로,
+ * 그 외 텍스트 기반 파일은 File.text()로 직접 읽습니다.
  */
 export async function readStatementFileAsText(
   file: File,
@@ -495,5 +680,154 @@ export async function readStatementFileAsText(
   if (isStatementImage(file)) {
     return extractTextFromImage(file, onProgress, onImageInfo);
   }
+  if (fileExt === ".xls" || fileExt === ".xlsx") {
+    return readSpreadsheetStatement(new Uint8Array(await file.arrayBuffer()));
+  }
   return file.text();
+}
+
+/** 엑셀 명세서를 바꾼 글자의 첫 줄. summarizeStatement가 이 표시로 '표 명세서' 규칙을 쓴다 */
+export const TABLE_STATEMENT_MARK = "[표 명세서]";
+
+const SPREADSHEET_UNSUPPORTED = "이 엑셀 파일은 아직 바로 읽지 못해요. 엑셀에서 '다른 이름으로 저장 → CSV UTF-8(쉼표로 분리)'로 저장해 올려 주세요.";
+
+/**
+ * 카드사 엑셀(xls) 명세서 → 줄 단위 글자(2026-11-24).
+ * 롯데·현대카드 홈페이지의 '엑셀 다운로드'는 진짜 엑셀이 아니라 웹 표(HTML)를 xls 이름으로 준다. 진짜 엑셀(xls 원본 D0 CF 11 E0,
+ * xlsx PK)은 읽는 부품이 없어 CSV로 저장하라고 안내한다. 글자 인코딩은 파일의 charset을 따르고(없으면 UTF-8), EUC-KR도 읽는다
+ */
+export function readSpreadsheetStatement(bytes: Uint8Array): string {
+  const [b0, b1, b2, b3] = bytes;
+  if ((b0 === 0xd0 && b1 === 0xcf && b2 === 0x11 && b3 === 0xe0) || (b0 === 0x50 && b1 === 0x4b)) throw new Error(SPREADSHEET_UNSUPPORTED);
+  const head = new TextDecoder("latin1").decode(bytes.slice(0, 4096));
+  const charset = head.match(/charset\s*=\s*["']?([\w-]+)/i)?.[1]?.toLowerCase() ?? "utf-8";
+  let html: string;
+  try {
+    html = new TextDecoder(/euc-kr|ks_c_5601|cp949|x-windows-949/.test(charset) ? "euc-kr" : "utf-8").decode(bytes);
+  } catch {
+    html = new TextDecoder("utf-8").decode(bytes);
+  }
+  if (!/<table/i.test(html)) throw new Error(SPREADSHEET_UNSUPPORTED);
+  return htmlTableToStatementText(html);
+}
+
+const cellText = (el: Element) => (el.textContent ?? "").replace(/ /g, " ").replace(/\s+/g, " ").trim();
+const cellsOf = (row: Element) => Array.from(row.children).filter((el) => /^(TD|TH)$/i.test(el.tagName));
+const spanOf = (el: Element, name: "colspan" | "rowspan") => Math.max(1, Number(el.getAttribute(name)) || 1);
+
+/** 표 안의 금액('1,740,000원'·'-300'). 숫자가 아니면 null */
+function cellAmount(text: string | undefined): number | null {
+  const t = (text ?? "").replace(/[원\s,]/g, "");
+  return /^-?\d+$/.test(t) ? Number(t) : null;
+}
+
+/** 표 안의 날짜('2026.06.29'·'2026년 08월 08일') → [년, 월, 일] */
+function cellDate(text: string | undefined): [number, number, number] | null {
+  const m = (text ?? "").match(/(20\d{2})\D{1,3}(\d{1,2})\D{1,3}(\d{1,2})/);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+/** 머리글 줄(묶인 칸 rowspan·colspan 포함) → 칸마다 이름. 롯데 '이번 달 입금하실 금액'(2칸) 아래 '원금'·'수수료' → '이번 달 입금하실 금액 원금' */
+function headerNames(rows: Element[], start: number): { names: string[]; next: number } {
+  const height = Math.max(1, ...cellsOf(rows[start]).map((c) => spanOf(c, "rowspan")));
+  const grid: string[][] = [];
+  for (let i = 0; i < height && start + i < rows.length; i++) {
+    grid[i] = grid[i] ?? [];
+    let col = 0;
+    for (const cell of cellsOf(rows[start + i])) {
+      while (grid[i][col] !== undefined) col++;
+      const text = cellText(cell);
+      for (let dr = 0; dr < spanOf(cell, "rowspan"); dr++) for (let dc = 0; dc < spanOf(cell, "colspan"); dc++) (grid[i + dr] = grid[i + dr] ?? [])[col + dc] = text;
+      col += spanOf(cell, "colspan");
+    }
+  }
+  const width = Math.max(...grid.map((g) => g.length));
+  const names = Array.from({ length: width }, (_, c) => Array.from(new Set(grid.map((g) => g[c] ?? "").filter(Boolean))).join(" "));
+  return { names, next: start + height };
+}
+
+/** 데이터 줄 칸(묶인 칸은 그만큼 펼친다) */
+function rowCells(row: Element): string[] {
+  return cellsOf(row).flatMap((c) => Array<string>(spanOf(c, "colspan")).fill(cellText(c)));
+}
+
+const find = (names: string[], ...res: RegExp[]) => {
+  for (const re of res) {
+    const i = names.findIndex((n) => re.test(n));
+    if (i >= 0) return i;
+  }
+  return -1;
+};
+
+/**
+ * 웹 표 명세서 → summarizeStatement가 읽는 줄. 머리글 칸 이름으로 날짜·가맹점·결제 원금·할부 칸을 찾는다.
+ *  - 금액: 이번 달 결제 원금(롯데 '이번 달 입금하실 금액 원금', 현대 '결제원금'). 명세서 합계가 이 칸의 합이다.
+ *    이번 달 결제가 0원인 줄(현대 '카드이용알림수수료'·'이메일이용 감면')과 금액 없는 혜택 줄(롯데 '무이자할부')은 뺀다
+ *  - 할부: '할부 개월/회차'를 금액 앞에 붙인다(롯데는 '회차'·'할부' 칸이 따로, 현대는 '할부/회차' 한 칸)
+ *  - 합계: 요약 표의 '합계'(롯데)나 상세 표 '총 합계' 줄의 결제 원금(현대)
+ *  - 이용 기간: 할부가 아닌 결제의 첫날~끝날(명세서 한 장 = 한 달). 지난달에 산 할부 회차가 있어도 달 수를 늘리지 않게
+ */
+export function htmlTableToStatementText(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const out: string[] = [TABLE_STATEMENT_MARK];
+  const days: number[] = [];
+  let total: { rank: number; value: number } | null = null;
+  const fmt = (v: number) => v.toLocaleString("en-US");
+  const ymd = ([y, m, d]: [number, number, number]) => `${y}.${String(m).padStart(2, "0")}.${String(d).padStart(2, "0")}`;
+  for (const table of Array.from(doc.querySelectorAll("table"))) {
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const head = rows.findIndex((r) => {
+      const t = cellsOf(r).map(cellText);
+      return t.some((x) => /이용일|거래일|승인일|매출일/.test(x)) && t.some((x) => /가맹점|이용처|사용처/.test(x));
+    });
+    if (head < 0) {
+      // 요약 표: '합계 943,478'(롯데)
+      for (const r of rows) {
+        const t = rowCells(r);
+        if (t.some((x) => /^합\s*계$/.test(x))) {
+          const v = t.map(cellAmount).find((x) => x !== null);
+          if (v != null && (!total || total.rank > 1)) total = { rank: 1, value: v };
+        }
+      }
+      continue;
+    }
+    const { names, next } = headerNames(rows, head);
+    const col = {
+      date: find(names, /이용일|거래일|승인일|매출일/),
+      merchant: find(names, /가맹점|이용처|사용처/),
+      billed: find(names, /결제\s*원금/, /(입금|청구|결제)\S*\s*금액.*원금/, /원금/),
+      total: find(names, /이용\s*(총액|금액)|승인\s*금액|거래\s*금액/),
+      inst: find(names, /할부\s*\/\s*회차|회차\s*\/\s*할부/),
+      round: find(names, /^회차$/),
+      months: find(names, /^할부(\s*개월)?$/),
+    };
+    if (col.date < 0 || col.merchant < 0) continue;
+    const amountCol = col.billed >= 0 ? col.billed : col.total;
+    for (const r of rows.slice(next)) {
+      const t = rowCells(r);
+      if (t.some((x) => /총\s*합\s*계/.test(x))) {
+        const v = cellAmount(t[amountCol]);
+        if (v !== null) total = { rank: 0, value: v };
+        continue;
+      }
+      const date = cellDate(t[col.date]);
+      const amount = cellAmount(t[amountCol]);
+      if (!date || amount === null || amount === 0) continue;
+      let inst = "";
+      if (col.inst >= 0 && /^\d{1,2}\s*\/\s*\d{1,2}$/.test(t[col.inst] ?? "")) inst = t[col.inst].replace(/\s/g, "");
+      else if (col.months >= 0 && Number(t[col.months]) > 1) inst = `${Number(t[col.months])}/${Number(t[col.round]) || 1}`;
+      // '한국도로공사 0004건'의 앞자리 0은 금액·번호 규칙에 지워지므로 미리 뗀다(건수는 건당 조건 계산에 쓴다)
+      const merchant = (t[col.merchant] ?? "").replace(/(^|\D)0+(\d+\s*건)/, "$1$2") || "이름 없는 가맹점";
+      out.push(`${ymd(date)} ${merchant} ${inst ? `${inst} ` : ""}${fmt(amount)}`);
+      if (!inst) days.push(new Date(date[0], date[1] - 1, date[2]).getTime());
+    }
+  }
+  if (days.length) {
+    const lo = Math.min(...days);
+    const hi = Math.max(...days);
+    const d = (t: number) => new Date(t);
+    if ((hi - lo) / 86_400_000 <= 45) out.splice(1, 0, `이용기간 ${ymd([d(lo).getFullYear(), d(lo).getMonth() + 1, d(lo).getDate()])} ~ ${ymd([d(hi).getFullYear(), d(hi).getMonth() + 1, d(hi).getDate()])}`);
+  }
+  if (total) out.push(`합계 ${fmt(total.value)}`);
+  return out.join("\n");
 }

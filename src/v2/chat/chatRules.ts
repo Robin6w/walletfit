@@ -207,7 +207,7 @@ export const TOPIC_REPLIES: FixedReply[] = [
   // 지갑 만들기·사이트 사용법
   { id: "make.restart", test: /^(처음부터|새로)\s*(다시)?\s*(할래|할게|하고\s*싶어|시작|만들래)/, reply: "처음부터 다시 하려면 지갑 만들기를 새로 시작하면 돼요.", next: ["make:own", "make:new", "make:statement", "make:respend"] },
   { id: "statement.format", test: [/명세서/, /(형식|파일\s*(종류|뭐|무슨)|무슨\s*파일|확장자|pdf|csv)/i], reply: "PDF나 CSV 명세서를 올릴 수 있어요.", go: "startOwn" },
-  { id: "statement.excel", test: /(엑셀|xlsx|xls)/i, except: /CSV|csv/, reply: "지금은 PDF와 CSV만 받아요. 엑셀은 CSV로 저장해서 올려 주세요." },
+  { id: "statement.excel", test: /(엑셀|xlsx|xls)/i, except: /CSV|csv/, reply: "카드사 홈페이지에서 받은 엑셀(xls) 명세서도 올릴 수 있어요. 열리지 않는 엑셀은 'CSV UTF-8'로 저장해서 올려 주세요." },
   { id: "statement.where", test: [/명세서/, /(어디서|어떻게)\s*(받|뽑|내려|구해)/], reply: "카드사 앱이나 홈페이지의 이용내역에서 PDF나 CSV로 내려받을 수 있어요." },
   { id: "statement.privacy", test: [/명세서/, /(저장|서버|보내|남아|유출|안전)/], reply: "명세서는 이 브라우저 안에서만 읽고 서버로 보내지 않아요." },
   { id: "howto.cards", test: /카드\s*(등록|추가|넣)\S*\s*(어디|어떻게)/, reply: "가진 카드는 지갑 만들기 첫 단계(카드 선택)에서 담을 수 있어요.", go: "startOwn" },

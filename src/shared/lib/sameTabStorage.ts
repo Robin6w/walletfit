@@ -6,21 +6,33 @@
  */
 export const SAME_TAB_STORAGE_EVENT = "walletfit:storage";
 
+/**
+ * local: 브라우저를 껐다 켜도 남는 값
+ * session: 이 탭에서만 쓰는 값. 새로고침·화면 이동에는 남고, 탭을 닫으면 지워진다(지출·담은 카드·저장한 지갑, 2026-11-24)
+ */
+export type StorageArea = "local" | "session";
+
+export function storageOf(area: StorageArea): Storage {
+  return area === "session" ? window.sessionStorage : window.localStorage;
+}
+
 /** 저장된 문자열과 다를 때만 쓰고 알린다. 저장소를 못 쓰면 조용히 넘어간다. */
-export function writeAndNotify(key: string, raw: string): void {
+export function writeAndNotify(key: string, raw: string, area: StorageArea = "local"): void {
   try {
-    if (window.localStorage.getItem(key) === raw) return;
-    window.localStorage.setItem(key, raw);
+    const store = storageOf(area);
+    if (store.getItem(key) === raw) return;
+    store.setItem(key, raw);
   } catch {
     return;
   }
   window.dispatchEvent(new CustomEvent<string>(SAME_TAB_STORAGE_EVENT, { detail: key }));
 }
 
-export function removeAndNotify(key: string): void {
+export function removeAndNotify(key: string, area: StorageArea = "local"): void {
   try {
-    if (window.localStorage.getItem(key) === null) return;
-    window.localStorage.removeItem(key);
+    const store = storageOf(area);
+    if (store.getItem(key) === null) return;
+    store.removeItem(key);
   } catch {
     return;
   }

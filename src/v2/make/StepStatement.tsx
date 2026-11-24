@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { isStatementImage, readStatementFileAsText, StatementPasswordError, validateStatementFile, type ImageReadInfo } from "@/features/statement/importerParser";
 import { Link } from "@/v2/app/router";
-import { mergeStatements, recategorize, summarizeStatement, type StatementSummary } from "@/v2/model/statement";
+import { useMerchantCategories } from "@/v2/app/state";
+import { applyMerchantCategories, merchantKey, mergeStatements, summarizeStatement, type StatementSummary } from "@/v2/model/statement";
 import { StatementItems } from "@/v2/make/StatementItems";
 import { useChrome } from "@/v2/ui/chrome";
 
@@ -106,8 +107,8 @@ export function StepStatement({
   const { compact } = useChrome();
   const input = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
-  /** 사용자가 바꾼 가맹점 카테고리. 명세서를 더 올리거나 빼도 유지한다 */
-  const [edits, setEdits] = useState<Record<string, string>>({});
+  /** 사용자가 바꾼 가맹점 카테고리. 이 탭에서 다음에 올리는 명세서에도 적용한다(2026-11-23, 탭을 닫으면 지워짐 2026-11-24) */
+  const [remembered, setRemembered] = useMerchantCategories();
   const [dragOver, setDragOver] = useState(false);
 
   const patch = (id: number, p: Partial<Entry>) => setEntries((list) => list.map((e) => (e.id === id ? { ...e, ...p } : e)));
@@ -117,7 +118,7 @@ export function StepStatement({
     if (s.itemCount === 0 || Object.keys(s.spending).length === 0) {
       patch(id, {
         status: "error",
-        error: "결제 내역을 찾지 못했어요. 카드사에서 받은 이용대금명세서나 카드 앱 이용내역 캡처인지 확인해 주세요. 스캔한 PDF와 흐리게 찍은 사진은 읽지 못해요.",
+        error: "결제 내역을 찾지 못했어요.\n카드사에서 받은 이용대금명세서나 카드 앱 이용내역 캡처인지 확인해 주세요. 스캔한 PDF와 흐리게 찍은 사진은 읽지 못해요.",
       });
       return;
     }
@@ -128,7 +129,7 @@ export function StepStatement({
         e.id !== id
           ? e
           : dup
-            ? { ...e, status: "error", error: `이미 올린 명세서(${dup.name})와 내용이 같아요. 같은 명세서를 두 번 넣으면 지출이 두 배로 계산돼요.`, print }
+            ? { ...e, status: "error", error: `이미 올린 명세서(${dup.name})와 내용이 같아요.\n같은 명세서를 두 번 넣으면 지출이 두 배로 계산돼요.`, print }
             : { ...e, status: "opened", error: "", pw: "", summary: s, print },
       );
     });
@@ -194,13 +195,23 @@ export function StepStatement({
   const remove = (id: number) => setEntries((list) => list.filter((e) => e.id !== id));
 
   const openedEntries = entries.filter((e) => e.status === "opened" && e.summary);
-  const summary = useMemo(() => {
-    if (!openedEntries.length) return null;
-    let s = mergeStatements(openedEntries.map((e) => ({ source: e.name, summary: e.summary! })));
-    for (const [name, cat] of Object.entries(edits)) if (s.items.some((it) => it.name === name)) s = recategorize(s, name, cat);
-    return s;
+  /** 기억한 분류를 적용하기 전(자동으로 읽은 분류) */
+  const base = useMemo(
+    () => (openedEntries.length ? mergeStatements(openedEntries.map((e) => ({ source: e.name, summary: e.summary! }))) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, edits]);
+    [entries],
+  );
+  const summary = useMemo(() => (base ? applyMerchantCategories(base, remembered) : null), [base, remembered]);
+
+  /** 자동으로 읽은 분류로 되돌리면 기억을 지운다(다음에 사전이 좋아지면 그 분류를 따르게) */
+  const rememberCategory = (name: string, category: string) => {
+    const key = merchantKey(name);
+    const auto = base?.items.find((it) => merchantKey(it.name) === key)?.category;
+    setRemembered((m) => {
+      const { [key]: _old, ...rest } = m;
+      return category === auto ? rest : { ...rest, [key]: category };
+    });
+  };
 
   const reading = entries.some((e) => e.status === "reading");
   const onlySample = openedEntries.length === 1 && openedEntries[0].sample;
@@ -237,7 +248,10 @@ export function StepStatement({
       </Link>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>명세서로 지출 채우기</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 15, color: "#5E6D96" }}>카드사 앱이나 홈페이지에서 받은 이용대금명세서를 올리면 카테고리별 지출을 대신 채워 드려요. 카드가 여러 장이면 명세서를 모두 올려 주세요</p>
+        <p style={{ margin: "6px 0 0", fontSize: 15, color: "#5E6D96" }}>카드사 앱이나 홈페이지에서 받은 이용대금명세서를 올리면 카테고리별 지출을 대신 채워 드려요.
+          <br />
+          카드가 여러 장이면 명세서를 모두 올려 주세요
+        </p>
       </header>
 
       <section style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 18, boxShadow: SHADOW }}>
@@ -313,10 +327,13 @@ export function StepStatement({
                       </div>
                       <div style={{ flex: "1 1 220px", minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 700, overflowWrap: "anywhere" }}>{e.name}</div>
-                        <div style={{ fontSize: 13, color: "#5E6D96" }}>
-                          {e.meta}
-                          {e.status === "opened" && e.summary ? ` · ${e.summary.itemCount}건` : ""}
-                        </div>
+                        {/* 예시 명세서는 파일 정보 줄('CSV · 예시 파일 · 79건')을 보여 주지 않는다(2026-11-23) */}
+                        {!e.sample && (
+                          <div style={{ fontSize: 13, color: "#5E6D96" }}>
+                            {e.meta}
+                            {e.status === "opened" && e.summary ? ` · ${e.summary.itemCount}건` : ""}
+                          </div>
+                        )}
                       </div>
                       <span style={badge.style}>
                         <Lock size={14} />
@@ -364,12 +381,16 @@ export function StepStatement({
                             {e.error}
                           </div>
                         )}
-                        <div style={{ fontSize: 13, lineHeight: 1.6, color: "#5E6D96" }}>카드사·은행이 파일을 보낼 때 안내한 비밀번호예요. 파일을 여는 데만 쓰고 저장하지 않아요. 잠기지 않은 파일은 이 칸 없이 바로 열려요.</div>
+                        <div style={{ fontSize: 13, lineHeight: 1.6, color: "#5E6D96" }}>
+                          카드사·은행이 파일을 보낼 때 안내한 비밀번호예요.
+                          <br />
+                          파일을 여는 데만 쓰고 저장하지 않아요. 잠기지 않은 파일은 이 칸 없이 바로 열려요.
+                        </div>
                       </div>
                     )}
 
                     {e.status === "error" && (
-                      <div role="alert" style={{ fontSize: 14, fontWeight: 600, color: "#C62828", lineHeight: 1.6 }}>
+                      <div role="alert" style={{ fontSize: 14, fontWeight: 600, color: "#C62828", lineHeight: 1.6, whiteSpace: "pre-line" }}>
                         {e.error}
                       </div>
                     )}
@@ -382,7 +403,11 @@ export function StepStatement({
                     )}
                     {e.status === "opened" && e.summary?.check && <CheckLine check={e.summary.check} image={!!e.image} />}
                     {e.status === "opened" && e.image && !e.summary?.check && !lowQuality(e.quality) && (
-                      <div style={{ fontSize: 13, lineHeight: 1.6, color: "#7A4F00" }}>사진은 글자를 인식해 읽어서 틀릴 수 있어요. 아래 표에서 금액을 확인해 주세요.</div>
+                      <div style={{ fontSize: 13, lineHeight: 1.6, color: "#7A4F00" }}>
+                        사진은 글자를 인식해 읽어서 틀릴 수 있어요.
+                        <br />
+                        아래 표에서 금액을 확인해 주세요.
+                      </div>
                     )}
                   </li>
                 );
@@ -398,7 +423,7 @@ export function StepStatement({
               </div>
             )}
 
-            {summary && <StatementItems summary={summary} onRecategorize={(name, cat) => setEdits((m) => ({ ...m, [name]: cat }))} />}
+            {summary && <StatementItems summary={summary} onRecategorize={rememberCategory} />}
           </div>
         )}
 
@@ -425,7 +450,12 @@ export function StepStatement({
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "#F3F7FF", fontSize: 14, color: "#3A4A78" }}>
           <Lock size={18} color="#1747D6" />
-          파일과 비밀번호는 이 브라우저 안에서만 써요. 서버로 보내거나 저장하지 않아요.
+          {/* 줄바꿈(br)이 flex 칸이 되지 않게 글자를 span 하나로 묶는다 */}
+          <span>
+            파일과 비밀번호는 이 브라우저 안에서만 써요.
+            <br />
+            서버로 보내거나 저장하지 않아요.
+          </span>
         </div>
       </section>
     </>

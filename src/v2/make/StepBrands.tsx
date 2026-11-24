@@ -145,12 +145,18 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
         <header>
           <span style={{ display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 14, background: "#E8EEFF", color: "#2457F5", fontSize: 13, fontWeight: 700 }}>마지막 질문 · 선택</span>
           <h1 style={{ margin: "14px 0 0", fontSize: 32, lineHeight: 1.3, fontWeight: 700, letterSpacing: "-0.03em" }}>평소 자주 가는 곳을 골라 주세요</h1>
-          <p style={{ margin: "8px 0 0", fontSize: 16, lineHeight: 1.7, color: "#3A4A78" }}>스타벅스, 쿠팡 등 자주 이용하는 브랜드를 선택해 주세요. 해당 브랜드의 할인 혜택까지 반영해 계산해 드려요.</p>
+          <p style={{ margin: "8px 0 0", fontSize: 16, lineHeight: 1.7, color: "#3A4A78" }}>
+            스타벅스, 쿠팡 등 자주 이용하는 브랜드를 선택해 주세요.
+            <br />
+            해당 브랜드의 할인 혜택까지 반영해 계산해 드려요.
+          </p>
         </header>
 
         {tabs.length === 0 || !tab ? (
           <section style={{ background: "#FFFFFF", borderRadius: 24, padding: 24, boxShadow: SHADOW, fontSize: 15, color: "#3A4A78" }}>
-            고를 브랜드가 있는 지출({BRAND_TABS.map((t) => t.label.split("·")[0]).join("·")})이 없어요. 바로 추천 조합을 볼 수 있어요.
+            고를 브랜드가 있는 지출({BRAND_TABS.map((t) => t.label.split("·")[0]).join("·")})이 없어요.
+            <br />
+            바로 추천 조합을 볼 수 있어요.
           </section>
         ) : (
           <>
@@ -326,7 +332,9 @@ export function StepBrands({ spending, picks, onPicks, brandIds, ownIds, prev, n
             {allChips.length === 0 && <span style={{ fontSize: 14, color: "#5E6D96" }}>아직 고른 곳이 없어요</span>}
           </div>
           <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#F3F7FF", fontSize: 13, lineHeight: 1.6, color: "#3A4A78" }}>
-            고른 브랜드에 그 카테고리 지출이 쓰였다고 보고 할인을 계산해요. 안 고른 카테고리는 일반 할인만 계산해요.
+            고른 브랜드에 그 카테고리 지출이 쓰였다고 보고 할인을 계산해요.
+            <br />
+            안 고른 카테고리는 일반 할인만 계산해요.
           </div>
           <Link
             to={next}

@@ -99,16 +99,13 @@ interface Props {
   view: CardViewEntry | undefined;
   /** 받기 전이면 true(혜택 칸에 '불러오는 중') */
   loading: boolean;
-  /** 내 카드(지갑 만들기에서 고른 카드)면 '내 카드' 표시 */
-  mine?: boolean;
+  mine: boolean;
   discontinued: boolean;
-  inCompare?: boolean;
+  inCompare: boolean;
   /** 내 지출 전부를 이 카드로 냈을 때 연회비를 뺀 월 혜택(지출을 넣었을 때만) */
   net?: number;
-  /** 없으면 '내 카드에 담기' 버튼을 숨긴다(혜택별 추천 화면) */
-  onToggleMine?: () => void;
-  /** 없으면 '비교함에 담기' 버튼을 숨긴다(혜택별 추천 화면) */
-  onToggleCompare?: () => void;
+  onToggleMine: () => void;
+  onToggleCompare: () => void;
   onClose: () => void;
   /** 결과 화면에서 열 때 맨 위에 보여 줄 '이 조합에서 이 카드가 하는 일'(2026-11-03). 있으면 전체 혜택 목록은 접어 둔다 */
   plan?: ReactNode;
@@ -306,21 +303,16 @@ export function CardDetailSheet({ entry, view, loading, mine, discontinued, inCo
           </Section>
         )}
 
-        {/* 2026-11-07: 바깥 사이트 원문 링크는 없앴다(혜택마다 '원문 보기'로 근거 문장을 보여 준다) */}
-        {(onToggleMine || onToggleCompare) && (
         <footer style={{ display: "flex", flexWrap: "wrap", gap: 10, paddingTop: 20, borderTop: "1px solid #E3EAF8" }}>
-          {onToggleMine && !(discontinued && !mine) && (
+          {!(discontinued && !mine) && (
             <button type="button" onClick={onToggleMine} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "none", background: mine ? "#E8EEFF" : "#2457F5", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: mine ? "#1747D6" : "#FFFFFF", cursor: "pointer" }}>
               {mine ? "내 카드에서 빼기" : "내 카드에 담기"}
             </button>
           )}
-          {onToggleCompare && (
-            <button type="button" onClick={onToggleCompare} aria-pressed={!!inCompare} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}>
-              {inCompare ? "비교함에서 빼기" : "비교함에 담기"}
-            </button>
-          )}
+          <button type="button" onClick={onToggleCompare} aria-pressed={inCompare} style={{ flex: "1 1 160px", height: 48, borderRadius: 24, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}>
+            {inCompare ? "비교함에서 빼기" : "비교함에 담기"}
+          </button>
         </footer>
-        )}
       </div>
     </div>,
     document.body,

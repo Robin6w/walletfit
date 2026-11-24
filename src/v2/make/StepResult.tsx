@@ -27,7 +27,7 @@ import {
 } from "@/v2/model/resultView";
 import { DetailsItem, GuideRows, HeroAmount, HeroCardStack, HeroTiles, RoleCardArticle, SHADOW, NUM } from "@/v2/result/parts";
 import { ConditionsBar } from "@/v2/result/MoreOptions";
-import { ProofPanel, reportNumbers } from "@/v2/result/ProofPanel";
+import { ProofPanel } from "@/v2/result/ProofPanel";
 import { CardDetailSheet } from "@/v2/ui/CardDetailSheet";
 import { IssuePlan } from "@/v2/result/IssuePlan";
 import { CardImage } from "@/v2/ui/CardImage";
@@ -76,7 +76,7 @@ function LoadingStatus({ task }: { task: string }) {
     <div role="status" aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 10, fontSize: 15, color: "#3A4A78" }}>
         <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-[#2457F5] border-t-transparent" />
-        {booting ? "계산 엔진을 준비하고 있어요. 처음 한 번만 10초 안팎 걸려요" : `${task}. 보통 10초 안에 끝나요`}
+        {booting ? "계산 엔진을 준비하고 있어요. 처음 한 번만 10초 안팎 걸려요" : task}
       </p>
       <ol aria-label="진행 단계" style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexWrap: "wrap", gap: 8, fontSize: 13 }}>
         {steps.map((st, i) => (
@@ -91,7 +91,13 @@ function LoadingStatus({ task }: { task: string }) {
         ))}
         {sec >= 5 && <li style={{ display: "inline-flex", alignItems: "center", height: 28, color: "#5E6D96" }}>{sec}초 지났어요</li>}
       </ol>
-      {sec >= 20 && <p style={{ margin: 0, fontSize: 13, color: "#5E6D96" }}>카드와 지출 항목이 많으면 조금 더 걸려요. 화면을 닫지 않으면 계산은 이어져요.</p>}
+      {sec >= 20 && (
+        <p style={{ margin: 0, fontSize: 13, color: "#5E6D96" }}>
+          카드와 지출 항목이 많으면 조금 더 걸려요.
+          <br />
+          화면을 닫지 않으면 계산은 이어져요.
+        </p>
+      )}
     </div>
   );
 }
@@ -105,8 +111,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const [proof, setProof] = useState<number | null>(null);
   const [issueSid, setIssueSid] = useState<number | null>(null);
   const [retry, setRetry] = useState(0);
-  // '4~5장 조합도 찾아보기'를 눌렀는지. 누르면 빠른 결과를 3장까지로 잡아(엔진이 앞 결과에 이어 풀어 바로 나온다) 2장으로 되돌아가 보이지 않게 한다
-  const [expanded, setExpanded] = useState(false);
 
   const viaStatement = source === "statement" && !!inp.statement;
   const effSource: "manual" | "statement" = viaStatement ? "statement" : "manual";
@@ -134,7 +138,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const newArgs = flow === "new" && inp.total && inp.newTypes.length && newIds.length ? { ids: newIds, margin, withAlt: false, ...common, ...pinArgs, ...extra } : null;
 
   // 점진적 결과: 2장까지 빠른 계산을 먼저 보여 주고 3장 이상은 이어서 계산한다(3장 이상은 장수마다 최대 8초)
-  const quickK = expanded ? 3 : 2;
+  const quickK = 2;
   const quickOf = (a: { maxCards: number } | null) => (a && a.maxCards > quickK ? { ...a, kLimit: quickK } : null);
   const recOwn = useEngineProgressive<RecommendResponse>("recommend", ownArgs, quickOf(ownArgs));
   const base = recOwn.data && !recOwn.data.empty ? recOwn.data : null;
@@ -189,11 +193,11 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   // 계산할 수 없는 경우
   const blocked =
     inp.total === 0
-      ? { text: "넣은 지출이 없어요. 지출 입력에서 금액을 넣어 주세요.", to: paths.make(flow, "spend"), label: "지출 입력으로" }
+      ? { text: "넣은 지출이 없어요.\n지출 입력에서 금액을 넣어 주세요.", to: paths.make(flow, "spend"), label: "지출 입력으로" }
       : flow === "own" && inp.owned.length === 0
-        ? { text: "담은 카드가 없어요. 카드 선택에서 가진 카드를 담아 주세요.", to: paths.make("own", "cards"), label: "카드 선택으로" }
+        ? { text: "담은 카드가 없어요.\n카드 선택에서 가진 카드를 담아 주세요.", to: paths.make("own", "cards"), label: "카드 선택으로" }
         : flow === "own" && inp.ownIds.length === 0
-          ? { text: "조건에 맞는 카드가 없어요. 아래 조건 바꾸기에서 카드 종류나 카드사 제외를 풀어 주세요.", to: null, label: "" }
+          ? { text: "조건에 맞는 카드가 없어요.\n아래 조건 바꾸기에서 카드 종류나 연회비 상한을 풀어 주세요.", to: null, label: "" }
           : flow === "new" && inp.newTypes.length === 0
             ? { text: "새 카드 종류를 먼저 골라 주세요.", to: paths.make("new", "type"), label: "카드 종류 선택으로" }
             : null;
@@ -210,7 +214,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
     tickets,
   };
 
-  const save = (stay: boolean) => {
+  const save = () => {
     // 3장 이상 조합을 찾는 중에는 저장하지 않는다(빠른 2장 결과를 저장하면 더 좋은 조합을 놓친다)
     if (!view || refining) return;
     const todos = todoList(view.pack, view.newSids).map((t) => ({ ...t, done: wallet?.todos.find((x) => x.id === t.id)?.done ?? false }));
@@ -233,11 +237,8 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
       ownedOnlyNet: view.ownedOnly?.net ?? null,
     };
     setWallet(w);
-    if (stay) showToast("할 일을 내 지갑에 저장했어요. 내 지갑에서 하나씩 체크할 수 있어요.", "success");
-    else {
-      showToast("내 지갑에 저장했어요", "success");
-      navigate(paths.wallet);
-    }
+    showToast("내 지갑에 저장했어요", "success");
+    navigate(paths.wallet);
   };
 
   const backTo = viaStatement ? paths.make(flow, "statement") : paths.make(flow, "spend");
@@ -254,7 +255,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
     return (
       <>
         <section style={{ background: "#FFFFFF", borderRadius: 24, padding: "32px clamp(18px, 2.6vw, 36px)", boxShadow: SHADOW, display: "flex", flexDirection: "column", gap: 16, alignItems: "flex-start" }}>
-          <p role="status" style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#0D1B4A" }}>
+          <p role="status" style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "#0D1B4A", whiteSpace: "pre-line" }}>
             {blocked.text}
           </p>
           {blocked.to && (
@@ -273,12 +274,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             setMargin={setMarginBack}
             noMargin={noMargin}
             noMarginTo={resultQ({ margin: 0 })}
-            candidateIds={flow === "own" ? inp.owned : newIds}
-            pack={null}
-            spending={spending}
-            brandShare={brandShare}
-            tickets={tickets}
-            efficientCeiling={null}
           />
         )}
       </>
@@ -315,16 +310,10 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
   const todos = todoList(pack, newSids);
   const perf = perfVM(pack);
   const barV = barVM(bar, pack);
-  // 기본은 3장까지만 계산한다(2026-10-30). 엔진이 '더 넣으면 늘 만한 카드가 있음'이라고 하면 4~5장도 찾아보게 한다
-  const moreCards = !refining && !busy && !!shown.rec.moreCards && c.maxCards < 5;
-  const findMore = () => {
-    setExpanded(true);
-    inp.setConditions({ maxCards: 5 });
-  };
+  // 기본은 3장까지만 계산한다(2026-10-30). '4~5장 조합도 찾아보기' 버튼은 2026-11-24에 뺐다(최대 카드 수는 계산 조건에서 바꾼다)
   const used = usedValuesVM(pack, ctx);
   const nm = noMargin && shown.base ? noMarginVM(shown.base, pack, margin) : null;
   const proofCard = proof !== null ? pack.cards.find((x) => x.sid === proof) : undefined;
-  const scrollToMore = () => document.getElementById("more-h")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <>
@@ -349,17 +338,9 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "#3A4A78" }}>{hero.lead}</p>
             {hero.notice && <p style={{ margin: 0, padding: "10px 14px", borderRadius: 12, background: "#E8EEFF", fontSize: 14, fontWeight: 600, color: "#1747D6" }}>{hero.notice}</p>}
             <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10 }}>
-              <button type="button" onClick={() => save(false)} disabled={!view || refining} style={primaryBtn}>
+              <button type="button" onClick={save} disabled={!view || refining} style={primaryBtn}>
                 {saveLabel}
               </button>
-              <button type="button" onClick={scrollToMore} style={outlineBtn}>
-                계산 자세히 보기
-              </button>
-              {moreCards && (
-                <button type="button" onClick={findMore} style={outlineBtn}>
-                  4~5장 조합도 찾아보기
-                </button>
-              )}
             </div>
           </div>
           <HeroCardStack sids={hero.sids} newSids={newSids} />
@@ -376,12 +357,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         setMargin={setMarginBack}
         noMargin={noMargin}
         noMarginTo={resultQ({ margin: 0 })}
-        candidateIds={flow === "own" ? inp.owned : newIds}
-        pack={pack}
-        spending={ctx.spending}
-        brandShare={brandShare}
-        tickets={tickets}
-        efficientCeiling={shown.rec.efficientCeiling ?? null}
       />
 
       {nm && (
@@ -472,21 +447,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         </h2>
         <p style={{ margin: "6px 0 8px", fontSize: 14, color: "#5E6D96" }}>계산대에서 이 카드로 결제하면 돼요</p>
         <GuideRows rows={rows} newSids={newSids} />
-        {todos.length > 0 && (
-          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "14px 18px", borderRadius: 14, background: "#F3F7FF" }}>
-            <span style={{ fontSize: 15, color: "#3A4A78" }}>
-              <strong style={{ color: "#0D1B4A" }}>할 일 {todos.length}가지</strong> · {todos.map((t) => t.text).join(", ")}
-            </span>
-            <button
-              type="button"
-              onClick={() => save(true)}
-              disabled={!view || refining}
-              style={{ height: 44, padding: "0 16px", borderRadius: 22, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#0D1B4A", cursor: "pointer" }}
-            >
-              할 일 저장
-            </button>
-          </div>
-        )}
+        {/* '할 일 ○가지 · … / 할 일 저장' 줄은 2026-11-24에 뺐다. 할 일은 '내 지갑에 저장'하면 함께 저장되고 발급 정보 창에도 나온다 */}
       </section>
 
       <section aria-labelledby="more-h" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -520,14 +481,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
               {shown.rec.moreCards
                 ? `지금은 최대 ${c.maxCards}장까지 계산했어요. 카드를 더 넣으면 혜택이 늘 수 있어요.`
                 : `${c.maxCards}장까지만 계산했어요.`}
-              {shown.rec.moreCards && (
-                <>
-                  {" "}
-                  <button type="button" onClick={findMore} style={{ padding: 0, border: 0, background: "none", font: "inherit", fontWeight: 700, color: "#2457F5", cursor: "pointer" }}>
-                    4~5장 조합도 찾아보기
-                  </button>
-                </>
-              )}
             </>
           )}
         </DetailsItem>
@@ -550,19 +503,6 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#2457F5" }}>계산 근거 보기 →</span>
               </button>
             ))}
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-              <span>결과 숫자가 카드사 안내와 다르면 알려 주세요. 그 카드의 혜택 표부터 다시 확인해요.</span>
-              <button
-                type="button"
-                onClick={() => {
-                  pack.cards.forEach((card) => reportNumbers(card));
-                  showToast("검수 목록에 올렸어요. 이 조합의 혜택 표를 먼저 다시 확인할게요.", "success");
-                }}
-                style={{ height: 40, padding: "0 16px", borderRadius: 20, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: "#0D1B4A", cursor: "pointer" }}
-              >
-                숫자가 이상해요
-              </button>
-            </div>
           </div>
         </DetailsItem>
       </section>
@@ -571,7 +511,7 @@ export function StepResult({ flow, inp, source, noMarginParam }: { flow: Flow; i
         <Link to={backTo} style={{ display: "flex", alignItems: "center", height: 44, fontSize: 15, fontWeight: 500, color: "#3A4A78", textDecoration: "none" }}>
           {backLabel}
         </Link>
-        <button type="button" onClick={() => save(false)} disabled={!view || refining} style={{ ...primaryBtn, height: 52, padding: "0 28px", borderRadius: 26, fontSize: 16 }}>
+        <button type="button" onClick={save} disabled={!view || refining} style={{ ...primaryBtn, height: 52, padding: "0 28px", borderRadius: 26, fontSize: 16 }}>
           {saveLabel}
         </button>
       </div>

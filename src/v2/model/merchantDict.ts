@@ -18,6 +18,8 @@ export const CORPORATE_NAMES: Record<string, string> = {
   비지에프리테일: "CU",
   코리아세븐: "세븐일레븐",
   우아한형제들: "배달의민족",
+  // 카카오뱅크 확인서는 가맹점명 칸이 좁아 '배민클럽_우아한형제'처럼 잘려 찍힌다(2026-11-23)
+  우아한형제: "배달의민족",
   위대한상상: "요기요",
   에스씨케이컴퍼니: "스타벅스",
   씨제이올리브영: "올리브영",
@@ -52,6 +54,9 @@ const TIERS: Array<Record<string, string[]>> = [
     // 푸디스트: 학교·회사 구내식당 운영사(사조푸디스트 등)
     dining: ["맥도날드", "버거킹", "롯데리아", "맘스터치", "KFC", "서브웨이", "이삭토스트", "김밥천국", "본죽", "아웃백", "빕스", "애슐리", "쉐이크쉑", "교촌", "BBQ", "BHC", "굽네", "토리키조쿠", "에머이", "지지고", "푸디스트"],
     household: ["다이소"],
+    // 스터디카페·독서실은 카페가 아니라 교육(카드 혜택 원문 '독서실 업종(스터디카페 포함)', 토즈스터디센터는 education 가맹점).
+    // '카페'가 이름에 들어 있어 키워드 규칙에서는 카페로 잡혔다(2026-11-23 카카오뱅크 10월 확인서). 카공족은 스터디카페 체인
+    education: ["스터디카페", "스터디센터", "토즈스터디", "토즈멤버십", "카공족"],
     // 철도·고속/시외버스는 대중교통이 아니라 기차/고속버스(intercity). 역 안 편의점(코레일유통)은 편의점.
     // 근거(2026-10-31 카드 혜택 데이터): 'KTX·고속버스 5% 적립'처럼 여행에 묶인 카드 41장 이상, 대중교통 혜택은
     // '시외·고속버스 제외'를 원문에 적은 카드가 많음(SolSol, NH20해봄, LOCA 365 등 7장). 포함하는 카드는 이동 전반 묶음 몇 장뿐.
@@ -64,7 +69,7 @@ const TIERS: Array<Record<string, string[]>> = [
   },
   {
     cafe: ["베이글", "도넛", "빵", "떡", "모찌", "제과", "아이스크림", "젤라또", "케이크", "마카롱", "와플", "디저트", "커피"],
-    dining: ["토스트", "김밥", "분식", "떡볶이", "버거", "쌀국수", "이자카야", "야키토리", "포차", "주점", "술집", "냉면", "칼국수", "국수", "곱창", "막창", "횟집", "돈까스", "돈가스", "라멘", "우동", "마라탕", "샤브", "닭갈비", "감자탕", "해장국", "순대", "브런치", "레스토랑", "비스트로", "뷔페", "맥주", "호프", "음식점"],
+    dining: ["토스트", "도시락", "김밥", "분식", "떡볶이", "버거", "쌀국수", "이자카야", "야키토리", "포차", "주점", "술집", "냉면", "칼국수", "국수", "곱창", "막창", "횟집", "미역", "돈까스", "돈가스", "라멘", "우동", "마라탕", "샤브", "닭갈비", "감자탕", "해장국", "순대", "브런치", "레스토랑", "비스트로", "뷔페", "맥주", "호프", "음식점"],
     // 아래는 카드 업종 혜택 원문에 나오는 업종 이름(2026-10-31, 현행 카드 업종 혜택의 제목·원문에서 4장 이상이 한 카테고리로 묶은 낱말).
     // 괄호는 그 카테고리로 묶은 카드 수. '충전'처럼 다른 결제(교통카드 충전)에 섞이는 낱말은 구체적인 이름으로만 넣는다
     medical: ["산후조리원" /* 25 */, "조산원" /* 10 */, "한약방" /* 9 */, "안경" /* 안경점 5 */, "의료" /* 29 */],
@@ -87,6 +92,24 @@ const TIERS: Array<Record<string, string[]>> = [
 
 const squash = (s: string) => s.toLowerCase().replace(/\s+/g, "");
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\&-]/g, "\\$&");
+/** 띄어쓰기가 섞여도 찾는 정규식('노브랜드 버거'도 '노브랜드버거') */
+const spaced = (word: string, flags = "gi") => new RegExp(word.split("").map(escape).join("\\s*"), flags);
+
+/**
+ * 브랜드 이름이 들어 있지만 그 브랜드가 아닌 가게(2026-11-23 카카오뱅크 10월 확인서).
+ * '제로웨이브'는 웨이브(OTT)가 아니고, '노브랜드버거'는 노브랜드(마트)가 아니라 버거 가게다.
+ * 키는 카드 혜택 데이터의 브랜드 이름. 그 브랜드를 찾을 때만 이 이름을 지운다(카테고리 낱말 찾기는 그대로라 노브랜드버거는 '버거'로 외식)
+ */
+const LOOKALIKES: Record<string, RegExp[]> = {
+  웨이브: [spaced("제로웨이브")],
+  노브랜드: [spaced("노브랜드버거")],
+};
+
+/** brand를 빼면 모든 브랜드의 닮은 이름을 지운다(키워드 규칙 KEYWORD_MAP에도 '웨이브'가 있다) */
+export function withoutLookalikes(line: string, brand?: string): string {
+  const res = brand === undefined ? Object.values(LOOKALIKES).flat() : LOOKALIKES[brand];
+  return res ? res.reduce((s, re) => s.replace(re, " "), line) : line;
+}
 
 interface WordTest {
   category: string;
@@ -150,10 +173,7 @@ const CORPORATE_ENTRIES = Object.entries({ ...CORPORATE_NAMES, ...STATEMENT_SPEL
 /** 줄에 있는 법인명·한글 표기를 브랜드 이름으로 바꾼다('(주)에프알엘코리아' → '(주)유니클로', '빕스' → 'VIPS') */
 export function withBrandNames(line: string): string {
   let out = line;
-  for (const [corp, brand] of CORPORATE_ENTRIES) {
-    const re = new RegExp(corp.split("").map(escape).join("\\s*"), "gi");
-    out = out.replace(re, brand);
-  }
+  for (const [corp, brand] of CORPORATE_ENTRIES) out = out.replace(spaced(corp), brand);
   return out;
 }
 
@@ -170,7 +190,8 @@ const CATALOG_TESTS: WordTest[] = Object.entries(brandCategory.brands as Record<
       const re = new RegExp(`(^|[^가-힣A-Za-z0-9])${n}`);
       return { category, test: (line: string) => re.test(line) };
     }
-    return wordTest(name, category);
+    const t = wordTest(name, category);
+    return LOOKALIKES[name] ? { category, test: (line: string) => t.test(withoutLookalikes(line, name)) } : t;
   });
 
 export function catalogCategory(line: string): string | null {

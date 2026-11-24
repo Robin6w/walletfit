@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { brandMatchers, cleanLine, mergeStatements, recategorize, statementSignals, summarizeStatement, ticketsOf } from "@/v2/model/statement";
+import { applyMerchantCategories, brandMatchers, cleanLine, merchantKey, mergeStatements, recategorize, statementSignals, summarizeStatement, ticketsOf } from "@/v2/model/statement";
 import { catalogCategory, fuzzyCategory, statementCategory, withBrandNames } from "@/v2/model/merchantDict";
 import { fixOcrText, pdfItemsToLines, validateStatementFile } from "@/features/statement/importerParser";
 import { statementBrandShare } from "@/v2/model/brands";
@@ -9,22 +9,41 @@ import { statementBrandShare } from "@/v2/model/brands";
 const sample = readFileSync(resolve(__dirname, "../public/samples/walletfit-sample-statement.csv"), "utf-8");
 
 describe("명세서 요약(v2)", () => {
-  it("예시 명세서: 카테고리 금액이 디자인 시나리오(월 83만 5천원)와 같다", () => {
+  // 2026-11-24 예시 명세서를 바꿨다: 강남으로 출퇴근하는 20대 후반 직장인의 10월 한 달(68건, 102만 1,500원).
+  // 예전 예시(디자인 시나리오 83만 5천원)는 편의점 25만원·GS25 22번처럼 실제 명세서 같지 않았고 추천 순혜택도 월 4만원 정도였다.
+  // 새 예시는 명세서로 넣으면 2장으로 월 약 6만 7천원(직접 입력하면 3장으로 6만 4천원, 아침 음식점 결제 가정 포함)
+  it("예시 명세서: 모든 결제가 카테고리로 나뉘고 '그 외'가 없다", () => {
     const s = summarizeStatement(sample);
-    // 10-30부터 배달의민족 3만 5천원은 외식이 아니라 배달(디자인 시나리오의 외식 7만 = 외식 3만 5천 + 배달 3만 5천)
-    expect(s.spending).toEqual({ convenience: 250000, cafe: 180000, transport: 80000, mobile: 140000, onlineShopping: 65000, dining: 35000, delivery: 35000, gas: 50000 });
-    expect(s.period).toBe("2026년 9월");
+    expect(s.spending).toEqual({
+      convenience: 89400,
+      cafe: 95900,
+      dining: 223400,
+      delivery: 134000,
+      onlineShopping: 134800,
+      transport: 72400,
+      culture: 45000,
+      mart: 103200,
+      subscription: 28400,
+      car: 26000,
+      mobile: 69000,
+    });
+    expect(s.period).toBe("2026년 10월");
     expect(s.months).toBe(1);
-    expect(s.itemCount).toBe(79);
+    expect(s.itemCount).toBe(68);
+    // 쿠팡 결제취소 1건은 환불로 뺀다
+    expect(s.refundCount).toBe(1);
+    expect(s.items.filter((it) => it.category === "etc")).toEqual([]);
   });
   it("예시 명세서: 브랜드 금액", () => {
     const s = summarizeStatement(sample);
-    expect(s.brands.cafe).toEqual({ 스타벅스: 72000, 투썸플레이스: 27000, 메가MGC커피: 21000 });
-    expect(s.brands.convenience).toEqual({ GS25: 160000, CU: 50000, 세븐일레븐: 40000 });
-    // 2026-11-01부터 카드 데이터의 브랜드 전부로 찾아 '네이버페이 스마트스토어'(9,700 + 10,300)도 네이버로 잡힌다
-    expect(s.brands.onlineShopping).toEqual({ 쿠팡: 45000, 네이버: 20000 });
-    expect(s.brands.delivery).toEqual({ 배달의민족: 35000 });
-    expect(s.brands.gas).toEqual({ SK에너지: 50000 });
+    expect(s.brands.cafe).toEqual({ 스타벅스: 58400, 투썸플레이스: 20300, 메가MGC커피: 17200 });
+    expect(s.brands.convenience).toEqual({ GS25: 55000, CU: 34400 });
+    // 쿠팡 4건 124,500원 − 결제취소 18,700원. '네이버페이 스마트스토어'는 네이버로 잡힌다
+    expect(s.brands.onlineShopping).toEqual({ 쿠팡: 105800, 네이버: 29000 });
+    expect(s.brands.delivery).toEqual({ 배달의민족: 89900, 쿠팡이츠: 44100 });
+    expect(s.brands.dining).toEqual({ 아웃백: 68000, 서브웨이: 17800, 교촌치킨: 23000, 맘스터치: 9800 });
+    expect(s.brands.culture).toEqual({ CGV: 45000 });
+    expect(s.brands.subscription).toEqual({ 넷플릭스: 13500, "유튜브 프리미엄": 14900 });
   });
   it("날짜·연도·시간을 금액으로 읽지 않는다", () => {
     expect(cleanLine("2026.09.03 14:22 스타벅스 강남점 6,500원")).toBe("스타벅스 강남점 6,500원");
@@ -74,6 +93,42 @@ describe("카카오뱅크 이용내역 확인서 형식(2026-10-31)", () => {
     expect(s.spending).toEqual({ mart: 16000, department: 173800, fashion: 29900, cafe: 15700, delivery: 13100 });
   });
 
+  it("10월 확인서 실물(2026-11-23, PDF 5쪽을 pdfItemsToLines로 읽은 글자): 87건 합계가 총승인금액과 맞고, 가맹점을 바르게 나눈다", () => {
+    const text = readFileSync(resolve(__dirname, "fixtures/kakaobank-2026-10.txt"), "utf-8");
+    const s = summarizeStatement(text);
+    expect(s.check).toEqual({ declared: 800540, declaredCount: undefined, read: 800540, readCount: 87 });
+    expect(s.period).toBe("2026년 10월");
+    expect(s.months).toBe(1);
+    const by = (name: string) => s.items.find((it) => it.name === name);
+    // 스터디카페·토즈·카공족은 카페가 아니라 교육(카드 혜택의 '독서실 업종(스터디카페 포함)')
+    for (const n of ["타임스터디카페 마곡", "기본스터디카페마곡", "토즈멤버십라운지 마", "토즈스터디센터마곡", "주식회사 카공족", "카공족아지트 발산점"]) expect(by(n)?.category).toBe("education");
+    // 브랜드 이름이 섞였지만 그 브랜드가 아닌 가게
+    expect(by("제로웨이브")).toMatchObject({ category: "etc" });
+    expect(by("제로웨이브")?.brand).toBeUndefined();
+    expect(by("노브랜드버거 수원호")).toMatchObject({ category: "dining" });
+    expect(by("노브랜드버거 수원호")?.brand).toBeUndefined();
+    expect(by("청담미역 마곡점")?.category).toBe("dining");
+    // 잘려 찍힌 법인명 '우아한형제'도 배달의민족
+    expect(by("배민클럽_우아한형제")).toMatchObject({ category: "delivery", brand: "배달의민족" });
+    // 칸 안에서 글자 중간이 잘린 이름은 띄우지 않고 잇는다
+    expect(by("따릉이(서울시설공단)")?.amount).toBe(1000);
+    expect(by("씨유(CU)수원당수2단")).toMatchObject({ category: "convenience", brand: "CU", amount: 1700 });
+    expect(s.spending).toEqual({
+      dining: 160100,
+      education: 95700,
+      etc: 278500,
+      mart: 10600,
+      household: 2000,
+      convenience: 30800,
+      cafe: 27400,
+      delivery: 90900,
+      medical: 13100,
+      books: 15700,
+      subscription: 29000,
+      onlineShopping: 46800,
+    });
+  });
+
   it("부호 없는 승인취소: 짝이 되는 승인이 없으면 취소된 결제로 빼고, 있으면 서로 지운다", () => {
     const s = summarizeStatement(
       [
@@ -104,6 +159,27 @@ describe("카카오뱅크 이용내역 확인서 형식(2026-10-31)", () => {
     expect(t.items.filter((it) => it.edited)).toHaveLength(2);
     // 브랜드 금액도 카테고리를 따라간다
     expect(recategorize(t, "쿠팡이츠", "dining").brands).toEqual({ dining: { 쿠팡이츠: 9000 } });
+  });
+
+  it("기억해 둔 가맹점 분류(2026-11-23): 다음 명세서에도 적용하고, 띄어쓰기만 다른 이름도 같은 가게로 본다", () => {
+    const remembered = { [merchantKey("디핀옥수")]: "dining", [merchantKey("프레베리")]: "cafe", [merchantKey("쿠팡이츠")]: "delivery" };
+    expect(merchantKey("타임스터디카페 마곡")).toBe(merchantKey("타임스터디카페마곡"));
+    const s = summarizeStatement(
+      [
+        "1 2026-11-25 승인 25302025 000000102683048 디핀 옥수 161,000",
+        "2 2026-11-25 승인 27301974 000000112605685 프레베리 51,000",
+        "3 2026-11-21 승인 21300540 000000100236305 쿠팡이츠 20,400",
+        "4 2026-11-20 승인 21297623 000000101194717 (주)지에이치컴퍼니 7,500",
+      ].join("\n"),
+    );
+    expect(s.spending).toEqual({ etc: 219500, delivery: 20400 });
+    const t = applyMerchantCategories(s, remembered);
+    expect(t.spending).toEqual({ dining: 161000, cafe: 51000, delivery: 20400, etc: 7500 });
+    // 자동 분류와 같은 기억(쿠팡이츠)은 '직접 바꿈'으로 표시하지 않는다
+    expect(t.items.filter((it) => it.edited).map((it) => it.name)).toEqual(["디핀 옥수", "프레베리"]);
+    expect(ticketsOf(t.items)).toEqual({ dining: [161000], cafe: [51000], delivery: [20400], etc: [7500] });
+    // 기억한 가게가 없으면 그대로
+    expect(applyMerchantCategories(s, {})).toBe(s);
   });
 
   it("결제 금액 목록(엔진 건당 조건용): 취소·환불은 빼고 바꾼 카테고리를 따른다", () => {

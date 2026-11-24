@@ -71,7 +71,6 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
   const [limit, setLimit] = useState(PAGE);
   const owned = useMemo(() => new Set(ids), [ids]);
   const results = useMemo(() => searchCards({ q, kind, issuer, pinned: owned }), [q, kind, issuer, owned]);
-  const discCount = results.filter((c) => isDiscontinued(c)).length;
   const issuers = moreIssuers
     ? Array.from(new Set(catalogCards.map((c) => c.issuer).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ko"))
     : DESIGN_ISSUERS;
@@ -82,7 +81,11 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
     <>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em" }}>가지고 있는 카드를 담아 주세요</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>담은 카드만으로 조합을 계산해요. 담은 카드는 오른쪽에 모여요.</p>
+        <p style={{ margin: "6px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5E6D96" }}>
+          담은 카드만으로 조합을 계산해요.
+          <br />
+          담은 카드는 오른쪽에 모여요.
+        </p>
       </header>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 24 }}>
@@ -115,7 +118,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 </button>
               )}
             </div>
-            <div style={{ fontSize: 14, color: "#5E6D96" }}>영문 카드명은 한글 별명으로도 찾아요 · 예: 탭탭오, 미스터라이프, 로카</div>
+            <div style={{ fontSize: 13, color: "#5E6D96" }}>영문 카드명은 한글 별명으로도 찾아요 · 예: 탭탭오, 미스터라이프, 로카</div>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
               <div role="group" aria-label="카드 종류" style={{ display: "flex", padding: 3, borderRadius: 12, background: "#F3F7FF" }}>
                 {(["all", "신용", "체크"] as const).map((k) => (
@@ -134,7 +137,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 ))}
               </div>
               <span aria-hidden="true" style={{ width: 1, height: 24, background: "#E3EAF8", margin: "0 4px" }} />
-              <span style={{ fontSize: 14, color: "#5E6D96" }}>카드사</span>
+              <span style={{ fontSize: 13, color: "#5E6D96" }}>카드사</span>
               {issuers.map((i) => (
                 <button
                   key={i}
@@ -158,9 +161,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
           <div aria-live="polite" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 8, padding: "0 4px" }}>
             <div style={{ fontSize: 15, color: "#3A4A78" }}>
               {q.trim() && <strong style={{ color: "#0D1B4A" }}>'{q.trim()}'</strong>} 검색 결과 {num(results.length)}장{" "}
-              {discCount > 0 && <span style={{ color: "#5E6D96" }}>· 발급 중단 {num(discCount)}장 포함</span>}
             </div>
-            <div style={{ fontSize: 14, color: "#5E6D96" }}>이미 가진 카드라면 발급이 끝났어도 담을 수 있어요</div>
           </div>
 
           <ul
@@ -210,7 +211,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     {compact ? (
                       <div>
                         {nameEl}
-                        <div style={{ marginTop: 2, fontSize: 14, lineHeight: 1.4, color: "#5E6D96" }}>
+                        <div style={{ marginTop: 2, fontSize: 11, lineHeight: 1.4, color: "#5E6D96" }}>
                           {disc && <b style={{ color: "#3A4A78" }}>발급 중단 · </b>}
                           {c.issuer} · {feeLabel(c)}
                         </div>
@@ -229,7 +230,7 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                     )}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {summaryChips(c).slice(0, compact ? 1 : undefined).map((chip, ci) => (
-                        <span key={`${ci}-${chip}`} style={compact ? { ...chipStyle, fontSize: 14 } : chipStyle}>
+                        <span key={`${ci}-${chip}`} style={chipStyle}>
                           {chip}
                         </span>
                       ))}
@@ -260,7 +261,13 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
                 </li>
               );
             })}
-            {results.length === 0 && <li style={{ gridColumn: "1 / -1", padding: "40px 18px", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>찾는 카드가 없어요. 카드사 이름으로도 찾아보세요.</li>}
+            {results.length === 0 && (
+              <li style={{ gridColumn: "1 / -1", padding: "40px 18px", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>
+                찾는 카드가 없어요.
+                <br />
+                카드사 이름으로도 찾아보세요.
+              </li>
+            )}
           </ul>
           {results.length > limit && (
             <button

@@ -22,8 +22,8 @@ const pill = (on: boolean): CSSProperties => ({
 });
 
 const ROWS: { key: ChoiceKey; cat: string; hint: string }[] = [
-  { key: "telecom", cat: "mobile", hint: "통신사 전용 통신요금 할인은 그 통신사를 써야 받아요. 모르면 통신사 점유율만큼만 계산해요." },
-  { key: "climate_pass", cat: "transport", hint: "기후동행 정기권 요금 할인은 정기권을 사야 받아요. 모르면 서울 이용자 비율만큼만 계산해요." },
+  { key: "telecom", cat: "mobile", hint: "통신사 전용 통신요금 할인은 그 통신사를 써야 받아요.\n모르면 통신사 점유율만큼만 계산해요." },
+  { key: "climate_pass", cat: "transport", hint: "기후동행 정기권 요금 할인은 정기권을 사야 받아요.\n모르면 서울 이용자 비율만큼만 계산해요." },
 ];
 
 export function ChoiceQuestions({ spending }: { spending: Record<string, number> }) {
@@ -43,7 +43,7 @@ export function ChoiceQuestions({ spending }: { spending: Record<string, number>
                 {q.question}
               </h2>
             </div>
-            <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>{r.hint}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6, color: "#5E6D96", whiteSpace: "pre-line" }}>{r.hint}</p>
             <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
               {Object.entries(q.options).map(([id, o]) => (
                 <button key={id} type="button" aria-pressed={cur === id} onClick={() => setChoice(r.key, cur === id ? null : id)} style={pill(cur === id)}>

@@ -8,8 +8,9 @@ import { withChoices } from "@/domain/engine/choices";
  * 조합 찾기는 7~9초 걸려서, 결과 → 내 지갑 → 결과로 돌아올 때 다시 계산하지 않게 한다.
  * 실패한 결과(ok: false)는 저장하지 않아서 '다시 계산'이 실제로 다시 계산한다.
  *
- * 2026-10-29: 조합 찾기(recommend·alt) 결과는 브라우저에도 최근 8개를 남긴다. 새로고침 뒤 결과 화면으로 바로
+ * 2026-10-29: 조합 찾기(recommend·alt) 결과는 최근 8개를 저장소에도 남긴다. 새로고침 뒤 결과 화면으로 바로
  * 들어와도(엔진 준비 약 10초 + 계산) 같은 입력이면 기다리지 않는다. 엔진 코드나 혜택 표가 바뀌면 버전이 달라져 버린다.
+ * 2026-11-24: 결과에 입력한 지출이 들어 있어 이 탭에서만 둔다(sessionStorage, 탭을 닫으면 지워짐).
  */
 const MAX_ENTRIES = 30;
 const inflight = new Map<string, Promise<unknown>>();
@@ -28,7 +29,7 @@ function keyOf(fn: EngineFn, args: unknown): string {
 function loadPersisted(): [string, unknown][] {
   if (!ENGINE_VERSION) return [];
   try {
-    const raw = window.localStorage.getItem(PERSIST_KEY);
+    const raw = window.sessionStorage.getItem(PERSIST_KEY);
     const parsed = raw ? (JSON.parse(raw) as Persisted) : null;
     return parsed && parsed.ver === ENGINE_VERSION && Array.isArray(parsed.items) ? parsed.items : [];
   } catch {
@@ -46,7 +47,7 @@ function persist(key: string, value: unknown) {
   persisted.push([key, value]);
   while (persisted.length > PERSIST_MAX) persisted.shift();
   try {
-    window.localStorage.setItem(PERSIST_KEY, JSON.stringify({ ver: ENGINE_VERSION, items: persisted } satisfies Persisted));
+    window.sessionStorage.setItem(PERSIST_KEY, JSON.stringify({ ver: ENGINE_VERSION, items: persisted } satisfies Persisted));
   } catch {
     // 저장 공간이 모자라거나 막혀 있으면 이번 세션 안에서만 다시 쓴다
   }

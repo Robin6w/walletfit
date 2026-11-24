@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import type { CatalogListing } from "@/domain/types/catalog";
+import type { CardViewEntry } from "@/domain/types/cardView";
 import type { RankRow } from "@/domain/types/engine";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
+import { KEYWORD_MAP } from "@/features/statement/importerParser";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useToast } from "@/shared/hooks/useToast";
-import { catalogCards, categories, catLabel, feeLabel, isDiscontinued, isRestricted, isUnread, isVerified, summaryChips } from "@/v1/catalog";
+import { catalogCards, categories, catLabel, feeLabel, isDiscontinued, isUnread, isVerified, summaryChips } from "@/v1/catalog";
 import { approxWon, num } from "@/v1/format";
 import { useAppData } from "@/v2/app/AppData";
 import { useCardView } from "@/v2/app/cardView";
@@ -13,7 +15,7 @@ import { useEngine } from "@/v2/app/engine";
 import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 import { useBrandPicks } from "@/v2/app/state";
-import { hasBenefit, matchesCard } from "@/v2/model/cardSearch";
+import { matchesCard } from "@/v2/model/cardSearch";
 import { benefitChips, matchedChip, matchesBenefit, perfText } from "@/v2/model/cardView";
 import { picksToBrandShare } from "@/v2/model/brands";
 import { CardDetailSheet } from "@/v2/ui/CardDetailSheet";
@@ -32,7 +34,6 @@ const SORTS = [
   { id: "fit", label: "내 지출에 유리한 순" },
   { id: "feeLow", label: "연회비 낮은 순" },
   { id: "feeHigh", label: "연회비 높은 순" },
-  { id: "new", label: "최신순" },
 ] as const;
 type Sort = (typeof SORTS)[number]["id"];
 const PAGE = 24;
@@ -70,6 +71,15 @@ const chipBtn = (on: boolean): CSSProperties => ({
 const selectStyle: CSSProperties = { height: 44, padding: "0 12px", border: "1px solid #D3DDF2", borderRadius: 12, background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, color: "#0D1B4A" };
 const chip: CSSProperties = { padding: "3px 10px", borderRadius: 999, background: "#F3F7FF", border: "1px solid #E3EAF8", fontSize: 13, color: "#3A4A78" };
 const compareLabel: CSSProperties = { display: "flex", alignItems: "center", gap: 8, height: 44, boxSizing: "content-box", padding: "0 12px", borderRadius: 12, border: "1px solid #D3DDF2", fontSize: 14, color: "#0D1B4A", cursor: "pointer" };
+
+/** 혜택으로 찾기: 원문 정제 혜택 표에 그 카테고리 혜택(계산 제외 빼고)이 있는 카드.
+ *  혜택 표를 받기 전이거나 없는 카드는 혜택 요약에 그 카테고리 낱말(스타벅스·커피·편의점 등)이 있거나 구간표가 있는 카드 */
+function hasBenefit(c: CatalogListing, cat: string, view: CardViewEntry | undefined): boolean {
+  if (view) return view.b.some((b) => b.c === cat && b.st !== "no_calc");
+  if (c.categoryTiers?.some((t) => t.category === cat)) return true;
+  const text = (c.benefitSummary ?? "").toLowerCase();
+  return (KEYWORD_MAP[cat] ?? []).some((k) => k.length >= 2 && text.includes(k.toLowerCase()));
+}
 
 function Icon({ d }: { d: string[] }) {
   return (
@@ -109,7 +119,7 @@ export default function Cards() {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "신용" | "체크">("all");
   const [issuer, setIssuer] = useState("");
-  // 기본은 '내 지출에 유리한 순'. 지출을 넣지 않았으면 최신순으로 보여 준다(2026-11-07, '원문 확인 카드 먼저' 정렬 삭제)
+  // 2026-11-23: '원문 확인 카드 먼저'·'최신순' 정렬 선택지를 뺐다. 지출이 없을 때의 '유리한 순'은 아래 기본 순서(원문 대조 카드 → 최신순)로 보인다
   const [sort, setSort] = useState<Sort>("fit");
   const [benefit, setBenefit] = useState("");
   const [showDisc, setShowDisc] = useState(false);
@@ -118,7 +128,7 @@ export default function Cards() {
   // 모바일 사이트: 필터를 한 줄씩으로 접고 카드를 가로 한 줄 목록으로(스크롤 줄이기, 2026-11-07)
   const { compact } = useChrome();
   const closeDetail = useCallback(() => setDetail(null), []);
-  // 원문 정제 혜택 표 요약(혜택 칩·실적 조건·상세 창). 받는 동안은 혜택 요약 칩을 보여 준다
+  // 원문 정제 혜택 표 요약(혜택 칩·실적 조건·상세 창). 받는 동안은 카드고릴라 요약 칩을 보여 준다
   const views = useCardView();
   const viewOf = (sid: number) => views?.cards[String(sid)];
   const dq = useDebounce(q, 250);
@@ -138,21 +148,16 @@ export default function Cards() {
     if (kind !== "all") l = l.filter((c) => c.category === kind);
     if (issuer) l = l.filter((c) => c.issuer === issuer);
     if (benefit) l = l.filter((c) => hasBenefit(c, benefit, views?.cards[String(c.sourceId)]));
-    // 발급 대상이 정해진 카드(정부 바우처·청소년 등)는 같은 순위면 뒤로, 그다음 최신순(2026-11-07: 연회비 순에서 국민행복카드가 맨 앞에 오던 것)
-    const tie = (a: CatalogListing, b: CatalogListing) => Number(isRestricted(a)) - Number(isRestricted(b)) || b.sourceId - a.sourceId;
     const out = [...l];
-    if (sort === "feeLow") out.sort((a, b) => (a.annualFee ?? 0) - (b.annualFee ?? 0) || tie(a, b));
-    else if (sort === "feeHigh") out.sort((a, b) => (b.annualFee ?? 0) - (a.annualFee ?? 0) || tie(a, b));
-    else if (sort === "fit" && netBy.size) out.sort((a, b) => (netBy.get(b.sourceId) ?? -1e9) - (netBy.get(a.sourceId) ?? -1e9) || tie(a, b));
-    // 최신순(지출이 없을 때의 '유리한 순'도 같은 순서)
-    else out.sort(tie);
+    if (sort === "feeLow") out.sort((a, b) => (a.annualFee ?? 0) - (b.annualFee ?? 0));
+    else if (sort === "feeHigh") out.sort((a, b) => (b.annualFee ?? 0) - (a.annualFee ?? 0));
+    else if (sort === "fit" && netBy.size) out.sort((a, b) => (netBy.get(b.sourceId) ?? -1e9) - (netBy.get(a.sourceId) ?? -1e9));
+    // 지출이 없거나 아직 계산 전인 '유리한 순': 혜택 표를 원문과 대조한 카드 → 나머지, 각각 최신순
+    else out.sort((a, b) => Number(isVerified(b)) - Number(isVerified(a)) || b.sourceId - a.sourceId);
     return out;
   }, [tab, owned, showDisc, dq, kind, issuer, benefit, sort, netBy, views]);
 
-  const sortLabel =
-    sort === "fit" && !hasSpend
-      ? "지출을 넣으면 내 지출에 유리한 순으로 보여요. 지금은 최신순"
-      : SORTS.find((s) => s.id === sort)!.label;
+  const sortLabel = sort === "fit" && !hasSpend ? "지출을 넣으면 내 지출에 유리한 순으로 보여요" : SORTS.find((s) => s.id === sort)!.label;
   const showNet = sort === "fit" && hasSpend && netBy.size > 0;
   const toggleCompare = (sid: number) => {
     if (!compareStore.toggle(sid)) showToast(`비교함에는 ${COMPARE_MAX}장까지 담을 수 있어요`, "info");
@@ -320,7 +325,6 @@ export default function Cards() {
             <h2 id="g-list" aria-live="polite" style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
               카드 {num(list.length)}장 <span style={{ fontSize: 14, fontWeight: 500, color: "#5E6D96" }}>· {sortLabel}</span>
             </h2>
-            {!compact && <span style={{ fontSize: 13, color: "#5E6D96" }}>'내 카드'는 지갑 만들기에서 담은 {myCards.ids.length}장이에요</span>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: compact ? 8 : 16 }}>
             {list.slice(0, limit).map((c) => {
@@ -329,7 +333,7 @@ export default function Cards() {
               const inCompare = compare.includes(c.sourceId);
               const v = viewOf(c.sourceId);
               const vChips = v ? benefitChips(v, 3, benefit || undefined) : [];
-              // 정리된 혜택이 없거나 크기를 못 읽은 카드는 혜택 요약 칩으로
+              // 정리된 혜택이 없거나 크기를 못 읽은 카드는 카드고릴라 요약 칩으로
               const chips = vChips.length ? vChips : summaryChips(c);
               // 혜택으로 찾았으면 걸린 혜택을 맨 앞에 강조해서 보여 준다(이름으로 찾은 카드는 그대로)
               const hit = dq.trim() && !matchesCard(c, dq.trim()) ? matchedChip(v, dq.trim()) : null;
@@ -349,31 +353,31 @@ export default function Cards() {
                         {c.name}
                       </button>
                     </h3>
-                    <div style={{ fontSize: 14, lineHeight: 1.4, color: "#5E6D96" }}>
+                    <div style={{ fontSize: 11, lineHeight: 1.4, color: "#5E6D96" }}>
                       {mine && <b style={{ color: "#1747D6" }}>내 카드 · </b>}
                       {disc && !mine && <b style={{ color: "#A3420B" }}>발급 중단 · </b>}
                       {c.issuer} · {c.annualFee ? `연 ${num(c.annualFee)}원` : feeLabel(c)}
                     </div>
                     {showNet && <NetLine sid={c.sourceId} net={netBy.get(c.sourceId)} verified={isVerified(c)} />}
                     {(hit || chips[0]) && (
-                      <span style={{ ...chip, alignSelf: "flex-start", maxWidth: "100%", boxSizing: "border-box", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 14, ...(hit ? { background: "#E8EEFF", border: "1px solid #C9D6F5", color: "#1747D6", fontWeight: 700 } : {}) }}>{hit ?? chips[0]}</span>
+                      <span style={{ ...chip, alignSelf: "flex-start", maxWidth: "100%", boxSizing: "border-box", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, ...(hit ? { background: "#E8EEFF", border: "1px solid #C9D6F5", color: "#1747D6", fontWeight: 700 } : {}) }}>{hit ?? chips[0]}</span>
                     )}
                     <div style={{ marginTop: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                       {disc && !mine ? (
-                        <span style={{ flex: 1, fontSize: 14, lineHeight: 1.4, color: "#5E6D96" }}>가진 경우만 담기</span>
+                        <span style={{ flex: 1, fontSize: 11, lineHeight: 1.4, color: "#5E6D96" }}>가진 경우만 담기</span>
                       ) : (
                         <button
                           type="button"
                           aria-pressed={mine}
                           aria-label={`${c.name} ${mine ? "내 카드에서 빼기" : "내 카드에 담기"}`}
                           onClick={() => myCards.toggle(c.sourceId)}
-                          style={{ flex: 1, minWidth: 0, height: 36, padding: "0 6px", borderRadius: 10, border: mine ? "1px solid #C9D6F5" : "1px solid #D3DDF2", background: mine ? "#E8EEFF" : "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: mine ? "#2457F5" : "#0D1B4A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                          style={{ flex: 1, minWidth: 0, height: 36, padding: "0 6px", borderRadius: 10, border: mine ? "1px solid #C9D6F5" : "1px solid #D3DDF2", background: mine ? "#E8EEFF" : "#FFFFFF", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: mine ? "#2457F5" : "#0D1B4A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
                         >
                           {mine ? <Icon d={["M20 6 9 17l-5-5"]} /> : <Icon d={["M12 5v14", "M5 12h14"]} />}
                           {mine ? "담음" : "담기"}
                         </button>
                       )}
-                      <label style={{ ...compareLabel, height: 36, padding: "0 8px", gap: 4, borderRadius: 10, fontSize: 14 }}>
+                      <label style={{ ...compareLabel, height: 36, padding: "0 8px", gap: 4, borderRadius: 10, fontSize: 13 }}>
                         <input type="checkbox" checked={inCompare} onChange={() => toggleCompare(c.sourceId)} aria-label={`${c.name} 비교함에 담기`} style={{ width: 16, height: 16, margin: 0, accentColor: "#2457F5" }} />
                         비교
                       </label>
@@ -446,7 +450,13 @@ export default function Cards() {
               );
             })}
           </div>
-          {list.length === 0 && <p style={{ margin: 0, padding: "40px 0", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>조건에 맞는 카드가 없어요. 검색어나 필터를 바꿔 보세요.</p>}
+          {list.length === 0 && (
+            <p style={{ margin: 0, padding: "40px 0", textAlign: "center", fontSize: 15, color: "#5E6D96" }}>
+              조건에 맞는 카드가 없어요.
+              <br />
+              검색어나 필터를 바꿔 보세요.
+            </p>
+          )}
           {list.length > limit && (
             <button
               type="button"

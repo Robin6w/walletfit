@@ -119,6 +119,20 @@ export function picksToBrandShare(spending: Record<string, number>, picks: Brand
   return out;
 }
 
+/**
+ * 계산기 브랜드 비중 → 자주 가는 곳에서 고른 브랜드(picksToBrandShare의 반대, 2026-11-24).
+ * 저장한 지갑에는 고른 브랜드 대신 비중만 남아 있어, 내 지갑에서 결과로 돌아갈 때 이걸로 되살린다.
+ * 별칭('스타벅스'·'STARBUCKS')은 화면 이름 하나로 모으고, 빈 칸({})은 '자주 가는 곳이 없어요'로 본다
+ */
+export function brandShareToPicks(share: BrandShare): BrandPicks {
+  const out: BrandPicks = {};
+  for (const [cat, m] of Object.entries(share ?? {})) {
+    const brands = Array.from(new Set(Object.entries(m ?? {}).filter(([k, v]) => !k.startsWith("_") && v > 0).map(([k]) => canonicalBrand(k))));
+    out[cat] = brands.length ? { brands } : { brands: [], none: true };
+  }
+  return out;
+}
+
 /** 명세서에서 읽은 브랜드 금액 → 계산기 브랜드 비중 */
 export function amountsToBrandShare(spending: Record<string, number>, amounts: Record<string, Record<string, number>>): BrandShare {
   const out: BrandShare = {};

@@ -47,11 +47,21 @@ function Worth({ card }: { card: EngineCard }) {
       <Bar label="받는 혜택" value={year} max={max} color={BLUE} text={korWon(year)} />
       <Bar label="연회비" value={fee} max={max} color="#9AA9CC" text={fee ? korWon(fee) : "없음"} />
       <p style={muted}>
-        {fee === 0
-          ? "연회비가 없어서 받는 혜택이 그대로 남아요."
-          : times !== null && times >= 1
-            ? `연회비의 약 ${times >= 10 ? Math.round(times) : times.toFixed(1)}배를 돌려받아요. 연회비를 빼면 1년에 ${korWon(year - fee)}이에요.`
-            : `이 조합에서는 혜택이 연회비보다 적어요(1년 ${korWon(year - fee)}). 다른 카드와 함께 쓸 때 조합 전체로 이득이라 추천했어요.`}
+        {fee === 0 ? (
+          "연회비가 없어서 받는 혜택이 그대로 남아요."
+        ) : times !== null && times >= 1 ? (
+          <>
+            {`연회비의 약 ${times >= 10 ? Math.round(times) : times.toFixed(1)}배를 돌려받아요.`}
+            <br />
+            {`연회비를 빼면 1년에 ${korWon(year - fee)}이에요.`}
+          </>
+        ) : (
+          <>
+            {`이 조합에서는 혜택이 연회비보다 적어요(1년 ${korWon(year - fee)}).`}
+            <br />
+            다른 카드와 함께 쓸 때 조합 전체로 이득이라 추천했어요.
+          </>
+        )}
       </p>
     </div>
   );
@@ -65,7 +75,11 @@ function Performance({ card }: { card: EngineCard }) {
     return (
       <div style={box}>
         <h4 style={h4}>실적 조건</h4>
-        <p style={{ ...muted, color: "#3A4A78" }}>전월 실적 조건이 없어요. 쓰는 만큼 바로 혜택을 받아요.</p>
+        <p style={{ ...muted, color: "#3A4A78" }}>
+          전월 실적 조건이 없어요.
+          <br />
+          쓰는 만큼 바로 혜택을 받아요.
+        </p>
       </div>
     );
   }
@@ -89,9 +103,9 @@ function Performance({ card }: { card: EngineCard }) {
         </span>
       </div>
       <p style={muted}>
-        {ok
-          ? `지난달에 이 카드로 ${korWon(th)} 넘게 써야 이번 달 혜택이 나와요. 추천대로 쓰면 ${korWon(q - th)} 여유가 있어요.`
-          : `추천대로 쓰면 조건보다 ${korWon(th - q)} 모자라요. 다른 지출을 조금 옮겨야 혜택이 나와요.`}
+        {ok ? `지난달에 이 카드로 ${korWon(th)} 넘게 써야 이번 달 혜택이 나와요.` : `추천대로 쓰면 조건보다 ${korWon(th - q)} 모자라요.`}
+        <br />
+        {ok ? `추천대로 쓰면 ${korWon(q - th)} 여유가 있어요.` : "다른 지출을 조금 옮겨야 혜택이 나와요."}
         {card.perf.excludesDiscounted ? " 할인받은 금액은 실적에서 빠져요." : ""}
         {card.perf.grace?.months_after_issue ? ` 발급 후 ${card.perf.grace.months_after_issue}개월은 실적이 모자라도 혜택을 줘요.` : ""}
       </p>

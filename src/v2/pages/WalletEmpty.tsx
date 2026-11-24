@@ -1,12 +1,10 @@
-import type { ReactNode } from "react";
 import { catalogCards } from "@/v1/catalog";
 import { num } from "@/v1/format";
 import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
 
-/* 디자인 원본 F-D-Wallet-Empty를 그대로 옮김(저장한 지갑이 없을 때). 그림은 특정 카드가 아닌 안내 그림이라 디자인 그대로.
- * afterHero: 안내 카드 바로 아래에 둘 내용(담아 둔 카드 목록, 2026-11-07) */
-export function WalletEmpty({ afterHero }: { afterHero?: ReactNode } = {}) {
+/* 디자인 원본 F-D-Wallet-Empty를 그대로 옮김(저장한 지갑이 없을 때). 그림은 특정 카드가 아닌 안내 그림이라 디자인 그대로 */
+export function WalletEmpty() {
   return (
     <>
       <header
@@ -37,8 +35,9 @@ export function WalletEmpty({ afterHero }: { afterHero?: ReactNode } = {}) {
               color: "#5E6D96",
             }}
           >
-            아직 저장한 지갑이 없어요. 추천 결과에서 '내 지갑에 저장'을 누르면
-            여기에 모여요.
+            아직 저장한 지갑이 없어요.
+            <br />
+            추천 결과에서 '내 지갑에 저장'을 누르면 여기에 모여요.
           </p>
         </div>
       </header>
@@ -171,7 +170,6 @@ export function WalletEmpty({ afterHero }: { afterHero?: ReactNode } = {}) {
           </span>
         </div>
       </section>
-      {afterHero}
       <section
         aria-labelledby="we-prev"
         style={{ display: "flex", flexDirection: "column", gap: "14px" }}
@@ -799,61 +797,6 @@ export function WalletEmpty({ afterHero }: { afterHero?: ReactNode } = {}) {
                 <path d="m13 6 6 6-6 6"></path>
               </svg>
             </span>
-          </Link>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "12px 16px",
-            padding: "16px 20px",
-            borderRadius: "16px",
-            background: "#E8EEFF",
-            border: "1px solid #C9D6F5",
-          }}
-        >
-          <span style={{ flexShrink: "0", display: "flex", color: "#1747D6" }}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 16V4"></path>
-              <path d="m7 9 5-5 5 5"></path>
-              <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>
-            </svg>
-          </span>
-          <span
-            style={{
-              flex: "1 1 360px",
-              minWidth: "0",
-              fontSize: "14px",
-              lineHeight: "1.6",
-              color: "#0D1B4A",
-            }}
-          >
-            카드 명세서가 있으면 더 빨라요. 지출 입력에서 <b>명세서로 채우기</b>
-            를 누르면 금액이 채워지고 바로 추천 결과로 넘어가요.
-          </span>
-          <Link
-            to={paths.guide}
-            style={{
-              flexShrink: "0",
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: "44px",
-              fontSize: "14px",
-              fontWeight: "700",
-            }}
-          >
-            이용 가이드 보기
           </Link>
         </div>
       </section>

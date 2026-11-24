@@ -456,14 +456,14 @@ export default function Compare() {
               </div>
             </section>
 
-            <section aria-label="계산 기준과 출처" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "12px 24px", padding: "18px 22px", borderRadius: 16, background: "#E8EEFF", border: "1px solid #C9D6F5" }}>
+            <section aria-label="계산 기준" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "12px 24px", padding: "18px 22px", borderRadius: 16, background: "#E8EEFF", border: "1px solid #C9D6F5" }}>
               <div style={{ flex: "1 1 520px", minWidth: 0, fontSize: 13, lineHeight: 1.7, color: "#3A4A78" }}>
                 <b style={{ color: "#0D1B4A" }}>계산 기준</b> · {basisText(ctx)}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px", fontSize: 13 }}>
                 {(CATALOG_DATE_TEXT || META_DATE) && (
                   <span style={{ display: "inline-flex", alignItems: "center", minHeight: 32, color: "#56658E" }}>
-                    카드 정보 · {CATALOG_DATE_TEXT ? `혜택 ${CATALOG_DATE_TEXT}` : ""}
+                    {CATALOG_DATE_TEXT ? `혜택 ${CATALOG_DATE_TEXT}` : ""}
                     {CATALOG_DATE_TEXT && META_DATE && META_DATE !== CATALOG_DATE_TEXT ? `, 출시일 ${META_DATE}` : !CATALOG_DATE_TEXT ? META_DATE : ""} 수집
                   </span>
                 )}
@@ -525,7 +525,11 @@ function EmptyCompare({ ids }: { ids: number[] }) {
       ))}
       <div style={{ flex: "1 1 280px", minWidth: 0 }}>
         <div style={{ fontSize: 18, fontWeight: 700 }}>{ids.length ? "1장 더 담으면 비교할 수 있어요" : "비교함이 비어 있어요"}</div>
-        <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>전체 카드에서 카드마다 있는 '비교' 칸을 눌러 담아 주세요. 최대 {COMPARE_MAX}장까지 담을 수 있어요.</p>
+        <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>
+          전체 카드에서 카드마다 있는 '비교' 칸을 눌러 담아 주세요.
+          <br />
+          최대 {COMPARE_MAX}장까지 담을 수 있어요.
+        </p>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         {ids.length > 0 && (

@@ -1,15 +1,17 @@
 import type { CSSProperties } from "react";
+import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
 import { toBrandShare } from "@/domain/engine/walletEngine";
-import { catalogBySourceId } from "@/v1/catalog";
+import { catalogBySourceId, categories } from "@/v1/catalog";
 import { approxWon, korWon } from "@/v1/format";
 import { useAppData } from "@/v2/app/AppData";
 import { paths, type Flow } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
-import type { SavedWalletV2 } from "@/v2/app/state";
+import { useBrandPicks, useStatementState, type SavedWalletV2 } from "@/v2/app/state";
 import { chatStore } from "@/v2/chat/chatStore";
+import { brandShareToPicks } from "@/v2/model/brands";
 import { monotoneBar, type BarItem } from "@/v2/model/guards";
-import { guideRows, heroVM, perfCards, unusedOwned, walletCard, type UnusedCardVM, type ViewCtx } from "@/v2/model/resultView";
-import { cardNick, countWord, josa } from "@/v2/model/text";
+import { guideRows, heroVM, perfCards, unusedOwned, walletCard, type ViewCtx } from "@/v2/model/resultView";
+import { cardNick, josa } from "@/v2/model/text";
 import { HeroAmount, HeroCardStack, NUM, SHADOW } from "@/v2/result/parts";
 import { CardImage } from "@/v2/ui/CardImage";
 import { CategoryIcon } from "@/v2/ui/icons";
@@ -36,7 +38,7 @@ function savedDate(iso: string): string {
   return Number.isNaN(d.getTime()) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number[]; toggleTodo: (id: string) => void }) {
+function SavedWallet({ w, owned }: { w: SavedWalletV2; owned: number[] }) {
   const pack = w.pack;
   const flow: Flow = w.flow ?? (w.scope === "all" ? "new" : "own");
   const brandShare = w.brandShare ?? toBrandShare(w.spending, w.brandSpend ?? {});
@@ -53,6 +55,20 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
   const tight = w.margin === 0 ? perfCards(pack).filter((p) => p.tight).sort((a, b) => (a.room ?? 0) - (b.room ?? 0))[0] : undefined;
   const todos = w.todos ?? [];
 
+  // 결과·지출 입력으로 갈 때 저장한 지갑의 입력값을 되살린다(2026-11-24). 지갑을 저장한 뒤 지출을 바꿨어도 이 지갑 기준으로 보이게 한다.
+  // 명세서로 만든 지갑은 명세서에서 읽은 브랜드 금액·결제 금액을, 직접 입력한 지갑은 자주 가는 곳을 함께 되살려 저장할 때와 같은 결과가 나오게 한다
+  const spend = useMonthlySpend(categories);
+  const [, setPicks] = useBrandPicks();
+  const [, setStatement] = useStatementState();
+  const restoreInputs = () => {
+    spend.setSpending(Object.fromEntries(categories.map((c) => [c.id, w.spending[c.id] ?? 0])));
+    if (w.source === "statement") {
+      setStatement({ brands: w.brandSpend ?? {}, fileName: "저장한 지갑", period: null, itemCount: 0, readAt: w.savedAt, ...(w.tickets ? { tickets: w.tickets } : {}) });
+    } else {
+      setPicks(brandShareToPicks(brandShare));
+    }
+  };
+
   return (
     <>
       <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "12px 20px" }}>
@@ -63,11 +79,12 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
           </p>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <Link to={paths.make(flow, w.source === "statement" ? "statement" : "spend")} style={outlineLink}>
+          <Link to={paths.make(flow, w.source === "statement" ? "statement" : "spend")} onClick={restoreInputs} style={outlineLink}>
             지출 다시 입력
           </Link>
-          <Link to={resultTo} style={outlineLink}>
-            카드 바꿔보기
+          {/* 결과 화면의 계산 조건으로 간다(카드 바꿔보기는 2026-11-24에 뺐다) */}
+          <Link to={resultTo} onClick={restoreInputs} style={outlineLink}>
+            조건 바꿔 보기
           </Link>
         </div>
       </header>
@@ -95,7 +112,7 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
                 : "이번 달 지출이 줄 것 같으면 실적 여유를 두고 다시 계산해 보세요."}
             </p>
           </div>
-          <Link to={baseTo} style={{ ...outlineLink, display: "inline-flex", gap: 7, height: 44, borderRadius: 22 }}>
+          <Link to={baseTo} onClick={restoreInputs} style={{ ...outlineLink, display: "inline-flex", gap: 7, height: 44, borderRadius: 22 }}>
             여유 {korWon(w.baseline?.margin ?? 20000)} 조합 보기
           </Link>
         </section>
@@ -110,7 +127,7 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
           <HeroAmount id="w-hero" title={hero.title} amount={hero.amount} as="h2" />
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "#3A4A78" }}>{hero.lead}</p>
           <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 10 }}>
-            <Link to={resultTo} style={{ ...outlineLink, height: 48, borderRadius: 24, background: "#2457F5", color: "#FFFFFF", border: "1px solid #2457F5" }}>
+            <Link to={resultTo} onClick={restoreInputs} style={{ ...outlineLink, height: 48, borderRadius: 24, background: "#2457F5", color: "#FFFFFF", border: "1px solid #2457F5" }}>
               계산 근거 보기
             </Link>
             <button type="button" onClick={() => chatStore.ask("내 지갑에 저장한 조합을 설명해 줘")} style={{ ...outlineLink, height: 48, borderRadius: 24, fontFamily: "inherit", cursor: "pointer" }}>
@@ -222,82 +239,51 @@ function SavedWallet({ w, owned, toggleTodo }: { w: SavedWalletV2; owned: number
             <h2 id="w-todo" style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 700 }}>
               카드사 앱에서 할 일 {todos.length}가지
             </h2>
-            {todos.map((t) => (
-              <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, fontSize: 15, lineHeight: 1.5, color: "#0D1B4A", cursor: "pointer" }}>
-                <input type="checkbox" checked={t.done} onChange={() => toggleTodo(t.id)} style={{ flexShrink: 0, width: 20, height: 20, margin: 0, accentColor: "#2457F5" }} />
-                <span style={t.done ? { textDecoration: "line-through", color: "#5E6D96" } : undefined}>{t.text}</span>
-              </label>
-            ))}
-            <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.6, color: "#3A4A78" }}>
-              {todos.length === 1 ? "이 일을" : `${countWord(todos.length)} 가지를`} 해야 위 금액을 그대로 받아요.
-            </p>
+            {/* 2026-11-24: 체크박스 대신 목록으로만 보여 준다(한 일 표시·'○ 가지를 해야 위 금액을 그대로 받아요' 안내는 뺐다) */}
+            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column" }}>
+              {todos.map((t) => (
+                <li key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, fontSize: 15, lineHeight: 1.5, color: "#0D1B4A" }}>
+                  <span aria-hidden="true" style={{ flexShrink: 0, width: 6, height: 6, borderRadius: 3, background: "#2457F5", margin: "0 7px" }} />
+                  {t.text}
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </div>
 
       {unused.length > 0 && (
-        <UnusedCards
-          items={unused}
-          title={`이 조합에서 쓰지 않는 카드 ${unused.length}장`}
-          text={`가진 카드 ${owned.length}장 중 ${unused.length}장은 이번 조합에서 결제에 쓰지 않아요. 해지나 정리를 고민한다면 카드사 실적·약관을 먼저 확인하세요.`}
-        />
+        <section aria-labelledby="w-out" style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h2 id="w-out" style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+            이 조합에서 쓰지 않는 카드 {unused.length}장
+          </h2>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>
+            가진 카드 {owned.length}장 중 {unused.length}장은 이번 조합에서 결제에 쓰지 않아요.
+            <br />
+            해지나 정리를 고민한다면 카드사 실적·약관을 먼저 확인하세요.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {unused.map((u) => (
+              <span key={u.sid} style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px 8px 8px", borderRadius: 12, background: "#F3F7FF", fontSize: 14, color: "#3A4A78" }}>
+                <CardImage sid={u.sid} width={48} />
+                {u.name} · {u.fee}
+              </span>
+            ))}
+          </div>
+        </section>
       )}
     </>
   );
 }
 
-/** 조합에 쓰지 않는(또는 아직 조합을 만들지 않은) 내 카드 목록 */
-function UnusedCards({ items, title, text, action }: { items: UnusedCardVM[]; title: string; text: string; action?: { label: string; to: string } }) {
-  return (
-    <section aria-labelledby="w-out" style={{ background: "#FFFFFF", border: "1px solid transparent", borderRadius: 20, boxShadow: SHADOW, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-      <h2 id="w-out" style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-        {title}
-      </h2>
-      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#5E6D96" }}>{text}</p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-        {items.map((u) => (
-          <span key={u.sid} style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 14px 8px 8px", borderRadius: 12, background: "#F3F7FF", fontSize: 14, color: "#3A4A78" }}>
-            <CardImage sid={u.sid} width={48} />
-            {u.name} · {u.fee}
-          </span>
-        ))}
-      </div>
-      {action && (
-        <Link to={action.to} style={{ ...outlineLink, alignSelf: "flex-start", background: "#2457F5", color: "#FFFFFF", border: "1px solid #2457F5" }}>
-          {action.label}
-        </Link>
-      )}
-    </section>
-  );
-}
-
-/** 내 지갑: 저장한 조합이 있으면 그 조합, 없으면 안내.
- *  조합을 저장하기 전에 전체 카드에서 담은 카드도 '아직 조합에 사용하지 않은 카드'로 보여 준다(2026-11-07) */
+/** 내 지갑: 저장한 조합이 있으면 그 조합, 없으면 안내 */
 export default function Wallet() {
-  const { wallet, myCards, toggleTodo } = useAppData();
+  const { wallet, myCards } = useAppData();
   const ok = wallet && wallet.pack && Array.isArray(wallet.pack.cards) && wallet.pack.cards.length > 0;
-  const pending = ok ? [] : unusedOwned(myCards.ids, { cards: [] });
   return (
     <>
       <MenuBar active="wallet" />
-      <PageMain title="내 지갑">
-        {ok ? (
-          <SavedWallet w={wallet} owned={myCards.ids} toggleTodo={toggleTodo} />
-        ) : (
-          <WalletEmpty
-            afterHero={
-              pending.length > 0 && (
-                <UnusedCards
-                  items={pending}
-                  title={`아직 조합에 사용하지 않은 카드 ${pending.length}장`}
-                  text={`담아 둔 카드 ${pending.length}장이에요. '보유한 카드로' 지갑을 만들면 이 카드들로 가장 유리한 조합을 계산해요.`}
-                  action={{ label: "이 카드들로 지갑 만들기", to: paths.start("own") }}
-                />
-              )
-            }
-          />
-        )}
-      </PageMain>
+      <PageMain title="내 지갑">{ok ? <SavedWallet w={wallet} owned={myCards.ids} /> : <WalletEmpty />}</PageMain>
     </>
   );
 }

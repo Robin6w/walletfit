@@ -13,7 +13,10 @@ const cats = [
 // 2026-10-06 점검: App과 각 화면이 같은 값을 따로 들고 있어서, 지갑 만들기에서 넣은 지출이
 // 새로고침 전까지 전체 카드·혜택별 추천에 반영되지 않았다
 describe("같은 탭 안의 화면끼리 저장 값 공유", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
 
   it("한 화면에서 넣은 지출이 다른 화면에 바로 보인다", () => {
     const app = renderHook(() => useMonthlySpend(cats));
@@ -36,31 +39,38 @@ describe("같은 탭 안의 화면끼리 저장 값 공유", () => {
     act(() => wizard.result.current.setBrand("cafe", "스타벅스", 30000));
     act(() => app.result.current.addBrands([{ cat: "dining", brand: "배달의민족", amount: 20000 }]));
     expect(wizard.result.current.brandSpend).toEqual({ cafe: { 스타벅스: 30000 }, dining: { 배달의민족: 20000 } });
-    expect(JSON.parse(localStorage.getItem("walletfit:v1:brand-spend") ?? "{}")).toEqual({ cafe: { 스타벅스: 30000 }, dining: { 배달의민족: 20000 } });
+    // 2026-11-24부터 이 탭에서만(sessionStorage)
+    expect(JSON.parse(sessionStorage.getItem("walletfit:v1:brand-spend") ?? "{}")).toEqual({ cafe: { 스타벅스: 30000 }, dining: { 배달의민족: 20000 } });
+    expect(localStorage.getItem("walletfit:v1:brand-spend")).toBeNull();
   });
 });
 
 // 2026-10-31: 명세서로 지출을 채우고 같은 동작에서 결과 화면으로 옮기면(화면이 주소마다 새로 만들어짐) 저장 useEffect가 돌기 전에
 // 화면이 사라져 지출·명세서 정보가 저장되지 않았다. 바꾸는 순간 저장해야 한다
 describe("값을 바꾸고 바로 화면이 사라져도 저장된다", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
 
-  it("지출 통째로 바꾸기(명세서로 채우기)", () => {
+  it("지출 통째로 바꾸기(명세서로 채우기). 지출은 이 탭(sessionStorage)에 둔다(2026-11-24, 새로고침해도 남고 탭을 닫으면 지워짐)", () => {
     const flow = renderHook(() => useMonthlySpend(cats));
     act(() => {
       flow.result.current.setSpending({ cafe: 15600, dining: 134100 });
       flow.unmount();
     });
-    expect(JSON.parse(localStorage.getItem("walletfit:monthly-spend") ?? "{}")).toEqual({ cafe: 15600, dining: 134100 });
+    expect(JSON.parse(sessionStorage.getItem("walletfit:monthly-spend") ?? "{}")).toEqual({ cafe: 15600, dining: 134100 });
+    expect(localStorage.getItem("walletfit:monthly-spend")).toBeNull();
     expect(renderHook(() => useMonthlySpend(cats)).result.current.spending).toEqual({ cafe: 15600, dining: 134100 });
   });
 
-  it("명세서 정보(useStoredValue)", () => {
-    const flow = renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null));
+  it("명세서 정보(useStoredValue, 이 탭에만)", () => {
+    const flow = renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null, "session"));
     act(() => {
       flow.result.current[1]({ fileName: "9월 카드.pdf" });
       flow.unmount();
     });
-    expect(renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null)).result.current[0]).toEqual({ fileName: "9월 카드.pdf" });
+    expect(renderHook(() => useStoredValue<{ fileName: string } | null>("walletfit:v2:statement", null, "session")).result.current[0]).toEqual({ fileName: "9월 카드.pdf" });
+    expect(localStorage.getItem("walletfit:v2:statement")).toBeNull();
   });
 });

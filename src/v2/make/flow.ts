@@ -14,16 +14,16 @@ import type { StepPill } from "@/v2/ui/TopBar";
 
 /**
  * 지갑 만들기 흐름이 같이 쓰는 값(2026-10-28 v2).
- *  - 지출(walletfit:monthly-spend), 자주 가는 곳, 명세서, 새 카드 종류는 localStorage
- *  - 조건 바꾸기(계산 방식·최대 카드 수·연회비 상한·카드사 제외·가진 카드 종류)는 탭을 닫으면 처음 값(sessionStorage)
+ *  - 지출(walletfit:monthly-spend), 자주 가는 곳, 명세서는 sessionStorage(새로고침해도 남고 탭을 닫으면 지워짐, 2026-11-24). 새 카드 종류·실적 여유·통신사 답도 같음
+ *  - 조건 바꾸기(최대 카드 수·연회비 상한·가진 카드 종류)는 탭을 닫으면 처음 값(sessionStorage)
  */
 
 export interface Conditions {
-  mode: "maxBenefit" | "efficient";
+  /** 계산 방식. 2026-11-23 '효율적' 선택을 화면에서 빼서 늘 혜택 최대화(최대 카드 수 안에서 순혜택이 가장 큰 조합) */
+  mode: "maxBenefit";
   maxCards: number;
   /** 연회비 상한(원/년). null이면 제한 없음 */
   feeCap: number | null;
-  excludedIssuers: string[];
   /** 계산에 넣을 카드 종류(가진 카드에도 적용). 새 카드 종류는 B1 단계 값과 함께 본다 */
   kinds: CardKind[];
   /** 새 카드까지 포함 흐름에서 꼭 넣을 카드(카드 비교의 '○○까지 넣어서 지갑 다시 짜기', 2026-10-29) */
@@ -33,8 +33,10 @@ export interface Conditions {
 const COND_KEY = "walletfit:v2:conditions";
 // 기본 최대 3장(2026-10-30): 지출 20가지 측정에서 4장 이상이 이득인 경우는 적고(+1~3%), 4~5장 계산은 오래 걸려
 // 결과 화면의 '4~5장 조합도 찾아보기'로 따로 연다
-const DEFAULT_COND: Conditions = { mode: "maxBenefit", maxCards: 3, feeCap: null, excludedIssuers: [], kinds: ["credit", "check"], pinned: [] };
-let cond: Conditions = { ...DEFAULT_COND, ...readSession<Partial<Conditions>>(COND_KEY, {}) };
+const DEFAULT_COND: Conditions = { mode: "maxBenefit", maxCards: 3, feeCap: null, kinds: ["credit", "check"], pinned: [] };
+// 예전에 '효율적'을 골랐거나 카드사를 빼 둔 값이 탭에 남아 있어도 되돌릴 화면이 없으니 읽지 않는다(2026-11-23·24)
+const { excludedIssuers: _oldExcluded, ...storedCond } = readSession<Partial<Conditions> & { excludedIssuers?: unknown }>(COND_KEY, {});
+let cond: Conditions = { ...DEFAULT_COND, ...storedCond, mode: "maxBenefit" };
 if (!Array.isArray(cond.pinned)) cond = { ...cond, pinned: [] };
 const condListeners = new Set<() => void>();
 
@@ -83,17 +85,15 @@ export function useFlowInputs() {
   const total = Object.values(spending).reduce((s, v) => s + v, 0);
   const owned = myCards.ids;
 
-  const issuerOk = (sid: number) => !conditions.excludedIssuers.includes(catalogBySourceId.get(sid)?.issuer ?? "");
-  /** 보유한 카드 흐름에서 계산에 넣는 카드(조건 바꾸기의 카드 종류·카드사 제외 적용) */
-  const ownIds = owned.filter((s) => conditions.kinds.includes(kindOf(s)) && issuerOk(s));
-  /** 새 카드 후보: 고른 종류(B1) + 조건의 카드 종류 + 카드사 제외 + 연회비 상한. 꼭 넣을 카드는 조건과 상관없이 넣는다 */
+  /** 보유한 카드 흐름에서 계산에 넣는 카드(조건 바꾸기의 카드 종류 적용) */
+  const ownIds = owned.filter((s) => conditions.kinds.includes(kindOf(s)));
+  /** 새 카드 후보: 고른 종류(B1) + 조건의 카드 종류 + 연회비 상한. 꼭 넣을 카드는 조건과 상관없이 넣는다 */
   const newPool = useMemo(() => {
     const kinds = (newTypes.length ? newTypes : (["credit", "check"] as CardKind[])).filter((k) => conditions.kinds.includes(k));
     const ownedSet = new Set(owned);
     const pool = issuableCards()
       .filter((c) => !ownedSet.has(c.sourceId))
       .filter((c) => kinds.includes(c.category === "체크" ? "check" : "credit"))
-      .filter((c) => !conditions.excludedIssuers.includes(c.issuer ?? ""))
       .filter((c) => conditions.feeCap === null || (c.annualFee ?? 0) <= conditions.feeCap)
       .map((c) => c.sourceId);
     const extra = conditions.pinned.filter((s) => !ownedSet.has(s) && catalogBySourceId.has(s) && !pool.includes(s));

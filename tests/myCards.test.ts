@@ -8,9 +8,11 @@ import {
 
 const STORAGE_KEY = "walletfit:saved-cards";
 
+// 2026-11-24: 담은 카드는 이 탭에서만 둔다(sessionStorage). 새로고침해도 남고 탭을 닫으면 지워진다
 describe("useSavedCards", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it("초기 상태에 빈 배열을 반환해야 한다", () => {
@@ -18,13 +20,13 @@ describe("useSavedCards", () => {
     expect(result.current.ids).toEqual([]);
   });
 
-  it("localStorage에 저장된 카드가 있으면 로드해야 한다", () => {
+  it("예전에 localStorage에 저장한 카드는 읽지 않는다(다시 들어오면 빈 상태)", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([1, 2, 3]));
     const { result } = renderHook(() => useSavedCards());
-    expect(result.current.ids).toEqual([1, 2, 3]);
+    expect(result.current.ids).toEqual([]);
   });
 
-  it("add 호출 시 카드가 저장소와 상태에 추가되어야 한다", () => {
+  it("add 호출 시 카드가 상태와 탭 저장소에 추가되고, 브라우저를 다시 열어도 남는 저장소에는 쓰지 않는다", () => {
     const { result } = renderHook(() => useSavedCards());
 
     act(() => {
@@ -32,7 +34,8 @@ describe("useSavedCards", () => {
     });
 
     expect(result.current.ids).toEqual([10]);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("[10]");
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBe("[10]");
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
   it("이미 존재하는 카드를 add하면 무시해야 한다", () => {
@@ -49,15 +52,16 @@ describe("useSavedCards", () => {
   });
 
   it("remove 호출 시 카드가 제거되어야 한다", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([10, 20]));
     const { result } = renderHook(() => useSavedCards());
+    act(() => {
+      result.current.importIds([10, 20], "overwrite");
+    });
 
     act(() => {
       result.current.remove(10);
     });
 
     expect(result.current.ids).toEqual([20]);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("[20]");
   });
 
   it("toggle 호출 시 카드가 없으면 추가하고 있으면 제거해야 한다", () => {
@@ -75,35 +79,20 @@ describe("useSavedCards", () => {
   });
 
   it("has 호출 시 카드의 포함 여부를 정확히 판단해야 한다", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([40]));
     const { result } = renderHook(() => useSavedCards());
+    act(() => {
+      result.current.add(40);
+    });
 
     expect(result.current.has(40)).toBe(true);
     expect(result.current.has(50)).toBe(false);
   });
 
-  it("다른 탭/창에서 storage 이벤트가 발생했을 때 상태를 동기화해야 한다", () => {
-    const { result } = renderHook(() => useSavedCards());
-
-    expect(result.current.ids).toEqual([]);
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([100]));
-
-    act(() => {
-      window.dispatchEvent(
-        new StorageEvent("storage", {
-          key: STORAGE_KEY,
-          newValue: JSON.stringify([100]),
-        })
-      );
-    });
-
-    expect(result.current.ids).toEqual([100]);
-  });
-
   it("importIds(merge 모드) 호출 시 기존 카드와 중복 없이 병합되어야 한다", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([1, 2]));
     const { result } = renderHook(() => useSavedCards());
+    act(() => {
+      result.current.importIds([1, 2], "overwrite");
+    });
 
     let added = 0;
     act(() => {
@@ -112,12 +101,13 @@ describe("useSavedCards", () => {
 
     expect(added).toBe(2);
     expect(result.current.ids).toEqual([1, 2, 3, 4]);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("[1,2,3,4]");
   });
 
   it("importIds(overwrite 모드) 호출 시 기존 카드가 완전히 대체되어야 한다", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([1, 2]));
     const { result } = renderHook(() => useSavedCards());
+    act(() => {
+      result.current.importIds([1, 2], "overwrite");
+    });
 
     let total = 0;
     act(() => {
@@ -126,19 +116,30 @@ describe("useSavedCards", () => {
 
     expect(total).toBe(2);
     expect(result.current.ids).toEqual([5, 6]);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("[5,6]");
   });
 
   it("clear 호출 시 모든 카드가 제거되어야 한다", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([1, 2, 3]));
     const { result } = renderHook(() => useSavedCards());
+    act(() => {
+      result.current.importIds([1, 2, 3], "overwrite");
+    });
 
     act(() => {
       result.current.clear();
     });
 
     expect(result.current.ids).toEqual([]);
-    expect(localStorage.getItem(STORAGE_KEY)).toBe("[]");
+  });
+
+  it("새로고침(훅을 새로 만듦)해도 담은 카드가 남고, 탭을 닫으면(탭 저장소가 비면) 비어 있다", () => {
+    const first = renderHook(() => useSavedCards());
+    act(() => {
+      first.result.current.add(7);
+    });
+    first.unmount();
+    expect(renderHook(() => useSavedCards()).result.current.ids).toEqual([7]);
+    sessionStorage.clear();
+    expect(renderHook(() => useSavedCards()).result.current.ids).toEqual([]);
   });
 });
 

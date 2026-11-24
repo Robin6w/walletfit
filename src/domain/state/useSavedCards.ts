@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 export { exportSavedCards, parseSavedCardsBackup, downloadSavedCardsBackup } from "./savedCardsBackup";
 export type { SavedCardsBackup, BackupValidation } from "./savedCardsBackup";
 
-const STORAGE_KEY = "walletfit:saved-cards";
+/** 담은 카드는 이 탭에서만 둔다(sessionStorage, 2026-11-24): 새로고침해도 남고 탭을 닫으면 지워진다 */
+export const SAVED_CARDS_KEY = "walletfit:saved-cards";
 
 function readStoredIds(): number[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(SAVED_CARDS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "number") : [];
@@ -17,14 +18,11 @@ function readStoredIds(): number[] {
 }
 
 function writeStoredIds(ids: Set<number>) {
-  // readStoredIds()는 try/catch로 감싸져 있는데 이 함수만 빠져 있었다. 시크릿 모드 저장
-  // 용량 제한이나 프라이버시 설정으로 setItem이 예외를 던지면(특히 사파리) 여기서 잡지
-  // 않으면 카드 추가/제거를 누를 때마다 앱이 그대로 죽는다. 저장이 실패해도 화면 상의
-  // 상태(idSet)는 이미 반영돼 있으므로, 실패는 조용히 무시하고 다음 시도에 맡긴다.
+  // 저장소를 못 써도(사생활 보호 창 등) 화면 상태는 그대로 쓴다
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids)));
+    window.sessionStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(Array.from(ids)));
   } catch {
-    // 저장 실패는 무시 — 세션 내 상태는 유지되고, 새로고침 시에만 유실될 수 있다.
+    /* 무시 */
   }
 }
 
@@ -70,9 +68,9 @@ function savedCardsReducer(state: Set<number>, action: SavedCardsAction): Set<nu
 }
 
 /**
- * 카탈로그 카드(sourceId)를 "내 카드"로 담아 localStorage에 저장합니다.
- * 브라우저 탭 간 동기화를 위해 storage 이벤트도 반영합니다.
- * 각 액션이 직접 저장하는 대신, idSet이 바뀔 때마다 useEffect 한 곳에서 저장을 담당합니다.
+ * 카탈로그 카드(sourceId)를 "내 카드"로 담습니다.
+ * 2026-11-24: 이 탭에서만 둔다(sessionStorage). 새로고침해도 남고(휴대폰에서 당겨 새로고침해도 그대로), 탭을 닫으면 지워진다.
+ * 앱 맨 위(AppDataProvider)에서 한 번만 부른다
  */
 export function useSavedCards() {
   const [idSet, dispatch] = useReducer(savedCardsReducer, undefined, () => new Set(readStoredIds()));
@@ -80,14 +78,6 @@ export function useSavedCards() {
   useEffect(() => {
     writeStoredIds(idSet);
   }, [idSet]);
-
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) dispatch({ kind: "replace", ids: readStoredIds() });
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
 
   const add = useCallback((sourceId: number) => {
     dispatch({ kind: "add", id: sourceId });

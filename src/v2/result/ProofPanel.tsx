@@ -2,29 +2,16 @@ import { useEffect, useRef, type ReactNode } from "react";
 import type { EngineCard, TraceBenefit } from "@/domain/types/engine";
 import { catLabel } from "@/v1/catalog";
 import { korWon, num, won } from "@/v1/format";
-import { statusLine } from "@/v1/wallet/model";
-import { useToast } from "@/shared/hooks/useToast";
 import { chatStore } from "@/v2/chat/chatStore";
 import { CardImage } from "@/v2/ui/CardImage";
 import { cardAmountText, shortOf } from "@/v2/model/resultView";
 import { pctText } from "@/v2/model/text";
-import { NUM, SHADOW } from "@/v2/result/parts";
+import { NUM } from "@/v2/result/parts";
 
 /**
  * 카드별 계산 근거(오른쪽 패널, 휴대폰은 전체 화면). 디자인에 없는 화면이라 v2 색·글꼴로 그렸다.
- * 순서: 패키지 → 전월실적 → 혜택별 계산 → 묶음 한도 → 합계 → 계산에 쓴 값
+ * 순서: 패키지 → 전월실적 → 혜택별 계산 → 묶음 한도 → 합계
  */
-const REPORT_KEY = "walletfit:v1:reports";
-
-export function reportNumbers(card: Pick<EngineCard, "sid" | "name" | "total">) {
-  try {
-    const list = JSON.parse(window.localStorage.getItem(REPORT_KEY) ?? "[]");
-    list.push({ sid: card.sid, name: card.name, at: new Date().toISOString(), total: card.total });
-    window.localStorage.setItem(REPORT_KEY, JSON.stringify(list));
-  } catch {
-    /* 저장 못 해도 안내는 보여 준다 */
-  }
-}
 
 function Step({ n, title, children, last }: { n: number; title: string; children: ReactNode; last?: boolean }) {
   return (
@@ -54,7 +41,6 @@ function Row({ k, v }: { k: ReactNode; v: ReactNode }) {
 
 export function ProofPanel({ card, onClose }: { card: EngineCard; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const { showToast } = useToast();
   useEffect(() => {
     ref.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -70,7 +56,6 @@ export function ProofPanel({ card, onClose }: { card: EngineCard; onClose: () =>
     .reduce((s, [, v]) => s + v, 0);
   const discounted = Math.max(0, card.perf.qRaw - card.perf.q);
   const sharedHit = card.shared.filter((s) => s.sum > 0.5);
-  const status = statusLine(card);
   let step = 0;
   const rate = (b: TraceBenefit) => (b.type === "percent" && b.value ? ` × ${pctText(b.value)}` : "");
 
@@ -118,7 +103,15 @@ export function ProofPanel({ card, onClose }: { card: EngineCard; onClose: () =>
                 ))}
             </ul>
             <p style={{ margin: "8px 0 0", fontSize: 13, color: "#3A4A78" }}>
-              {card.choiceGroups?.some((g) => g.auto) ? "이 카드는 카드사가 이용금액을 보고 매달 자동으로 정해요." : "패키지는 카드사 앱에서 바꿀 수 있어요. 지출이 바뀌면 가장 나은 패키지도 바뀔 수 있어요."}
+              {card.choiceGroups?.some((g) => g.auto) ? (
+                "이 카드는 카드사가 이용금액을 보고 매달 자동으로 정해요."
+              ) : (
+                <>
+                  패키지는 카드사 앱에서 바꿀 수 있어요.
+                  <br />
+                  지출이 바뀌면 가장 나은 패키지도 바뀔 수 있어요.
+                </>
+              )}
             </p>
           </Step>
         )}
@@ -214,45 +207,17 @@ export function ProofPanel({ card, onClose }: { card: EngineCard; onClose: () =>
           </p>
         </Step>
 
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #EDF2FC" }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>이 계산에 쓴 값</div>
-          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {card.flags.slice(0, 8).map((f) => {
-              const text = f.replace(/^[^:]+:\s*/, "");
-              const user = /입력한/.test(text);
-              return (
-                <span key={f} style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, ...(user ? { background: "#E8EEFF", color: "#1747D6" } : { background: "#FFF6EE", color: "#A3420B" }) }}>
-                  {user ? text : `가정 · ${text}`}
-                </span>
-              );
-            })}
-            {card.flags.length === 0 && <span style={{ fontSize: 13, color: "#5E6D96" }}>가정한 값 없이 원문 숫자만 썼어요.</span>}
-          </div>
-          {status && <p style={{ margin: "12px 0 0", padding: "8px 12px", borderRadius: 10, background: "#FFF6EE", fontSize: 13, color: "#A3420B" }}>{status}</p>}
-        </div>
-
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #EDF2FC", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 14 }}>
-          <div style={{ display: "flex", gap: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                chatStore.ask(`${shortOf(card)} 계산 근거를 설명해 줘`);
-                onClose();
-              }}
-              style={{ border: "none", background: "transparent", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer" }}
-            >
-              이 계산 물어보기
-            </button>
-          </div>
+        {/* '이 계산에 쓴 값' 칸과 '숫자가 이상해요' 버튼은 2026-11-24에 뺐다 */}
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #EDF2FC", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 14 }}>
           <button
             type="button"
             onClick={() => {
-              reportNumbers(card);
-              showToast("검수 목록에 올렸어요. 이 카드의 혜택 표를 먼저 다시 확인할게요.", "success");
+              chatStore.ask(`${shortOf(card)} 계산 근거를 설명해 줘`);
+              onClose();
             }}
-            style={{ height: 40, padding: "0 16px", borderRadius: 20, border: "1px solid #D3DDF2", background: "#FFFFFF", fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: "#0D1B4A", cursor: "pointer", boxShadow: SHADOW }}
+            style={{ border: "none", background: "transparent", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "#2457F5", cursor: "pointer" }}
           >
-            숫자가 이상해요
+            이 계산 물어보기
           </button>
         </div>
       </div>

@@ -661,7 +661,11 @@ function KeyForm({ onDone }: { onDone: () => void }) {
           지우기
         </button>
       </div>
-      <p style={{ margin: 0, fontSize: 12, color: "#5E6D96" }}>키가 없으면 계산 결과로 바로 답해요. 키는 이 브라우저에 두고, 질문할 때만 아주LLM으로 보내요.</p>
+      <p style={{ margin: 0, fontSize: 12, color: "#5E6D96" }}>
+        키가 없으면 계산 결과로 바로 답해요.
+        <br />
+        키는 이 브라우저에 두고, 질문할 때만 아주LLM으로 보내요.
+      </p>
     </div>
   );
 }

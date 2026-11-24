@@ -3,12 +3,13 @@ import { onStoredKeyChange, writeAndNotify } from "@/shared/lib/sameTabStorage";
 import type { EnginePack } from "@/domain/types/engine";
 
 /**
- * v1 화면이 브라우저에 저장하는 값. 저장소를 못 쓰는 환경(사생활 보호 창 등)에서도 화면은 그대로 동작합니다.
+ * v1 화면이 저장하는 값. 저장소를 못 쓰는 환경(사생활 보호 창 등)에서도 화면은 그대로 동작합니다.
  *  - 자주 가는 곳(브랜드 금액), 실적 여유, 저장한 지갑, 할 일 체크
+ * 2026-11-24: 모두 이 탭에서만 둔다(sessionStorage). 새로고침해도 남고 탭을 닫으면 지워진다
  */
 function read<T>(key: string, fallback: T): T {
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = window.sessionStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
@@ -16,7 +17,7 @@ function read<T>(key: string, fallback: T): T {
 }
 
 /**
- * localStorage 값 하나를 화면 상태로 쓴다. 같은 키를 쓰는 다른 화면(App·지갑 만들기·명세서)과
+ * sessionStorage 값 하나를 화면 상태로 쓴다. 같은 키를 쓰는 다른 화면(App·지갑 만들기·명세서)과
  * 같은 탭 안에서도 값이 맞춰진다. 저장 못 해도 화면은 계속 동작한다.
  */
 function useStored<T>(key: string, fallback: T) {
@@ -24,7 +25,7 @@ function useStored<T>(key: string, fallback: T) {
   const current = useRef(value);
   current.current = value;
   useEffect(() => {
-    writeAndNotify(key, JSON.stringify(value));
+    writeAndNotify(key, JSON.stringify(value), "session");
   }, [key, value]);
   useEffect(
     () =>
@@ -101,8 +102,29 @@ export interface SavedWallet {
   todos: { id: string; text: string; done: boolean }[];
 }
 
+const SAVED_WALLET_KEY = "walletfit:v1:saved-wallet";
+
+/**
+ * 저장한 지갑. 2026-11-24: 이 탭에서만 둔다(sessionStorage). 새로고침해도 남고 탭을 닫으면 지워진다.
+ * 앱 맨 위(AppDataProvider)에서 한 번만 부른다
+ */
 export function useSavedWallet() {
-  const [wallet, setWallet] = useStored<SavedWallet | null>("walletfit:v1:saved-wallet", null);
+  const [wallet, setWallet] = useState<SavedWallet | null>(() => {
+    try {
+      const raw = window.sessionStorage.getItem(SAVED_WALLET_KEY);
+      return raw ? (JSON.parse(raw) as SavedWallet) : null;
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      if (wallet) window.sessionStorage.setItem(SAVED_WALLET_KEY, JSON.stringify(wallet));
+      else window.sessionStorage.removeItem(SAVED_WALLET_KEY);
+    } catch {
+      /* 저장 못 해도 화면은 동작 */
+    }
+  }, [wallet]);
   const toggleTodo = useCallback(
     (id: string) =>
       setWallet((w) => (w ? { ...w, todos: w.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) } : w)),

@@ -3,6 +3,10 @@ import { onStoredKeyChange, removeAndNotify, writeAndNotify } from "@/shared/lib
 import type { SpendCategory, MonthlySpend } from "@/domain/types/card";
 import type { ParsedSpendingItem } from "@/features/statement/importerParser";
 
+/**
+ * 지출 입력은 이 탭에서만 쓴다(sessionStorage, 2026-11-24). 새로고침·화면 이동에는 남고(휴대폰에서 당겨 새로고침해도 그대로),
+ * 탭을 닫으면 지워진다(담은 카드·저장한 지갑과 같음)
+ */
 export const SPENDING_STORAGE_KEY = "walletfit:monthly-spend";
 
 export function createEmptyMonthlySpend(categories: SpendCategory[]): MonthlySpend {
@@ -37,12 +41,12 @@ function sanitizeSpendingRecord(raw: unknown, categories: SpendCategory[]): Mont
 }
 
 export function loadStoredMonthlySpend(categories: SpendCategory[]): MonthlySpend {
-  if (typeof window === "undefined" || !window.localStorage) {
+  if (typeof window === "undefined") {
     return createEmptyMonthlySpend(categories);
   }
 
   try {
-    const raw = localStorage.getItem(SPENDING_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(SPENDING_STORAGE_KEY);
     if (!raw) return createEmptyMonthlySpend(categories);
     return sanitizeSpendingRecord(JSON.parse(raw), categories);
   } catch {
@@ -51,14 +55,14 @@ export function loadStoredMonthlySpend(categories: SpendCategory[]): MonthlySpen
 }
 
 export function saveMonthlySpend(spending: MonthlySpend): void {
-  if (typeof window === "undefined" || !window.localStorage) return;
+  if (typeof window === "undefined") return;
   // 값이 바뀔 때만 쓰고, 같은 탭의 다른 화면에도 알린다(QuotaExceededError·시크릿 모드는 조용히 무시)
-  writeAndNotify(SPENDING_STORAGE_KEY, JSON.stringify(spending));
+  writeAndNotify(SPENDING_STORAGE_KEY, JSON.stringify(spending), "session");
 }
 
 export function clearMonthlySpend(): void {
-  if (typeof window === "undefined" || !window.localStorage) return;
-  removeAndNotify(SPENDING_STORAGE_KEY);
+  if (typeof window === "undefined") return;
+  removeAndNotify(SPENDING_STORAGE_KEY, "session");
 }
 
 type SpendingUpdater = MonthlySpend | ((prev: MonthlySpend) => MonthlySpend);
@@ -102,7 +106,7 @@ function spendingReducer(state: MonthlySpend, action: SpendingAction): MonthlySp
 }
 
 /**
- * 월 지출 프로필 상태를 관리하고 localStorage에 동기화하는 커스텀 훅입니다.
+ * 월 지출 프로필 상태를 관리하고 sessionStorage(이 탭)에 동기화하는 커스텀 훅입니다.
  */
 export function useMonthlySpend(categories: SpendCategory[]) {
   const [spending, dispatch] = useReducer(spendingReducer, categories, loadStoredMonthlySpend);
@@ -112,7 +116,7 @@ export function useMonthlySpend(categories: SpendCategory[]) {
     saveMonthlySpend(spending);
   }, [spending]);
 
-  // 다른 탭, 그리고 같은 탭의 다른 화면(지갑 만들기·명세서·전체 카드 등)에서 바꾼 값을 따라간다
+  // 같은 탭의 다른 화면(지갑 만들기·명세서·전체 카드 등)에서 바꾼 값을 따라간다(sessionStorage라 다른 탭과는 나누지 않는다)
   const current = useRef(spending);
   current.current = spending;
   useEffect(

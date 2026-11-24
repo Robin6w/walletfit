@@ -66,7 +66,9 @@ export function StatementItems({ summary, onRecategorize }: { summary: Statement
         <span style={{ fontSize: 14, color: "#3A4A78", fontVariantNumeric: "tabular-nums" }}>합계 {won(total)}</span>
       </div>
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "#5E6D96" }}>
-        가맹점마다 어느 카테고리로 들어갔는지 확인하고, 틀린 곳은 카테고리를 눌러 바꿔 주세요. 같은 가맹점 결제는 함께 바뀌어요.{months > 1 ? ` 표의 금액은 실제 결제 금액이고, 추천에는 ${months}달 평균으로 들어가요.` : ""}
+        가맹점마다 어느 카테고리로 들어갔는지 확인하고, 틀린 곳은 카테고리를 눌러 바꿔 주세요.
+        <br />
+        같은 가맹점 결제는 함께 바뀌고, 바꾼 분류는 창을 닫기 전까지 다음 명세서에도 적용해요.{months > 1 ? ` 표의 금액은 실제 결제 금액이고, 추천에는 ${months}달 평균으로 들어가요.` : ""}
         {cancelledCount > 0 ? ` 취소된 결제 ${cancelledCount}건은 합계와 추천 계산에서 뺐어요.` : ""}
         {rewardCount > 0 ? ` 캐시백 같은 카드 혜택 입금 ${rewardCount}건은 소비가 아니라 뺐어요.` : ""}
       </p>

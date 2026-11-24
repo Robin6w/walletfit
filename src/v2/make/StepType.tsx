@@ -123,7 +123,6 @@ export function StepType({ value, onChange }: { value: CardKind[]; onChange: (v:
             카드 종류를 하나 이상 골라 주세요
           </button>
         )}
-        <span style={{ fontSize: 13, color: "#5E6D96" }}>다음 단계에서 한 달 지출을 입력해요</span>
       </div>
     </>
   );

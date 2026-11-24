@@ -19,6 +19,7 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
   ];
 
   beforeEach(() => {
+    sessionStorage.clear();
     localStorage.clear();
     vi.restoreAllMocks();
   });
@@ -33,7 +34,7 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       });
     });
 
-    it("localStorage가 비어있을 때 readStoredSpending은 기본 0원 프로필을 반환해야 한다", () => {
+    it("sessionStorage가 비어있을 때 readStoredSpending은 기본 0원 프로필을 반환해야 한다", () => {
       const profile = loadStoredMonthlySpend(mockCategories);
       expect(profile).toEqual({
         transport: 0,
@@ -42,8 +43,8 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       });
     });
 
-    it("localStorage에 저장된 유효한 지출 데이터를 정상 복원해야 한다", () => {
-      localStorage.setItem(
+    it("sessionStorage에 저장된 유효한 지출 데이터를 정상 복원해야 한다", () => {
+      sessionStorage.setItem(
         SPENDING_STORAGE_KEY,
         JSON.stringify({ transport: 150000, mart: 250000, dining: 80000 }),
       );
@@ -56,8 +57,8 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       });
     });
 
-    it("localStorage에 잘못된 JSON이나 음수/NaN 등 비정상 값이 있으면 0원으로 보정해야 한다", () => {
-      localStorage.setItem(
+    it("sessionStorage에 잘못된 JSON이나 음수/NaN 등 비정상 값이 있으면 0원으로 보정해야 한다", () => {
+      sessionStorage.setItem(
         SPENDING_STORAGE_KEY,
         JSON.stringify({ transport: -50000, mart: "invalid", dining: 100000.8 }),
       );
@@ -72,18 +73,18 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
 
     it("writeStoredSpending과 clearStoredSpending이 스토리지에 정상 반영되어야 한다", () => {
       saveMonthlySpend({ transport: 50000, mart: 30000, dining: 20000 });
-      expect(localStorage.getItem(SPENDING_STORAGE_KEY)).toBe(
+      expect(sessionStorage.getItem(SPENDING_STORAGE_KEY)).toBe(
         JSON.stringify({ transport: 50000, mart: 30000, dining: 20000 }),
       );
 
       clearMonthlySpend();
-      expect(localStorage.getItem(SPENDING_STORAGE_KEY)).toBeNull();
+      expect(sessionStorage.getItem(SPENDING_STORAGE_KEY)).toBeNull();
     });
   });
 
   describe("useMonthlySpend 커스텀 훅 테스트", () => {
     it("기존 로컬스토리지에 저장된 값이 있으면 초기 렌더 시 복원되어야 한다", () => {
-      localStorage.setItem(
+      sessionStorage.setItem(
         SPENDING_STORAGE_KEY,
         JSON.stringify({ transport: 120000, mart: 300000, dining: 0 }),
       );
@@ -93,7 +94,7 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       expect(result.current.spending.mart).toBe(300000);
     });
 
-    it("updateCategory 호출 시 상태가 갱신되고 localStorage에 동기화되어야 한다", () => {
+    it("updateCategory 호출 시 상태가 갱신되고 sessionStorage에 동기화되어야 한다", () => {
       const { result } = renderHook(() => useMonthlySpend(mockCategories));
 
       act(() => {
@@ -101,12 +102,12 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       });
 
       expect(result.current.spending.mart).toBe(450000);
-      const stored = JSON.parse(localStorage.getItem(SPENDING_STORAGE_KEY) || "{}");
+      const stored = JSON.parse(sessionStorage.getItem(SPENDING_STORAGE_KEY) || "{}");
       expect(stored.mart).toBe(450000);
     });
 
-    it("resetSpending 호출 시 모든 카테고리가 0원으로 초기화되고 localStorage에 반영되어야 한다", () => {
-      localStorage.setItem(
+    it("resetSpending 호출 시 모든 카테고리가 0원으로 초기화되고 sessionStorage에 반영되어야 한다", () => {
+      sessionStorage.setItem(
         SPENDING_STORAGE_KEY,
         JSON.stringify({ transport: 200000, mart: 500000, dining: 300000 }),
       );
@@ -124,7 +125,7 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
         dining: 0,
       });
 
-      const stored = JSON.parse(localStorage.getItem(SPENDING_STORAGE_KEY) || "{}");
+      const stored = JSON.parse(sessionStorage.getItem(SPENDING_STORAGE_KEY) || "{}");
       expect(stored).toEqual({
         transport: 0,
         mart: 0,
@@ -166,25 +167,17 @@ describe("spendingProfile logic and useMonthlySpend hook", () => {
       expect(result.current.spending.mart).toBe(0);
     });
 
-    it("다른 탭의 storage 이벤트 발생 시 변경된 프로필로 상태를 동기화해야 한다", () => {
-      const { result } = renderHook(() => useMonthlySpend(mockCategories));
+    it("지출은 이 탭(sessionStorage)에만 둔다: 브라우저를 다시 열어도 남는 localStorage 값은 읽지도 쓰지도 않는다(2026-11-24, 새로고침해도 남고 탭을 닫으면 지워짐)", () => {
+      localStorage.setItem(SPENDING_STORAGE_KEY, JSON.stringify({ transport: 99000, mart: 88000, dining: 77000 }));
 
-      localStorage.setItem(
-        SPENDING_STORAGE_KEY,
-        JSON.stringify({ transport: 99000, mart: 88000, dining: 77000 }),
-      );
+      const { result } = renderHook(() => useMonthlySpend(mockCategories));
+      expect(result.current.spending).toEqual({ transport: 0, mart: 0, dining: 0 });
 
       act(() => {
-        window.dispatchEvent(
-          new StorageEvent("storage", {
-            key: SPENDING_STORAGE_KEY,
-            newValue: JSON.stringify({ transport: 99000, mart: 88000, dining: 77000 }),
-          }),
-        );
+        result.current.updateCategory("mart", 10000);
       });
-
-      expect(result.current.spending.transport).toBe(99000);
-      expect(result.current.spending.mart).toBe(88000);
+      expect(JSON.parse(localStorage.getItem(SPENDING_STORAGE_KEY) || "{}").mart).toBe(88000);
+      expect(JSON.parse(sessionStorage.getItem(SPENDING_STORAGE_KEY) || "{}").mart).toBe(10000);
     });
   });
 });

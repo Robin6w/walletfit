@@ -1,7 +1,7 @@
 import { parseTextLocally } from "@/features/statement/importerParser";
 import type { Tickets } from "@/domain/types/engine";
 import { BRAND_TABS, aliasesOf, canonicalBrand } from "@/v2/model/brands";
-import { CATALOG_BRAND_NAMES, catalogCategory, fuzzyCategory, statementCategory, withBrandNames } from "@/v2/model/merchantDict";
+import { CATALOG_BRAND_NAMES, catalogCategory, fuzzyCategory, statementCategory, withBrandNames, withoutLookalikes } from "@/v2/model/merchantDict";
 
 /**
  * 명세서 텍스트 → 월 지출·브랜드 금액(2026-10-28 v2 A2′·B2′).
@@ -171,6 +171,9 @@ export function merchantName(line: string): string {
     )
     .join(" ")
     .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    // 낱말 끝의 밑줄('김포공항_', 칸이 잘린 자리). 가운데 밑줄('ChatGPT_NICE')은 둔다
+    .replace(/_+(?=\s|$)/g, "")
     .trim();
   return name;
 }
@@ -227,14 +230,14 @@ export function brandMatchers(extra: string[] = []): BrandMatcher[] {
       if (!a) continue;
       if (/^[A-Za-z0-9.+&-]{1,3}$/.test(a)) {
         const re = new RegExp(`(^|[^A-Za-z0-9])${a.replace(/[.+&-]/g, "\\$&")}([^A-Za-z0-9]|$)`, "i");
-        out.push({ brand, test: (line) => re.test(line), len: a.length });
+        out.push({ brand, test: (line) => re.test(withoutLookalikes(line, brand)), len: a.length });
       } else if (/^[가-힣]{1,2}$/.test(a)) {
         // 한글 2글자 이하는 낱말 맨 앞에서만('설아아이스크림' 속 '크림'(KREAM)이 걸리지 않게, 2026-10-31)
         const re = new RegExp(`(^|[^가-힣A-Za-z0-9])${a}`);
-        out.push({ brand, test: (line) => re.test(line), len: a.length });
+        out.push({ brand, test: (line) => re.test(withoutLookalikes(line, brand)), len: a.length });
       } else {
         const s = squash(a);
-        out.push({ brand, test: (line) => squash(line).includes(s), len: a.length });
+        out.push({ brand, test: (line) => squash(withoutLookalikes(line, brand)).includes(s), len: a.length });
       }
     }
   }
@@ -302,10 +305,11 @@ export function summarizeStatement(
     const raw = lines[i];
     let joined = raw;
     // 카카오뱅크 확인서처럼 긴 가맹점명이 칸 안에서 두 줄로 나뉘면 결제 줄 위·아래에 이름 조각만 남는다(2026-10-31)
+    // 칸 너비에서 글자 중간이 잘린 것이라 아래 조각은 띄우지 않고 잇는다('따릉이(서울시설공단' + ')', '씨유(CU)수원당수2' + '단', 2026-11-23)
     if (!merchantName(cleanLine(raw))) {
-      const before = loose(i - 1) ? lines[i - 1] : "";
-      const after = loose(i + 1) ? lines[i + 1] : "";
-      joined = `${raw} ${before}${after ? ` ${after}` : ""}`;
+      const before = loose(i - 1) ? lines[i - 1].trim() : "";
+      const after = loose(i + 1) ? lines[i + 1].trim() : "";
+      joined = `${raw} ${before}${after}`;
     }
     rows.push({ raw, text: joined, amount: item.amount, unsignedCancel: CANCEL.test(raw) && !SIGNED_AMOUNT.test(cleanLine(raw)) });
   });
@@ -358,7 +362,7 @@ export function summarizeStatement(
     const line = withBrandNames(body(r));
     const brand = matchers.find((m) => m.test(line))?.brand;
     // 카테고리: 담은 카드 혜택의 카테고리 → 카드 데이터 전체의 브랜드 사전 → 명세서 전용 사전 → 기존 키워드 분류(2026-10-31)
-    let cat = (brand && brandCats[brand]) || catalogCategory(line) || statementCategory(line) || parseTextLocally(line)[0]?.category || "etc";
+    let cat = (brand && brandCats[brand]) || catalogCategory(line) || statementCategory(line) || parseTextLocally(withoutLookalikes(line))[0]?.category || "etc";
     const name = nameOf(r) || "이름 없는 가맹점";
     // 사진(OCR)에서 읽은 명세서만: 정확히 맞는 분류가 없으면 '거의 같은' 브랜드 이름으로 카테고리를 정한다(2026-11-02, fuzzyCategory)
     if (cat === "etc" && opts.ocr) cat = fuzzyCategory(name) ?? "etc";
@@ -463,6 +467,30 @@ export function weekdaysOf(items: StatementItem[]): Tickets {
 /** 엔진에 넘길 명세서 정보: 결제 금액 목록 + 요일별 금액. 이게 오면 엔진은 명세서 경로로 계산한다(간편결제 비중 가정 0) */
 export function statementSignals(items: StatementItem[]): Tickets {
   return { ...ticketsOf(items), ...weekdaysOf(items) };
+}
+
+/**
+ * 사용자가 고른 가맹점 분류를 기억할 때 쓰는 이름 키(2026-11-23). 띄어쓰기·대소문자만 다른 이름은 같은 가게로 본다.
+ * 지점명까지 넣는다: 같은 카드사 명세서에는 같은 가게가 늘 같은 이름으로 찍히고, 지점을 떼면 다른 가게가 섞인다
+ */
+export function merchantKey(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "");
+}
+
+/**
+ * 기억해 둔 가맹점 분류(merchantKey → 카테고리)를 명세서에 적용한다(2026-11-23).
+ * 공용 사전에 동네 가게 이름을 하나씩 넣는 대신, 사용자가 한 번 고친 분류를 이 브라우저에 두고 다음 명세서부터 그대로 쓴다.
+ * 바뀐 결제는 edited로 표시하고, 카테고리별 지출·브랜드 금액을 다시 계산한다
+ */
+export function applyMerchantCategories(summary: StatementSummary, remembered: Record<string, string>): StatementSummary {
+  let changed = false;
+  const items = summary.items.map((it) => {
+    const cat = remembered[merchantKey(it.name)];
+    if (!cat || cat === it.category) return it;
+    changed = true;
+    return { ...it, category: cat, edited: true };
+  });
+  return changed ? { ...summary, ...totalsOf(items, summary.months), items } : summary;
 }
 
 /**

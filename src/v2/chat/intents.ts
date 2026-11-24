@@ -248,7 +248,7 @@ export const INTENTS: Intent[] = [
   // 6-5 못 알아들음·이어 묻기
   { id: "followup.unresolved", group: UNCLEAR, name: "알 수 없는 이어 묻기", desc: "앞 대화를 봐도 무엇을 가리키는지 알 수 없는 짧은 되묻기(앞 대화로 알 수 있으면 그 의도를 고른다)", answer: { kind: "followup" }, examples: ["그거 말고", "무슨 말이야?", "이해가 안 돼", "다시 설명해줘", "더 쉽게 말해줘", "왜?", "그럼 그건?", "더 자세히 알려줘", "그래서?", "예를 들면?", "그 카드는?"] },
   { id: "input.unclear", group: UNCLEAR, name: "뜻 없는 입력", desc: "글자를 이뤄도 뜻을 알 수 없는 입력", answer: { kind: "unclear" }, examples: ["ㅇ", "ㅋㅋㅋ", "???", "ㅁㄴㅇㄹ", "asdf"] },
-  { id: "input.format", group: UNCLEAR, name: "형식이 이상한 입력", desc: "이모지만, 링크, 외국어 문장, 300자 넘는 글(코드가 처리)", answer: code, examples: ["😀", "https://www.card-gorilla.com/card/detail/1", "recommend me a card", "(300자가 넘는 아주 긴 글)"] },
+  { id: "input.format", group: UNCLEAR, name: "형식이 이상한 입력", desc: "이모지만, 링크, 외국어 문장, 300자 넘는 글(코드가 처리)", answer: code, examples: ["😀", "https://example.com/card/detail/1", "recommend me a card", "(300자가 넘는 아주 긴 글)"] },
 
   // 6-6 범위 밖 요청 (주제를 넣어 한 문장 거절)
   { id: "out_of_scope", group: OUT, name: "범위 밖 요청", desc: "카드·지갑·이 서비스와 관계없는 요청(음식, 날씨, 투자·코인·대출·보험·적금, 환율, 숙제, 코딩, 번역, 노래·영화·맛집·여행지 추천, 건강, 법률, 정치, 뉴스, 글쓰기, 연애, 다른 앱 평가)", answer: ai("out"), examples: ["오늘 저녁 뭐 먹지?", "요즘 날씨 너무 안 좋네", "주식 뭐 사면 좋을까?", "코인 사도 돼?", "대출 받을 수 있어?", "보험 추천해줘", "적금 어디가 좋아?", "환율 얼마야?", "숙제 도와줘", "파이썬 코드 짜줘", "이 문장 영어로 번역해줘", "노래 추천해줘", "영화 추천해줘", "맛집 알려줘", "여행지 추천해줘", "머리가 아파", "법률 상담 해줘", "대통령 누구 찍어야 해?", "오늘 뉴스 뭐 있어?", "수학 문제 풀어줘", "자기소개서 써줘", "연애 상담 해줘", "토스 앱 어때?"] },

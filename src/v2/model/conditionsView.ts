@@ -7,14 +7,11 @@ import { korWon } from "@/v1/format";
  * 지금 어떤 조건으로 계산했는지 펼치지 않아도 보이게 한다.
  */
 export interface ConditionsSummaryInput {
-  mode: "maxBenefit" | "efficient";
   maxCards: number;
   kinds: CardKind[];
   margin: number;
   noMargin: boolean;
   feeCap: number | null;
-  /** 계산에서 뺀 카드사 수(후보 카드의 카드사 중) */
-  excludedIssuers: number;
   pinned: number;
 }
 
@@ -32,8 +29,8 @@ export function feeCapText(feeCap: number | null): string {
 }
 
 export function conditionsSummary(c: ConditionsSummaryInput): string[] {
+  // 계산 방식(혜택 최대화/효율적) 선택은 2026-11-23에 뺐다. 늘 최대 카드 수 안에서 순혜택이 가장 큰 조합
   const out = [`최대 ${c.maxCards}장`, kindsText(c.kinds), c.noMargin ? "실적 여유 없음" : `실적 여유 ${korWon(c.margin)}`, feeCapText(c.feeCap)];
-  if (c.excludedIssuers > 0) out.push(`카드사 ${c.excludedIssuers}곳 제외`);
   if (c.pinned > 0) out.push(`꼭 넣을 카드 ${c.pinned}장`);
   return out;
 }

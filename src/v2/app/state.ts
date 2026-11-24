@@ -5,9 +5,9 @@ import type { BrandPicks } from "@/v2/model/brands";
 import type { Flow } from "@/v2/app/paths";
 import { useStoredValue } from "@/v2/app/storage";
 
-/** 자주 가는 곳에서 고른 브랜드 */
+/** 자주 가는 곳에서 고른 브랜드. 지출 입력과 같이 이 탭에서만 쓴다(새로고침해도 남고 탭을 닫으면 지워짐, 2026-11-24) */
 export function useBrandPicks() {
-  return useStoredValue<BrandPicks>("walletfit:v2:brand-picks", {});
+  return useStoredValue<BrandPicks>("walletfit:v2:brand-picks", {}, "session");
 }
 
 export interface StatementState {
@@ -22,19 +22,27 @@ export interface StatementState {
   tickets?: Tickets;
 }
 
-/** 마지막으로 읽은 명세서 정보. 명세서 경로(A2′·B2′)의 결과 계산에 쓴다 */
+/** 마지막으로 읽은 명세서 정보. 명세서 경로(A2′·B2′)의 결과 계산에 쓴다. 명세서로 채운 지출과 같이 이 탭에서만 쓴다(2026-11-24) */
 export function useStatementState() {
-  return useStoredValue<StatementState | null>("walletfit:v2:statement", null);
-}
-
-/** B 흐름: 새 카드 종류(신용·체크). 비어 있으면 아직 고르지 않음 */
-export function useNewCardTypes() {
-  return useStoredValue<CardKind[]>("walletfit:v2:new-card-types", []);
+  return useStoredValue<StatementState | null>("walletfit:v2:statement", null, "session");
 }
 
 /**
- * 저장한 지갑. v1 키(walletfit:v1:saved-wallet)를 그대로 쓰고 v2 필드는 선택으로 더한다.
- * v1에서 저장한 지갑도 그대로 읽힌다.
+ * 사용자가 명세서 표에서 고친 가맹점 분류(merchantKey → 카테고리, 2026-11-23). 이 탭에서 다음에 올리는 명세서에도 적용한다.
+ * 2026-11-24: 이 탭에서만 둔다(sessionStorage, 탭을 닫으면 지워짐). 가맹점 이름은 서버로 가지 않는다
+ */
+export function useMerchantCategories() {
+  return useStoredValue<Record<string, string>>("walletfit:v2:merchant-categories", {}, "session");
+}
+
+/** B 흐름: 새 카드 종류(신용·체크). 비어 있으면 아직 고르지 않음. 이 탭에서만 둔다(2026-11-24) */
+export function useNewCardTypes() {
+  return useStoredValue<CardKind[]>("walletfit:v2:new-card-types", [], "session");
+}
+
+/**
+ * 저장한 지갑. v1 모양(SavedWallet)에 v2 필드를 선택으로 더한다.
+ * 2026-11-24부터 이 탭에서만 둔다(새로고침해도 남고 탭을 닫으면 지워짐, v1/state.ts useSavedWallet).
  */
 export interface SavedWalletV2 extends SavedWallet {
   v?: 2;

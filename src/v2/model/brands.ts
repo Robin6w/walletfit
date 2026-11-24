@@ -90,6 +90,30 @@ export const BRAND_LOGOS: Record<string, string> = {
   투썸플레이스: "/brands/twosome.png",
   파리바게뜨: "/brands/paris-baguette.png",
   폴바셋: "/brands/paul-bassett.png",
+  // 2026-11-23: 외식 탭 로고(신재윤 디자인 페이지)
+  아웃백: "/brands/outback.png",
+  VIPS: "/brands/vips.png",
+  맥도날드: "/brands/mcdonalds.png",
+  롯데리아: "/brands/lotteria.png",
+  버거킹: "/brands/burgerking.png",
+  맘스터치: "/brands/momstouch.png",
+  도미노피자: "/brands/dominos.png",
+  교촌치킨: "/brands/kyochon.png",
+  애슐리: "/brands/ashley.png",
+  // 2026-11-23: 디자인 페이지에 없던 배달·OTT·구독 로고(각 서비스의 한국 앱스토어 공식 앱 아이콘을 원형으로)
+  땡겨요: "/brands/ddangyo.png",
+  넷플릭스: "/brands/netflix.png",
+  "유튜브 프리미엄": "/brands/youtube.png",
+  티빙: "/brands/tving.png",
+  "디즈니+": "/brands/disney-plus.png",
+  웨이브: "/brands/wavve.png",
+  쿠팡플레이: "/brands/coupang-play.png",
+  왓챠: "/brands/watcha.png",
+  멜론: "/brands/melon.png",
+  지니: "/brands/genie.png",
+  스포티파이: "/brands/spotify.png",
+  ChatGPT: "/brands/chatgpt.png",
+  Claude: "/brands/claude.png",
 };
 
 export function logoOf(brand: string): string | null {

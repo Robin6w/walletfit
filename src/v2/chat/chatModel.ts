@@ -1,7 +1,7 @@
 import type { BrandShare, EngineCard, EnginePack, RankRow, RecommendResponse, Tickets } from "@/domain/types/engine";
 import type { AzuLlmMessage } from "@/features/chatbot/azuLlmClient";
 import type { CatalogListing } from "@/domain/types/catalog";
-import { CATEGORY_LABEL, catLabel, catalogBySourceId, catalogCards, isDiscontinued } from "@/v1/catalog";
+import { CATEGORY_LABEL, catLabel, catalogBySourceId, catalogCards, isDiscontinued, isRecommendExcluded } from "@/v1/catalog";
 import { approxKor, korWon, num, won } from "@/v1/format";
 import { paths, type Flow } from "@/v2/app/paths";
 import { headVM, insightsVM, sumVM, type CardMeta, type CmpCardInput } from "@/v2/model/compareView";
@@ -299,7 +299,7 @@ async function answerCompare(ctx: ChatContext, call: EngineCall): Promise<ChatMs
     lines.push(`한 장으로 지출 전부(월 ${korAmount(total)}원)를 결제하면 ${countWord(sorted.length)} 카드가 받는 금액이 같아요(월 ${won(top?.total ?? 0)}).`);
   }
   for (const ins of insightsVM(inputs, null).filter((x) => x.id !== "diff").slice(0, 2)) lines.push(`${ins.title}. ${ins.text}`);
-  const notOwned = inputs.find((x) => !ctx.ownedIds.includes(x.sid));
+  const notOwned = inputs.find((x) => !ctx.ownedIds.includes(x.sid) && !isRecommendExcluded(x.sid));
   const actions: ChatAction[] = notOwned
     ? [{ label: `${nickBy(notOwned.sid)}까지 넣어서 지갑 다시 짜기`, id: "pin", sid: notOwned.sid, primary: true }, { label: "카드 비교 보기", to: paths.compare(ids) }]
     : [{ label: "카드 비교 보기", to: paths.compare(ids) }];

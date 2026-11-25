@@ -2,7 +2,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { CardKind } from "@/domain/types/card";
 import type { BrandShare, Tickets } from "@/domain/types/engine";
 import { useMonthlySpend } from "@/domain/state/useMonthlySpend";
-import { catalogBySourceId, categories, issuableCards } from "@/v1/catalog";
+import { catalogBySourceId, categories, isRecommendExcluded, issuableCards } from "@/v1/catalog";
 import { korWon } from "@/v1/format";
 import { useMargin } from "@/v1/state";
 import { paths, type Flow, type MakeStep } from "@/v2/app/paths";
@@ -86,7 +86,7 @@ export function useFlowInputs() {
   const owned = myCards.ids;
 
   /** 보유한 카드 흐름에서 계산에 넣는 카드(조건 바꾸기의 카드 종류 적용) */
-  const ownIds = owned.filter((s) => conditions.kinds.includes(kindOf(s)));
+  const ownIds = owned.filter((s) => conditions.kinds.includes(kindOf(s)) && !isRecommendExcluded(s));
   /** 새 카드 후보: 고른 종류(B1) + 조건의 카드 종류 + 연회비 상한. 꼭 넣을 카드는 조건과 상관없이 넣는다 */
   const newPool = useMemo(() => {
     const kinds = (newTypes.length ? newTypes : (["credit", "check"] as CardKind[])).filter((k) => conditions.kinds.includes(k));
@@ -96,11 +96,11 @@ export function useFlowInputs() {
       .filter((c) => kinds.includes(c.category === "체크" ? "check" : "credit"))
       .filter((c) => conditions.feeCap === null || (c.annualFee ?? 0) <= conditions.feeCap)
       .map((c) => c.sourceId);
-    const extra = conditions.pinned.filter((s) => !ownedSet.has(s) && catalogBySourceId.has(s) && !pool.includes(s));
+    const extra = conditions.pinned.filter((s) => !ownedSet.has(s) && catalogBySourceId.has(s) && !pool.includes(s) && !isRecommendExcluded(s));
     return [...extra, ...pool];
   }, [newTypes, conditions, owned]);
   /** 꼭 넣을 카드(가진 카드가 아니고 카드 목록에 있는 것만) */
-  const pinned = useMemo(() => conditions.pinned.filter((s) => !owned.includes(s) && catalogBySourceId.has(s)), [conditions.pinned, owned]);
+  const pinned = useMemo(() => conditions.pinned.filter((s) => !owned.includes(s) && catalogBySourceId.has(s) && !isRecommendExcluded(s)), [conditions.pinned, owned]);
 
   const brandShareFor = (source: "manual" | "statement"): BrandShare => brandShareWith(spending, source);
   /** 다른 지출(예: 소득으로 채울 지출)에 같은 규칙으로 브랜드 비중을 만든다 */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { catalogBySourceId, catalogCards, isRecommendExcluded, issuableCards } from "@/v1/catalog";
 
-describe("추천에서 빼는 카드(나라사랑·국민행복·아이행복·청소년, 2026-11-25)", () => {
+describe("추천에서 빼는 카드(나라사랑·국민행복·아이행복·청소년·선불, 2026-11-25)", () => {
   const excluded = catalogCards.filter((c) => isRecommendExcluded(c.sourceId));
   const ids = new Set(excluded.map((c) => c.sourceId));
 
@@ -29,6 +29,12 @@ describe("추천에서 빼는 카드(나라사랑·국민행복·아이행복·�
     for (const s of ihappy) expect(ids.has(s)).toBe(true);
   });
 
+  it("선불카드를 모두 뺀다(신한 처음(선불)은 청소년 카드로도 걸림)", () => {
+    const prepaid = catalogCards.filter((c) => c.name.includes("선불")).map((c) => c.sourceId);
+    expect(prepaid.sort((a, b) => a - b)).toEqual([2546, 2547, 2857]);
+    for (const s of prepaid) expect(ids.has(s)).toBe(true);
+  });
+
   it("이름에 teen이 들어가도 청소년 카드가 아니면 빼지 않는다(위버스 SEVENTEEN)", () => {
     expect(isRecommendExcluded(2247)).toBe(false);
     expect(isRecommendExcluded(2249)).toBe(false);
@@ -38,6 +44,7 @@ describe("추천에서 빼는 카드(나라사랑·국민행복·아이행복·�
   it("뺀 카드는 새 카드 후보(검수 안 한 카드 포함)에 하나도 없다", () => {
     const pool = issuableCards({ includeUnverified: true });
     expect(pool.some((c) => ids.has(c.sourceId))).toBe(false);
-    expect(excluded.length).toBe(5 + 25 + 3 + 18);
+    // 나라사랑 5 + 국민행복 25 + 아이행복 3 + 청소년 18 + 선불 2(처음(선불)은 청소년에 포함)
+    expect(excluded.length).toBe(5 + 25 + 3 + 18 + 2);
   });
 });

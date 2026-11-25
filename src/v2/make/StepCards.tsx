@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { catalogBySourceId, catalogCards, feeLabel, isDiscontinued, summaryChips } from "@/v1/catalog";
+import { catalogBySourceId, catalogCards, feeLabel, isDiscontinued, isRecommendExcluded, summaryChips } from "@/v1/catalog";
 import { num } from "@/v1/format";
 import { paths } from "@/v2/app/paths";
 import { Link } from "@/v2/app/router";
@@ -70,7 +70,8 @@ export function StepCards({ ids, onToggle }: { ids: number[]; onToggle: (sid: nu
   const [moreIssuers, setMoreIssuers] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const owned = useMemo(() => new Set(ids), [ids]);
-  const results = useMemo(() => searchCards({ q, kind, issuer, pinned: owned }), [q, kind, issuer, owned]);
+  // 나라사랑카드는 추천 계산에 넣지 않아 담는 목록에서도 뺀다(2026-11-25). 예전에 담아 둔 건 보여서 뺄 수 있게 둔다
+  const results = useMemo(() => searchCards({ q, kind, issuer, pinned: owned }).filter((c) => owned.has(c.sourceId) || !isRecommendExcluded(c.sourceId)), [q, kind, issuer, owned]);
   const issuers = moreIssuers
     ? Array.from(new Set(catalogCards.map((c) => c.issuer).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ko"))
     : DESIGN_ISSUERS;

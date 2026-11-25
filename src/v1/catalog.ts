@@ -51,6 +51,17 @@ export function isRestricted(entry: CatalogListing): boolean {
   return RESTRICTED_IDS.has(entry.sourceId) || RESTRICTED.test(entry.name);
 }
 
+/**
+ * 추천 계산에 아예 넣지 않는 카드(2026-11-25 사용자 결정): 나라사랑카드(군 장병 전용).
+ * 새 카드 후보뿐 아니라 '내 카드로 담기'·'꼭 넣을 카드'·카드 비교의 '넣어서 지갑 다시 짜기'에서도 뺀다.
+ * 전체 카드 목록·카드 상세에는 그대로 보인다
+ */
+const NO_RECOMMEND = /나라사랑/;
+export function isRecommendExcluded(sid: number): boolean {
+  const e = catalogBySourceId.get(sid);
+  return !!e && NO_RECOMMEND.test(e.name);
+}
+
 const VERIFIED = (benefitStatus as { verified: Record<string, string> }).verified;
 const UNREAD = new Set<number>((benefitStatus as { unread?: number[] }).unread ?? []);
 

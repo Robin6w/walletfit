@@ -52,14 +52,17 @@ export function isRestricted(entry: CatalogListing): boolean {
 }
 
 /**
- * 추천 계산에 아예 넣지 않는 카드(2026-11-25 사용자 결정): 나라사랑카드(군 장병 전용).
+ * 추천 계산에 아예 넣지 않는 카드(2026-11-25 사용자 결정): 나라사랑카드(군 장병), 국민행복카드(정부 바우처), 청소년 카드.
  * 새 카드 후보뿐 아니라 '내 카드로 담기'·'꼭 넣을 카드'·카드 비교의 '넣어서 지갑 다시 짜기'에서도 뺀다.
  * 전체 카드 목록·카드 상세에는 그대로 보인다
  */
-const NO_RECOMMEND = /나라사랑/;
+// 청소년: '\bteens?\b'라서 'My TeenS'·'Hi teen'은 걸리고 'SEVENTEEN'(위버스 카드)은 안 걸린다
+const NO_RECOMMEND = /(나라사랑|국민행복|청소년|틴즈|틴업|\bteens?\b)/i;
+/** 이름으로는 안 걸리는 청소년(만 12~18세 등) 전용 카드. 원문 발급 대상 문구로 확인(RESTRICTED_IDS 주석 참고) */
+const NO_RECOMMEND_IDS = new Set([679, 680, 686, 2060, 2419, 2639, 2665, 2857, 2887, 2889, 3019]);
 export function isRecommendExcluded(sid: number): boolean {
   const e = catalogBySourceId.get(sid);
-  return !!e && NO_RECOMMEND.test(e.name);
+  return !!e && (NO_RECOMMEND_IDS.has(sid) || NO_RECOMMEND.test(e.name));
 }
 
 const VERIFIED = (benefitStatus as { verified: Record<string, string> }).verified;
@@ -81,7 +84,8 @@ export function isVerified(entry: CatalogListing): boolean {
  */
 export function issuableCards(opts: { includeUnverified?: boolean } = {}): CatalogListing[] {
   return catalogCards.filter(
-    (e) => !isInfoInsufficient(e) && !isDiscontinued(e) && !isRestricted(e) && (opts.includeUnverified || isVerified(e)),
+    (e) =>
+      !isInfoInsufficient(e) && !isDiscontinued(e) && !isRestricted(e) && !isRecommendExcluded(e.sourceId) && (opts.includeUnverified || isVerified(e)),
   );
 }
 
